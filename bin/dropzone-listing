@@ -1,0 +1,12 @@
+#!/usr/bin/env node
+var program = require('commander');
+
+program
+  .usage('<command> [options]')
+  .description('Manage listings')
+  .command('find', 'Searches through The Blockchain for listings')
+  .command('show', 'Show listing details')
+  .command('create', 'Create an item listing as a seller')
+  .command('update', 'Update your item listing');
+
+program.parse(process.argv);

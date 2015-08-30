@@ -1,0 +1,33 @@
+#!/usr/bin/env node
+var program = require('commander');
+
+program
+  .usage('<private_key> [options]')
+  .description('Create an item listing as a seller')
+  .option('-a, --latitude <coordinate>', 
+    "The approximate latitude your listing's location", 
+    parseFloat)
+  .option('-o, --longitude <coordinate>', 
+    "The approximate longitude your listing's location", 
+    parseFloat)
+  .option('-r, --radius <meters>', 
+    "The approximate diameter your item's location"
+    + " around the provided latitude and longitude", 
+    parseInt)
+  .on('--help', function(){
+    console.log(
+      "  Given the provided seller address <private_key>, create an item\n"
+      + "  which is pubilicly listed as available for purchase by other users.\n");
+    console.log(
+      "  Example:\n\n"
+      + "  # Create an item\n"
+      + "  dropzone listing create \\\n"
+      + "    --latitude '51.500782' \\\n"
+      + "    --longitude '-0.124669' \\\n"
+      + "    --radius 1000 \\\n"
+      + "    --price_currency 'USD' \\\n"
+      + "    --price_in_units 100 \\\n"
+      + "    --description 'Test Description'\n");
+  });
+
+program.parse(process.argv);

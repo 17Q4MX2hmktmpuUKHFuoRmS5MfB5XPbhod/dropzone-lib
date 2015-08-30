@@ -1,0 +1,32 @@
+{
+  "name": "dropzone",
+  "version": "0.0.1",
+  "description": "An anonymous peer-to-peer local contraband marketplace",
+  "bin": {
+      "dropzone": "bin/dropzone"
+  },
+  "scripts": {
+    "prepublish": "patch node_modules/commander/index.js < patches/commander.patch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone_js.git"
+  },
+  "keywords": [
+    "bitcoin",
+    "p2p",
+    "market",
+    "buy",
+    "sell",
+    "drop",
+    "cli"
+  ],
+  "author": "aynik",
+  "bugs": {
+    "url": "https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone_js/issues"
+  },
+  "homepage": "https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone_js",
+  "dependencies": {
+    "commander": "^2.8.1"
+  }
+}

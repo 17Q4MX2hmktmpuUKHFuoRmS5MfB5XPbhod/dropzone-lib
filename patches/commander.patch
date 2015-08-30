@@ -1,0 +1,72 @@
+diff --git a/index.js b/index.js
+index 8776965..d938e32 100644
+--- a/index.js
++++ b/index.js
+@@ -187,17 +187,6 @@ Command.prototype.arguments = function (desc) {
+ }
+ 
+ /**
+- * Add an implicit `help [cmd]` subcommand
+- * which invokes `--help` for the given command.
+- *
+- * @api private
+- */
+-
+-Command.prototype.addImplicitHelpCommand = function() {
+-  this.command('help [cmd]', 'display help for [cmd]');
+-};
+-
+-/**
+  * Parse expected `args`.
+  *
+  * For example `["[type]"]` becomes `[{ required: false, name: 'type' }]`.
+@@ -436,9 +425,6 @@ Command.prototype.allowUnknownOption = function(arg) {
+  */
+ 
+ Command.prototype.parse = function(argv) {
+-  // implicit help
+-  if (this.executables) this.addImplicitHelpCommand();
+-
+   // store raw args
+   this.rawArgs = argv;
+ 
+@@ -814,7 +800,7 @@ Command.prototype.version = function(str, flags) {
+   if (0 == arguments.length) return this._version;
+   this._version = str;
+   flags = flags || '-V, --version';
+-  this.option(flags, 'output the version number');
++  this.option(flags, 'Output the version number');
+   this.on('version', function() {
+     process.stdout.write(str + '\n');
+     process.exit(0);
+@@ -909,7 +895,7 @@ Command.prototype.optionHelp = function() {
+   var width = this.largestOptionLength();
+ 
+   // Prepend the help information
+-  return [pad('-h, --help', width) + '  ' + 'output usage information']
++  return [pad('-h, --help', width) + '  ' + 'Output usage information']
+     .concat(this.options.map(function(option) {
+       return pad(option.flags, width) + '  ' + option.description;
+       }))
+@@ -969,7 +969,7 @@ Command.prototype.helpInformation = function() {
+   }
+   var usage = [
+     ''
+-    ,'  Usage: ' + cmdName + ' ' + this.usage()
++    ,'  Usage: ' + cmdName.replace(/-/g, ' ') + ' ' + this.usage()
+     , ''
+   ];
+ 
+@@ -985,9 +985,10 @@ Command.prototype.helpInformation = function() {
+     , ''
+   ];
+ 
+-  return usage
+-    .concat(cmds)
++  return ['\n']
+     .concat(desc)
++    .concat(usage)
++    .concat(cmds)
+     .concat(options)
+     .join('\n');
+ };

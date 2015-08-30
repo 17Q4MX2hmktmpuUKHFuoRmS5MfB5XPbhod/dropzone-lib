@@ -1,0 +1,20 @@
+#!/usr/bin/env node
+var program = require('commander');
+
+program
+  .usage('<private_key> <session_id> <message> [options]')
+  .description('Communicate with somebody in a private conversation over testnet')
+  .on('--help', function(){
+    console.log(
+      "  Append a <message> to the conversation identified by <session_id> using your\n"
+      + "  testnet <private_key>.\n");
+    console.log(
+      "  Example:\n\n"
+      + "  # Chat with another user over testnet\n"
+      + "  dropzone communication say \\\n"
+      + "    92UvdTpmxA6cvD6YeJZSiHW8ff8DsZXL2PHZu9Mg7JY3zbaETJw \\\n"
+      + "    0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098 \\\n"
+      + "    'Thank you for your inquiry'\n");
+  });
+
+program.parse(process.argv);

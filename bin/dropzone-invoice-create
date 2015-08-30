@@ -1,0 +1,32 @@
+#!/usr/bin/env node
+var program = require('commander');
+var tab = new Array(27).join(' ');
+
+program
+  .usage('<private_key> <recipient_addr> [options]')
+  .description('Create an invoice to a potential buyer')
+  .option('-n, --amount_due <btc>', 
+    "Amount due, denominated in Bitcoin (ie 0.5)",
+    parseFloat)
+  .option('-e, --expires_in <num_blocks>', 
+    "The expiration time of the invoice. 'Times' are to be indicated in the number of\n"
+    + "  blocks that this listing is available for. Omitting this field indicates no expiration.\n"
+    + "  Specifying an expiration is useful for locking in an exchange rate when closing a sale.\n",
+    parseInt)
+  .on('--help', function(){
+    console.log(
+      "  An invoice is needed to lock in currency exchange rates for the purposes of a sale, and\n"
+      + "  for the purpose of allowing the network to identify a successful sale on your profile\n"
+      + "  <private_key>. Satisfied invoices build reputation. This command will generate an invoice to\n"
+      + "  the buyer at the specified address <recipient_addr>.\n");
+    console.log(
+      "  Example:\n\n"
+      + "  # Create an invoice\n"
+      + "  dropzone invoice create \\\n"
+      + "    92thgQGx77ihBaA56W7B1Qm8nhYHRERo1UqrgT2p6P6QTqkRhRB \\\n"
+      + "    mi37WkBomHJpUghCn7Vgh3ah33h6L9Nkqw \\\n"
+      + "    --amount_due='0.5' \\\n"
+      + "    --expires_in=6\n");
+  });
+
+program.parse(process.argv);

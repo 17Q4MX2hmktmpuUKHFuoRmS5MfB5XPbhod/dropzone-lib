@@ -1,0 +1,17 @@
+#!/usr/bin/env node
+var program = require('commander');
+
+program
+  .usage('<private_key> [options]')
+  .description('Show the available communication sessions for a given testnet private key')
+  .on('--help', function(){
+    console.log(
+      "  This command lists all the conversations that have been initiated and/or authenticated on\n"
+      + "  the testnet address correlated with the specified <private_key>.\n");
+    console.log(
+      "  Example:\n\n"
+      + "  # List all communication sessions for a private key\n"
+      + "  dropzone communication list 92UvdTpmxA6cvD6YeJZSiHW8ff8DsZXL2PHZu9Mg7JY3zbaETJw\n");
+  });
+
+program.parse(process.argv);

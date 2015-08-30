@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+var program = require('commander');
+
+program
+  .usage('<command> [options]')
+  .description('Manage buyer and seller profiles')
+  .command('buyer', 'Manage buyer profiles')
+  .command('seller', 'Manage seller profiles')
+
+program.parse(process.argv);

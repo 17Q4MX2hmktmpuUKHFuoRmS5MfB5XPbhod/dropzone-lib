@@ -1,0 +1,34 @@
+#!/usr/bin/env node
+var program = require('commander');
+var tab = new Array(27).join(' ');
+
+program
+  .usage('<private_key> <tx_id> [options]')
+  .description('Leave a review on a generated invoice')
+  .option('-s, --description <text>',
+    "A description of the transaction and/or a review of the product.")
+  .option('-l, --delivery_quality <points>',
+    "The quality of the delivery itself. Between 0 (worst) to 8 (best)")
+  .option('-o, --product_quality <points>',
+    "The quality of the product. Between 0 (worst) to 8 (best)")
+  .option('-m, --communications_quality <points>',
+    "The seller's communications skill. Between 0 (worst) to 8 (best)")
+  .on('--help', function(){
+    console.log(
+      "  A review is primarily designed for the purposes of establishing feedback and reputations\n"
+      + "  amongst buyers and sellers. After an invoice is generated, and value is sent, a review\n"
+      + "  indicates to the network the nature of the transaction, and a buyer's <privkey> experience\n"
+      + "  with the seller. Reviews are left in response to a specific invoice at the provided <txid>.\n");
+    console.log(
+      "  Example:\n\n"
+      + "  # Review a purchase\n"
+      + "  dropzone review create \\\n"
+      + "    92UvdTpmxA6cvD6YeJZSiHW8ff8DsZXL2PHZu9Mg7JY3zbaETJw \\\n"
+      + "    0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098 \\\n"
+      + "    --description='Fair exchange' \\\n"
+      + "    --delivery_quality=8 \\\n"
+      + "    --product_quality=7 \\\n"
+      + "    --communications_quality=3\n");
+  });
+
+program.parse(process.argv);

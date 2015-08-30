@@ -1,0 +1,17 @@
+#!/usr/bin/env node
+var program = require('commander');
+
+program
+  .usage('<addr>')
+  .description('Display the balance on the provided address')
+  .on('--help', function(){
+    console.log(
+      "  Given the provided public key, display the Bitcoin balance remaining in\n"
+      + "  this account. Does not include unconfirmed transactions.\n");
+    console.log(
+      "  Example:\n\n"
+      + "  # Show the balance of Miracle Max's Account\n"
+      + "  dropzone balance 17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod\n");
+  });
+
+program.parse(process.argv);

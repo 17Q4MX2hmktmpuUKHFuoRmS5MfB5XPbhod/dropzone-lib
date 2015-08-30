@@ -1,0 +1,14 @@
+#!/usr/bin/env node
+var program = require('commander');
+
+program
+  .usage('<tx_id> [options]')
+  .description('Show review details')
+  .on('--help', function(){
+    console.log(
+      "  Example:\n\n"
+      + "  # Display a buyer's review\n"
+      + "  dropzone review show 0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098\n");
+  });
+
+program.parse(process.argv);
