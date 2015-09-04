@@ -1,16 +1,25 @@
 {
   "name": "dropzone",
   "version": "0.0.1",
+  "readme": "README.md",
   "description": "An anonymous peer-to-peer local contraband marketplace",
+  "main": "./src/index.js",
   "bin": {
     "dropzone": "bin/dropzone"
   },
   "scripts": {
-    "prepublish": "patch node_modules/commander/index.js < patches/commander.patch"
+    "prepublish": "patch node_modules/commander/index.js < patches/commander.patch",
+    "compile": "browserify ./src/index.js -s dropzone > dropzone.js",
+    "coverage": "istanbul cover _mocha -- test/*.js",
+    "coveralls": "npm run-script coverage && coveralls < coverage/lcov.info",
+    "integration": "mocha test/integration/",
+    "standard": "standard",
+    "test": "npm run-script unit && npm run standard",
+    "unit": "mocha"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone_js.git"
+    "url": "https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/node-dropzone.git"
   },
   "keywords": [
     "bitcoin",
@@ -22,6 +31,9 @@
     "cli"
   ],
   "author": "aynik",
+  "contributors": [
+    { "name": "Miracle Max" }
+  ],
   "bugs": {
     "url": "https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone_js/issues"
   },
@@ -31,9 +43,22 @@
     "bitcore-p2p": "^0.14.0",
     "bitcore-p2p-browserify": "^0.14.0",
     "commander": "^2.8.1",
-    "sequelize": "^3.7.1"
+    "bitcoinjs-lib": "^1.5.8"
   },
   "browser": {
     "bitcore-p2p": "bitcore-p2p-browserify"
+  },
+  "devDependencies": {
+    "async": "^0.9.0",
+    "browserify": "^10.0.0",
+    "bs58": "^2.0.1",
+    "cb-http-client": "^0.2.0",
+    "coveralls": "^2.11.2",
+    "httpify": "^1.0.0",
+    "istanbul": "^0.3.5",
+    "mocha": "^2.2.0",
+    "proxyquire": "^1.4.0",
+    "sinon": "^1.12.2",
+    "standard": "^5.0.0"
   }
 }
