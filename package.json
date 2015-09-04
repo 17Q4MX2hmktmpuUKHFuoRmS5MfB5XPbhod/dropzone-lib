@@ -8,7 +8,7 @@
     "dropzone": "bin/dropzone"
   },
   "scripts": {
-    "prepublish": "patch node_modules/commander/index.js < patches/commander.patch",
+    "postinstall": "scripts/postinstall.sh",
     "compile": "browserify ./src/index.js -s dropzone > dropzone.js",
     "coverage": "istanbul cover _mocha -- test/*.js",
     "coveralls": "npm run-script coverage && coveralls < coverage/lcov.info",
@@ -32,18 +32,20 @@
   ],
   "author": "aynik",
   "contributors": [
-    { "name": "Miracle Max" }
+    {
+      "name": "Miracle Max"
+    }
   ],
   "bugs": {
     "url": "https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone_js/issues"
   },
   "homepage": "https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone_js",
   "dependencies": {
+    "bitcoinjs-lib": "^1.5.8",
     "bitcore": "^0.12.0",
     "bitcore-p2p": "^0.14.0",
     "bitcore-p2p-browserify": "^0.14.0",
-    "commander": "^2.8.1",
-    "bitcoinjs-lib": "^1.5.8"
+    "commander": "^2.8.1"
   },
   "browser": {
     "bitcore-p2p": "bitcore-p2p-browserify"
