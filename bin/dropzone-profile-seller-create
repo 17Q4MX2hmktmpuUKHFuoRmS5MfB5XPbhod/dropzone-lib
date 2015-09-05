@@ -14,7 +14,8 @@ program
     tab + 'the destination key. If you wish to deactivate your store\n' +
     tab + 'entirely, a 0 can be passed here')
   .option('-c, --communications_addr <addr>',
-    'Specifies through which testnet address you wish to receive messages')
+    'Specifies through which testnet address you wish\n' +
+    tab + 'to receive messages')
   .on('--help', function () {
     console.log(
       '  A seller profile is required to precede all item declarations\n' +

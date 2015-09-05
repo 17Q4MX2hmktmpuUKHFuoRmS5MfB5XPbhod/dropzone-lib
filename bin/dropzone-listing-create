@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 var program = require('commander')
+var tab = new Array(31).join(' ')
 
 program
   .usage('<private_key> [options]')
@@ -11,8 +12,8 @@ program
     "The approximate longitude your listing's location",
     parseFloat)
   .option('-r, --radius <meters>',
-    "The approximate diameter your item's location" +
-    ' around the provided latitude and longitude',
+    "The approximate diameter your item's location\n" +
+    tab + 'around the provided latitude and longitude',
     parseInt)
   .on('--help', function () {
     console.log(

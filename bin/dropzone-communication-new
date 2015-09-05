@@ -17,7 +17,7 @@ program
       '  recipient that a connection has been established with, and\n' +
       '  these secrets are stored in the ~/.dropzone/dropzone.db file.\n' +
       '  When the user responds to this request a secret is automatically\n' +
-      ' generated on their computer as well.\n')
+      '  generated on their computer as well.\n')
     console.log(
       '  Example:\n\n' +
       '  # Start a conversation\n' +

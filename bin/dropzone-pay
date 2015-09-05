@@ -7,7 +7,7 @@ program
   .on('--help', function () {
     console.log(
       '  Given the provided <private_key>, send Bitcoin in units\n' +
-      ' of BTC <amnt_btc> to the recipient specified by <dest_addr>.\n')
+      '  of BTC <amnt_btc> to the recipient specified by <dest_addr>.\n')
     console.log(
       '  Example:\n\n' +
       '  # Send 1.2 BTC ' +

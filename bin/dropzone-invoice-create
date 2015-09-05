@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 var program = require('commander')
+var tab = new Array(32).join(' ')
 
 program
   .usage('<private_key> <recipient_addr> [options]')
@@ -9,10 +10,10 @@ program
     parseFloat)
   .option('-e, --expires_in <num_blocks>',
     "The expiration time of the invoice. 'Times' are to be indicated\n" +
-    '  in the number of blocks that this listing is available for.\n' +
-    '  Omitting this field indicates no expiration. Specifying an\n' +
-    '  expiration is useful for locking in an exchange rate\n' +
-    '  when closing a sale.\n',
+    tab + 'in the number of blocks that this listing is available for.\n' +
+    tab + 'Omitting this field indicates no expiration. Specifying an\n' +
+    tab + 'expiration is useful for locking in an exchange rate\n' +
+    tab + 'when closing a sale.\n',
     parseInt)
   .on('--help', function () {
     console.log(
