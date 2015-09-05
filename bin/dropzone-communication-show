@@ -1,19 +1,20 @@
 #!/usr/bin/env node
-var program = require('commander');
+var program = require('commander')
 
 program
   .usage('<private_key> <session_id> [options]')
-  .description('Show all the available messages for a given testnet private key and session')
-  .on('--help', function(){
+  .description('Show all the available messages for a given session')
+  .on('--help', function () {
     console.log(
-      "  Outputs a full conversation, start to finish, between the testnet <private_key> starting\n"
-      + "  with the initiation at the transaction identified by <session_id>.\n");
+      '  Outputs a full conversation, start to finish, between the\n' +
+      '  testnet <private_key> starting with the initiation at the\n' +
+      '  transaction identified by <session_id>.\n')
     console.log(
-      "  Example:\n\n"
-      + "  # Displays a conversation\n"
-      + "  dropzone communication show \\\n"
-      + "    92UvdTpmxA6cvD6YeJZSiHW8ff8DsZXL2PHZu9Mg7JY3zbaETJw \\\n"
-      + "    0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098\n");
-  });
+      '  Example:\n\n' +
+      '  # Displays a conversation\n' +
+      '  dropzone communication show \\\n' +
+      '    92UvdTpmxA6cvD6YeJZSiHW8ff8DsZXL2PHZu9Mg7JY3zbaETJw \\\n' +
+      '    0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098\n')
+  })
 
-program.parse(process.argv);
+program.parse(process.argv)

@@ -1,20 +1,21 @@
 #!/usr/bin/env node
-var program = require('commander');
+var program = require('commander')
 
 program
   .usage('<private_key> <dest_addr> <amount_btc>')
   .description('Send value to a recipient')
-  .on('--help', function(){
+  .on('--help', function () {
     console.log(
-      "  Given the provided <private_key>, send Bitcoin in units of BTC <amnt_btc>\n"
-      + "  to the recipient specified by <dest_addr>.\n");
+      '  Given the provided <private_key>, send Bitcoin in units\n' +
+      ' of BTC <amnt_btc> to the recipient specified by <dest_addr>.\n')
     console.log(
-      "  Example:\n\n"
-      + "  # Send 1.2 Bitcoin from",
-        "mi37WkBomHJpUghCn7Vgh3ah33h6L9Nkqw to mqVRfjepJTxxoDgDt892tCybhmjfKCFNyp\n"
-      + "  dropzone pay \\\n"
-      + "    92UvdTpmxA6cvD6YeJZSiHW8ff8DsZXL2PHZu9Mg7JY3zbaETJw \\\n"
-      + "    mqVRfjepJTxxoDgDt892tCybhmjfKCFNyp 1.2\n");
-  });
+      '  Example:\n\n' +
+      '  # Send 1.2 BTC ' +
+          ' from mi37WkBomHJpUghCn7Vgh3ah33h6L9Nkqw' +
+          ' to mqVRfjepJTxxoDgDt892tCybhmjfKCFNyp\n' +
+      '  dropzone pay \\\n' +
+      '    92UvdTpmxA6cvD6YeJZSiHW8ff8DsZXL2PHZu9Mg7JY3zbaETJw \\\n' +
+      '    mqVRfjepJTxxoDgDt892tCybhmjfKCFNyp 1.2\n')
+  })
 
-program.parse(process.argv);
+program.parse(process.argv)

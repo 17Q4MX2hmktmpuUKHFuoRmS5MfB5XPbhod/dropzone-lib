@@ -1,12 +1,16 @@
 #!/usr/bin/env node
-var program = require('commander');
+var program = require('commander')
 
 program
   .usage('<command> [options]')
   .description('Manage communications between you and another party')
-  .command('new', 'Start a new conversation with the person at a given testnet address')
-  .command('list', 'Show the available communication sessions for a given testnet private key')
-  .command('show', 'Show all the available messages for a given testnet private key and session')
-  .command('say', 'Communicate with somebody in a private conversation over testnet');
+  .command('new',
+    'Start a new conversation with the owner of testnet address')
+  .command('list',
+    'Show the available communications for a given testnet private key')
+  .command('show',
+    'Show all the available messages for a given session')
+  .command('say',
+    'Communicate with someone in a private conversation over testnet')
 
-program.parse(process.argv);
+program.parse(process.argv)

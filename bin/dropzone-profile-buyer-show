@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-var program = require('commander');
+var program = require('commander')
 
 program
   .usage('<addr> [options]')
   .description('Show a buyer profile')
-  .on('--help', function(){
+  .on('--help', function () {
     console.log(
-      "  Displays the information associated with the buyer at the given address.\n");
+      '  Displays information associated with a buyer at a given address.\n')
     console.log(
-      "  Example:\n\n"
-      + "  # Look up a user's buyer profile\n"
-      + "  dropzone profile buyer show mgDprFdTS61x1ejowYqJSmoWiqwpEiGrcy\n");
-  });
+      '  Example:\n\n' +
+      "  # Look up a user's buyer profile\n" +
+      '  dropzone profile buyer show mgDprFdTS61x1ejowYqJSmoWiqwpEiGrcy\n')
+  })
 
-program.parse(process.argv);
+program.parse(process.argv)

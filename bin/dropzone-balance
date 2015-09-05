@@ -1,17 +1,17 @@
 #!/usr/bin/env node
-var program = require('commander');
+var program = require('commander')
 
 program
   .usage('<addr>')
   .description('Display the balance on the provided address')
-  .on('--help', function(){
+  .on('--help', function () {
     console.log(
-      "  Given the provided public key, display the Bitcoin balance remaining in\n"
-      + "  this account. Does not include unconfirmed transactions.\n");
+      '  Given the provided public key, display the balance remaining\n' +
+      '  in this account. Does not include unconfirmed transactions.\n')
     console.log(
-      "  Example:\n\n"
-      + "  # Show the balance of Miracle Max's Account\n"
-      + "  dropzone balance 17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod\n");
-  });
+      '  Example:\n\n' +
+      "  # Show the balance of Miracle Max's Account\n" +
+      '  dropzone balance 17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod\n')
+  })
 
-program.parse(process.argv);
+program.parse(process.argv)

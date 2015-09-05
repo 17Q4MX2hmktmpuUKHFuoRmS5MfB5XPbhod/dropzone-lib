@@ -1,34 +1,37 @@
 #!/usr/bin/env node
-var program = require('commander');
-var tab = new Array(35).join(' ');
+var program = require('commander')
+var tab = new Array(35).join(' ')
 
 program
   .usage('<private_key> [options]')
   .description('Create a seller profile')
-  .option('-s, --description <text>', "A description of yourself")
+  .option('-s, --description <text>', 'A description of yourself')
   .option('-a, --alias <name>',
-    "A short name by which you would like to be identified")
+    'A short name by which you would like to be identified')
   .option('-t, --transfer_id <addr>',
-    "Transfer this identity to the specified address. Note that this is a one-way\n"
-    + tab + "operation, and that you should be sure to control the destination key. If you wish to\n"
-    + tab + "deactivate your store entirely, a 0 can be passed here")
+    'Transfer this identity to the specified address. Note that this is\n' +
+    tab + 'a one-way operation, and that you should be sure to control\n' +
+    tab + 'the destination key. If you wish to deactivate your store\n' +
+    tab + 'entirely, a 0 can be passed here')
   .option('-c, --communications_addr <addr>',
-    "Specifies which testnet address you wish to receive communications inquiries at")
-  .on('--help', function(){
+    'Specifies through which testnet address you wish to receive messages')
+  .on('--help', function () {
     console.log(
-      "  A seller profile is required to precede all item declarations on a public key (Specified\n"
-      + "  in <private_key>). This declaration is expected to contain basic information about a seller,\n"
-      + "  and offers some provisions which facilitate identity transfers. This command will create an\n"
-      + "  identity if one does not exist at the specified address, and/or will update any identity that\n"
-      + "  already exists at the specified address.\n");
+      '  A seller profile is required to precede all item declarations\n' +
+      '  on a public key (Specified in <private_key>). This declaration\n' +
+      '  is expected to contain basic information about a seller,\n' +
+      '  and offers some provisions which facilitate identity transfers.\n' +
+      '  This command will create an identity if one does not exist at\n' +
+      '  the specified address, and/or will update any identity that\n' +
+      '  already exists at the specified address.\n')
     console.log(
-      "  Example:\n\n"
-      + "  # Declare a seller profile\n"
-      + "  dropzone profile seller create \\\n"
-      + "    92thgQGx77ihBaA56W7B1Qm8nhYHRERo1UqrgT2p6P6QTqkRhRB \\\n"
-      + "    --alias='Miracle Max' \\\n"
-      + "    --description='First seller' \\\n"
-      + "    --communications_addr='mi37WkBomHJpUghCn7Vgh3ah33h6L9Nkqw'\n");
-  });
+      '  Example:\n\n' +
+      '  # Declare a seller profile\n' +
+      '  dropzone profile seller create \\\n' +
+      '    92thgQGx77ihBaA56W7B1Qm8nhYHRERo1UqrgT2p6P6QTqkRhRB \\\n' +
+      "    --alias='Miracle Max' \\\n" +
+      "    --description='First seller' \\\n" +
+      "    --communications_addr='mi37WkBomHJpUghCn7Vgh3ah33h6L9Nkqw'\n")
+  })
 
-program.parse(process.argv);
+program.parse(process.argv)

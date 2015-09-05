@@ -1,41 +1,43 @@
 #!/usr/bin/env node
-var program = require('commander');
-var tab = new Array(32).join(' ');
+var program = require('commander')
+var tab = new Array(32).join(' ')
 
 program
   .usage('<block_depth> [options]')
   .description('Searches through the Blockchain for listings')
-  .option('-a, --latitude <coordinate>', 
-    "The approximate latitude your location", 
+  .option('-a, --latitude <coordinate>',
+    'The approximate latitude your location',
     parseFloat)
-  .option('-o, --longitude <coordinate>', 
-    "The approximate longitude your location", 
+  .option('-o, --longitude <coordinate>',
+    'The approximate longitude your location',
     parseFloat)
-  .option('-r, --radius <meters>', 
-    "The approximate diameter you wish to search around the provided latitude and\n"
-    + tab + "longitude. The expected unit of distance is in meters",
+  .option('-r, --radius <meters>',
+    'The approximate diameter you wish to search around the provided\n' +
+    tab + 'latitude and longitude. The expected unit of distance is in meters',
     parseInt)
-  .option('-s, --start_at <block_height>', 
-    "Start searching from the specified block height until <block_depth> 'blocks down'.\n"
-    + tab + "The default behavior is to start at the current blockchain height",
+  .option('-s, --start_at <block_height>',
+    'Start searching from the specified block height\n' +
+    tab + "until <block_depth> 'blocks down'. The default behavior is to\n" +
+    tab + 'start at the current blockchain height',
     parseInt)
-  .on('--help', function(){
+  .on('--help', function () {
     console.log(
-      "  Search through the Blockchain, up until the provided <block_depth>, for Drop Zone\n"
-      + "  listings. Note that the returned listings may not be entirely updated, or even valid. A\n"
-      + "  subsequent 'listing show' command should be specified to validate the details of the item\n"
-      + "  you're interested in.\n");
+      '  Search through the Blockchain, up until the\n' +
+      '  provided <block_depth>, for Drop Zone listings. Note that the\n' +
+      '  returned listings may not be entirely updated, or even valid. A\n' +
+      "  subsequent 'listing show' command should be specified to validate\n" +
+      "  the details of the item you're interested in.\n")
     console.log(
-      "  Example:\n\n"
-      + "  # Find listings uploaded (approximately) in the last hour\n"
-      + "  dropzone listing find 6\n\n"
-      + "  # Find listings uploaded twenty kilometers around Shijuku in the last day\n"
-      + "  dropzone listing find 144 \\\n"
-      + "    --latitude 35.689487 --longitude 139.691706 --radius 20000\n\n"
-      + "  # Find listings between block 371813 and 371810 (inclusive)\n"
-      + "  dropzone listing find 3 --start_at 371813\n\n"
-      + "  # Find listings in block 371812\n"
-      + "  dropzone listing find 0 --start_at 371812\n");
-  });
+      '  Example:\n\n' +
+      '  # Find listings uploaded (approximately) in the last hour\n' +
+      '  dropzone listing find 6\n\n' +
+      '  # Find listings twenty kilometers around Shijuku in the last day\n' +
+      '  dropzone listing find 144 \\\n' +
+      '    --latitude 35.689487 --longitude 139.691706 --radius 20000\n\n' +
+      '  # Find listings between block 371813 and 371810 (inclusive)\n' +
+      '  dropzone listing find 3 --start_at 371813\n\n' +
+      '  # Find listings in block 371812\n' +
+      '  dropzone listing find 0 --start_at 371812\n')
+  })
 
-program.parse(process.argv);
+program.parse(process.argv)

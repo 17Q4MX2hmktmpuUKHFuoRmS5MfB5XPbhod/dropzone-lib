@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-var program = require('commander');
+var program = require('commander')
 
 program
   .usage('<command> [options]')
@@ -7,4 +7,4 @@ program
   .command('create', 'Create an invoice to a potential buyer')
   .command('show', 'Show invoice details')
 
-program.parse(process.argv);
+program.parse(process.argv)
