@@ -3,21 +3,20 @@ var util = require('util')
 
 var bitcore = require('bitcore')
 
-var Hash = bitcore.crypto.Hash
 var Script = bitcore.Script
 var Address = bitcore.Address
 
-DEFAULT_PREFIX = 'CNTRPRTY'
-OP_RETURN_PARTS = /^OP_RETURN ([a-f0-9]+)$/
-P2PKH_PARTS = /^OP_DUP OP_HASH160 ([a-f0-9]+) OP_EQUALVERIFY OP_CHECKSIG$/
-OP_MULTISIG_PARTS = /^OP_[12] ([a-f0-9 ]+) OP_([23]) OP_CHECKMULTISIG$/
+var DEFAULT_PREFIX = 'CNTRPRTY'
+var OP_RETURN_PARTS = /^OP_RETURN ([a-f0-9]+)$/
+var P2PKH_PARTS = /^OP_DUP OP_HASH160 ([a-f0-9]+) OP_EQUALVERIFY OP_CHECKSIG$/
+var OP_MULTISIG_PARTS = /^OP_[12] ([a-f0-9 ]+) OP_([23]) OP_CHECKMULTISIG$/
 
 util.inherits(TxDecoderError, Error)
 
 function TxDecoderError (message) {
   this.name = this.constructor.name
   this.message = 'Transaction decoder error: ' + message
-  Error.captureStackTrace(this, this.constructor);
+  Error.captureStackTrace(this, this.constructor)
 }
 
 function BadEncodingError () {
@@ -39,13 +38,13 @@ function TxDecoder (tx, options) {
 
 TxDecoder.prototype.isPrefixed = function (data, offset) {
   offset = offset || 1
-  var data = data.slice(offset, offset + this.prefix.length).toString('utf-8')
+  data = data.slice(offset, offset + this.prefix.length).toString('utf-8')
   return data === this.prefix
 }
 
-TxDecoder.prototype.decrypt = function (chunk) {
-  var decipher = crypto.createDecipheriv("rc4", this.decryptKey, '');   
-  return Buffer.concat([decipher.update(chunk), decipher.final()])
+TxDecoder.prototype.decrypt = function (data) {
+  var decipher = crypto.createDecipheriv('rc4', this.decryptKey, '')
+  return Buffer.concat([decipher.update(data), decipher.final()])
 }
 
 TxDecoder.prototype.parse = function (outputs) {
@@ -53,87 +52,92 @@ TxDecoder.prototype.parse = function (outputs) {
     return
   }
 
-  var match 
-  var chunk
+  var match
+  var data
   var script
 
-  if (match = outputs[0].match(P2PKH_PARTS)) {
-    chunk = new Buffer(match[1], 'hex')
-    if (!this.isPrefixed(this.decrypt(chunk))) {
+  match = outputs[0].match(P2PKH_PARTS)
+  if (match) {
+    data = new Buffer(match[1], 'hex')
+    if (!this.isPrefixed(this.decrypt(data))) {
       script = Script.fromASM(outputs.shift())
       this.receiverAddr = Address.fromScript(script)
     }
   }
 
-  if (match = outputs.slice(-1)[0].match(P2PKH_PARTS)) {
-    chunk = new Buffer(match[1], 'hex')
-    if (!this.isPrefixed(this.decrypt(chunk))) {
+  match = outputs.slice(-1)[0].match(P2PKH_PARTS)
+  if (match) {
+    data = new Buffer(match[1], 'hex')
+    if (!this.isPrefixed(this.decrypt(data))) {
       script = Script.fromASM(outputs.pop())
       this.senderAddr = Address.fromScript(script)
     }
   }
 
   var methodTest = {
-    fromOpReturn: OP_RETURN_PARTS, 
+    fromOpReturn: OP_RETURN_PARTS,
     fromOpCheckSig: P2PKH_PARTS,
     fromOpCheckMultisig: OP_MULTISIG_PARTS
   }
-  
-  return this.data = Buffer.concat(outputs.map(function (output) {
+
+  this.data = Buffer.concat(outputs.map(function (output) {
     var test
     var match
 
     for (var method in methodTest) {
-      test = methodTest[method] 
-      if (match = output.match(test)) {
+      test = methodTest[method]
+      match = output.match(test)
+      if (match) {
         break
       }
     }
     if (match) {
       return this[method].apply(this, match.slice(1))
     }
-    return new Buffer
+    return new Buffer()
   }.bind(this)))
+
+  return this.data
 }
 
 TxDecoder.prototype.fromOpReturn = function (data) {
   if (!data) {
-    throw new BadEncodingError
+    throw new BadEncodingError()
   }
 
   data = this.decrypt(new Buffer(data, 'hex'))
 
-  if (!this.prefixed(data, 0)) {
-    throw new BadEncodingError 
+  if (!this.prefixed(data, 0)) {
+    throw new BadEncodingError()
   }
-  
+
   return data.slice(this.prefix.length)
 }
 
 TxDecoder.prototype.fromOpCheckSig = function (hexPubKey) {
-  var chunk = this.decrypt(new Buffer(hexPubKey, 'hex'))
+  var data = this.decrypt(new Buffer(hexPubKey, 'hex'))
 
-  if (!this.isPrefixed(chunk)) {
-    throw new BadEncodingError
+  if (!this.isPrefixed(data)) {
+    throw new BadEncodingError()
   }
 
-  var length = chunk[0].length
+  var length = data[0].length
   var start = 1 + this.prefix.length
-  return chunk.slice(start, start + length + 1)
+  return data.slice(start, start + length + 1)
 }
 
 TxDecoder.prototype.fromOpCheckMultisig = function (hexPubKeys) {
   hexPubKeys = hexPubKeys.split(' ')
 
-  var chunk = Buffer.concat(hexPubKeys.slice(0, -1).map(function (hexPubKey) {
-    var chunk = new Buffer(hexPubKey, 'hex')
-    return chunk.slice(1, chunk.length-1)
+  var data = Buffer.concat(hexPubKeys.slice(0, -1).map(function (hexPubKey) {
+    var data = new Buffer(hexPubKey, 'hex')
+    return data.slice(1, data.length - 1)
   }))
 
-  var data = this.decrypt(chunk)
+  data = this.decrypt(data)
 
-  if (!this.isPrefixed(data)) {
-    throw new BadEncodingError
+  if (!this.isPrefixed(data)) {
+    throw new BadEncodingError()
   }
 
   return data.slice(1, 1 + data[0]).slice(this.prefix.length)

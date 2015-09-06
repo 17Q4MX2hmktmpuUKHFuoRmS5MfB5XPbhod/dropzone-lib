@@ -72,8 +72,8 @@ Network.prototype.getFilteredTxs = function (filter, next) {
 
   this.pool.on('peerready', function (peer) {
     if (!currPeer ||
-    peer.bestHeight > currPeer.bestHeight ||
-    currPeer.status !== Peer.STATUS.READY) {
+      peer.bestHeight > currPeer.bestHeight ||
+      currPeer.status !== Peer.STATUS.READY) {
       currPeer = peer
       var FilterLoad = this.messages.FilterLoad
       var GetHeaders = this.messages.GetHeaders

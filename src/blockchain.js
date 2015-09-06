@@ -18,7 +18,7 @@ Blockchain.getTxsByAddr = function (addr, next) {
     if (txs.length) return next(null, txs)
     var filter = BloomFilter.create(1, 0.1, 0, BloomFilter.BLOOM_UPDATE_ALL)
     filter.insertAddress(addr)
-    new Network({ network: address.network }).getFilteredTxs(filter, { 
+    new Network({ network: addr.network }).getFilteredTxs(filter, {
       hash: '00000000aac43d0734c8a9346b58ac0ce539c94853ed15cfa03a6f4d698ddaf3',
       height: 533832
     }, next)
