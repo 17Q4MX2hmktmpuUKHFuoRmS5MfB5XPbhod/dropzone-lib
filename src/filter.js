@@ -10,4 +10,6 @@ BloomFilter.prototype.isRelevantAddress = function (address) {
   return this._addresses.indexOf(address) > -1
 }
 
-module.exports = BloomFilter
+module.exports = {
+  BloomFilter: BloomFilter
+}

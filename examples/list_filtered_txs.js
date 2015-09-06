@@ -1,11 +1,13 @@
 var bitcore = require('bitcore')
 
-var Network = require('../src/network')
-var BloomFilter = require('../src/bloom_filter')
+var network = require('../src/network')
+var filter = require('../src/filter')
+
+var Network = network.Network
+var BloomFilter = filter.BloomFilter
 
 var net = new Network({
-  relay: false, 
-  network: Network.TEST
+  network: network.test
 })
 
 var filter = BloomFilter.create(1, 0.1, 0, BloomFilter.BLOOM_UPDATE_ALL)

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 var program = require('commander')
+var command = require('../src/commands').communication.list
 
 program
   .usage('<private_key> [options]')
@@ -16,5 +17,6 @@ program
       '  dropzone communication list \\\n' +
       '    92UvdTpmxA6cvD6YeJZSiHW8ff8DsZXL2PHZu9Mg7JY3zbaETJw\n')
   })
+  .action(command)
 
 program.parse(process.argv)

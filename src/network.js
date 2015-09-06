@@ -1,9 +1,9 @@
 var bitcore = require('bitcore')
 var p2p = require('bitcore-p2p')
 
-var Messages = p2p.Messages
 var Pool = p2p.Pool
 var Peer = p2p.Peer
+var Messages = p2p.Messages
 var Inventory = p2p.Inventory
 
 function Network (options) {
@@ -12,6 +12,10 @@ function Network (options) {
   }
 
   options = options || {}
+
+  if (!options.relay) {
+    options.relay = false
+  }
 
   this.network = options.network
     ? bitcore.Networks[options.network.toString()]
@@ -118,7 +122,9 @@ Network.prototype.getFilteredTxs = function (filter, next) {
     }
     tx.inputs.forEach(function (input) {
       if (!input.script) return
-      if (input.script.isPublicKeyHashIn() || input.script.isPublicKeyIn()) {
+      var isPKHIn = input.script.isPublicKeyHashIn()
+      var isPKIn = input.script.isPublicKeyIn()
+      if (isPKHIn || isPKIn) {
         var address = input.script.toAddress(this.network).toString()
         if (filter.isRelevantAddress(address) && !(tx.hash in txs)) {
           txs[tx.hash] = tx
@@ -127,7 +133,9 @@ Network.prototype.getFilteredTxs = function (filter, next) {
     }.bind(this))
     tx.outputs.forEach(function (output) {
       if (!output.script) return
-      if (output.script.isPublicKeyHashOut() || output.script.isPublicKeyOut()) {
+      var isPKHOut = output.script.isPublicKeyHashOut()
+      var isPKOut = output.script.isPublicKeyOut()
+      if (isPKHOut || isPKOut) {
         var address = output.script.toAddress(this.network).toString()
         if (filter.isRelevantAddress(address) && !(tx.hash in txs)) {
           txs[tx.hash] = tx
@@ -139,7 +147,8 @@ Network.prototype.getFilteredTxs = function (filter, next) {
   this.pool.connect()
 }
 
-Network.MAIN = bitcore.Networks.livenet
-Network.TEST = bitcore.Networks.testnet
-
-module.exports = Network
+module.exports = {
+  Network: Network,
+  main: bitcore.Networks.livenet,
+  test: bitcore.Networks.testnet
+}
