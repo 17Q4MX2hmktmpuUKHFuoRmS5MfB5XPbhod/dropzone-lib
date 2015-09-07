@@ -3,13 +3,13 @@
   "version": "0.0.1",
   "readme": "README.md",
   "description": "An anonymous peer-to-peer local contraband marketplace",
-  "main": "./src/index.js",
+  "main": "index.js",
   "bin": {
     "dropzone": "bin/dropzone"
   },
   "scripts": {
     "postinstall": "scripts/postinstall.sh",
-    "compile": "browserify ./src/index.js -s dropzone > dropzone.js",
+    "compile": "browserify index.js -s dropzone > dropzone.js",
     "coverage": "istanbul cover _mocha -- test/*.js",
     "coveralls": "npm run-script coverage && coveralls < coverage/lcov.info",
     "integration": "mocha test/integration/",
