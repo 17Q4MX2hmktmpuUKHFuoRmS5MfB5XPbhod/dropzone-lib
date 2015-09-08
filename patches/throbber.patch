@@ -1,0 +1,44 @@
+diff --git a/index.js b/index.js
+index 0576bff..7f773f1 100644
+--- a/index.js
++++ b/index.js
+@@ -7,25 +7,31 @@ function Throbber() {
+ 
+ util.inherits(Throbber, EventEmitter);
+ 
+-Throbber.prototype.start = function() {
++Throbber.prototype.start = function(msg) {
++	this.msg = msg || "";
+ 
+ 	var chars = ["|","\\","-","/","|","\\","-","/"];
+ 	this.emit("started");
+ 
+ 	var i = 0;
+ 	this.timer = setInterval(function(){
+-		process.stdout.write(chars[i]);
+-		process.stdout.write("\b");
++		var delchars = new Array(this.msg.length+3).join("\b");
++		process.stdout.write(chars[i]+' '+this.msg);
++		process.stdout.write(delchars);
+ 		i++;
+ 		if (i == chars.length) i = 0;
+-	},100);
+-	
++	}.bind(this),100);
++}
++
++Throbber.prototype.update = function(msg) {
++	this.msg = msg;
+ }
+ 
+ Throbber.prototype.stop = function() {
+ 	this.emit("stopped");
+ 	clearInterval(this.timer);
+-	process.stdout.write("\b");
++	var delchars = new Array(this.msg.length+2).join("\b");
++	process.stdout.write(delchars);
+ }
+ 
+-module.exports = Throbber;
+\ No newline at end of file
++module.exports = Throbber;

@@ -1,9 +1,19 @@
 var path = require('path')
 var orm = require('orm')
 
-var CONFIG_DIR = path.join(process.env.HOME, '.dropzone')
+var MigrateTask = require('migrate-orm2') 
 
-var cache = orm.connect('sqlite://' + path.join(CONFIG_DIR, 'cache.db'))
+var CONFIG_DIR = path.join(process.env.HOME, '.dropzone')
+var DB_URL = 'sqlite://' + path.join(CONFIG_DIR, 'cache.db')
+
+var cache = orm.connect(DB_URL)
+
+cache.ready = function (next) {
+  var task = new MigrateTask(cache.driver)
+  task.up(function () {
+    cache.sync(next)
+  })
+}
 
 cache.define('Tx', {
   id: {
@@ -26,6 +36,10 @@ cache.define('Tx', {
   isTesting: {
     type: 'boolean',
     mapsTo: 'is_testing'
+  },
+  blockId: {
+    type: 'text',
+    mapsTo: 'blockid'
   },
   blockHeight: {
     type: 'integer',

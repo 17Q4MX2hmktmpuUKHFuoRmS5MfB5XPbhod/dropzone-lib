@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 var program = require('commander')
+var cache = require('../src/cache')
 
 program
   .version(require('../package').version)
@@ -21,4 +22,6 @@ program
   .command('review <command>', 'Manage sales reviews')
   .command('invoice <command>', 'Manage invoices')
 
-program.parse(process.argv)
+cache.ready(function() {
+  program.parse(process.argv)
+})

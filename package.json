@@ -47,14 +47,15 @@
     "bitcore-p2p-browserify": "^0.14.0",
     "cli-table": "^0.3.1",
     "commander": "^2.8.1",
+    "migrate-orm2": "^1.2.14",
+    "orm": "^2.1.27",
     "sqlite3": "^3.0.10",
-    "orm": "^2.1.27"
+    "throbber": "^1.0.1"
   },
   "browser": {
     "bitcore-p2p": "bitcore-p2p-browserify"
   },
   "devDependencies": {
-    "async": "^0.9.0",
     "browserify": "^10.0.0",
     "coveralls": "^2.11.2",
     "istanbul": "^0.3.5",

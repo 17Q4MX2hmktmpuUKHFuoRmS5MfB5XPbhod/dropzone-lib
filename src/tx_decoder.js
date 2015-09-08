@@ -1,7 +1,7 @@
 var crypto = require('crypto')
 var util = require('util')
-
 var bitcore = require('bitcore')
+var network = require('./network')
 
 var Script = bitcore.Script
 var Address = bitcore.Address
@@ -30,6 +30,7 @@ function TxDecoder (tx, options) {
 
   this.prefix = options.prefix || DEFAULT_PREFIX
   this.decryptKey = options.decryptKey || tx.inputs[0].prevTxId
+  this.network = options.network || network.main
 
   this.parse(tx.outputs.map(function (output) {
     return output.script.toASM()
@@ -61,7 +62,7 @@ TxDecoder.prototype.parse = function (outputs) {
     data = new Buffer(match[1], 'hex')
     if (!this.isPrefixed(this.decrypt(data))) {
       script = Script.fromASM(outputs.shift())
-      this.receiverAddr = Address.fromScript(script)
+      this.receiverAddr = Address.fromScript(script, this.network)
     }
   }
 
@@ -70,7 +71,7 @@ TxDecoder.prototype.parse = function (outputs) {
     data = new Buffer(match[1], 'hex')
     if (!this.isPrefixed(this.decrypt(data))) {
       script = Script.fromASM(outputs.pop())
-      this.senderAddr = Address.fromScript(script)
+      this.senderAddr = Address.fromScript(script, this.network)
     }
   }
 

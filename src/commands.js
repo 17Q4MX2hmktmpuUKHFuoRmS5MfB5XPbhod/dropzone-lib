@@ -10,14 +10,15 @@ var communication = {}
 
 communication.list = function (wifPrivKey, program) {
   var privKey = PrivateKey.fromWIF(wifPrivKey)
-  // For now just printing transactions
-  Session.all(privKey.toAddress(network.test), function (err, txs) {
+  var addr = privKey.toAddress(network.test)
+  Session.all(addr, network.test, function (err, messages) {
     if (err) throw err
-    var table = new Table({ head: ['Transactions'] })
-    txs.forEach(function (tx) {
-      table.push([tx.txId])
+    messages.forEach(function (message) {
+      var table = new Table({ head: ['Session', message.txId] })
+      table.push(['Sender', message.senderAddr])
+      table.push(['Receiver', message.receiverAddr])
+      console.log(table.toString())
     })
-    console.log(table.toString())
   })
 }
 

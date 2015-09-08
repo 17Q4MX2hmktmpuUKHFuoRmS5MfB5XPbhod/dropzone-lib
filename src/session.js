@@ -45,12 +45,15 @@ Session.prototype.getSenderAddr = function (network) {
   return this.privKey.toAddress(network)
 }
 
-Session.all = function (addr, next) {
+Session.all = function (addr, network, next) {
   Messages.find({
-    type: 'COMMUN',
-    addr: addr,
-    isInit: true
-  }, next)
+    addr: addr
+  }, network, function (err, messages) {
+    if (err) return next(err)
+    next(null, messages.filter(function (message) {
+      return message.isInit 
+    }))
+  })
 }
 
 module.exports = {
