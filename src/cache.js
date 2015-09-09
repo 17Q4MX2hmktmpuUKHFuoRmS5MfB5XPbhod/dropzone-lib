@@ -1,7 +1,7 @@
 var path = require('path')
 var orm = require('orm')
 
-var MigrateTask = require('migrate-orm2') 
+var MigrateTask = require('migrate-orm2')
 
 var CONFIG_DIR = path.join(process.env.HOME, '.dropzone')
 var DB_URL = 'sqlite://' + path.join(CONFIG_DIR, 'cache.db')

@@ -51,7 +51,7 @@ Session.all = function (addr, network, next) {
   }, network, function (err, messages) {
     if (err) return next(err)
     next(null, messages.filter(function (message) {
-      return message.isInit 
+      return message.isInit
     }))
   })
 }

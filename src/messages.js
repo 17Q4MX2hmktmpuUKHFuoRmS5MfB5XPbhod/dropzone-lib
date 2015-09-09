@@ -18,14 +18,13 @@ var MSGS_PREFIX = 'DZ'
 Messages.find = function (query, network, next) {
   query = query || {}
   var queries = [query]
-  var isTesting = network.name === 'testnet'
   var addr = query.addr
   if (query.addr) {
     var strAddr = query.addr.toString()
     queries = [{ senderAddr: strAddr }, { receiverAddr: strAddr }]
   }
   async.waterfall([function (next) {
-    async.concat(queries, function (query, next) {
+    async.concat(queries, function (query, next) {
       TxCache.find(query, 'blockHeight', next)
     }, function (err, txs) {
       if (err) return next(err)
@@ -37,12 +36,12 @@ Messages.find = function (query, network, next) {
   }, function (ctxs, next) {
     var tip
     if (ctxs.length) {
-      for (var cachedTx, c = ctxs.length; c--; ) {
+      for (var cachedTx, c = ctxs.length; c--;) {
         if (ctxs[c].blockId) {
           cachedTx = ctxs[c]
           break
         }
-      } 
+      }
       if (cachedTx) {
         tip = {
           hash: cachedTx.blockId,
@@ -57,10 +56,10 @@ Messages.find = function (query, network, next) {
       txs = txs.map(function (tx) {
         return Message.fromTx(tx, network)
       }).filter(Message.isValid)
-      txs = ctxs.concat(txs) 
+      txs = ctxs.concat(txs)
       async.each(txs, function (tx, next) {
-        TxCache.one({ txId: tx.txId }, function (err, ctx) {
-          if (err) throw err 
+        TxCache.one({ txId: tx.txId }, function (err, ctx) {
+          if (err) throw err
           if (ctx) {
             ctx.blockId = tx.blockId
             return ctx.save(next)
@@ -82,7 +81,7 @@ Messages.find = function (query, network, next) {
   }], next)
 }
 
-function Message () {}
+function Message () {}
 
 Message.create = function (params) {
   var msg = new Message()

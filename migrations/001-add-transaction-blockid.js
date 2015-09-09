@@ -1,9 +1,9 @@
-exports.up = function(next){
+exports.up = function (next) {
   this.addColumn('transactions', {
     blockid: { type: 'text' }
-  }, next);
+  }, next)
 }
 
-exports.down = function(next){
-  this.dropColumn('transactions', 'blockid', next);
+exports.down = function (next) {
+  this.dropColumn('transactions', 'blockid', next)
 }

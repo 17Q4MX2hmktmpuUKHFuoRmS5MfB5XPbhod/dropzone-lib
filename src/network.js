@@ -1,14 +1,11 @@
 var bitcore = require('bitcore')
 var p2p = require('bitcore-p2p')
-var cache = require('./cache')
 
 var Throbber = require('throbber')
 
 var Pool = p2p.Pool
-var Peer = p2p.Peer
 var Messages = p2p.Messages
 var Inventory = p2p.Inventory
-var BlockCache = cache.models.Block
 
 var HASH_BUFFER = 2000
 
@@ -56,7 +53,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
     }
     next = arguments[2]
   }
-  
+
   var FilterLoad = messages.FilterLoad
   var GetHeaders = messages.GetHeaders
   var GetData = messages.GetData
@@ -72,13 +69,13 @@ Network.prototype.getFilteredTxs = function (filter, next) {
     block: { col: [], hashes: [] }
   }
 
-  var pushBlock = function(block) {
+  var pushBlock = function (block) {
     for (var t = 0, tl = cached.tx.col.length; t < tl; t++) {
       if (block.hasTransaction(cached.tx.col[t])) {
         cached.tx.col[t].block = {
           hash: block.header.hash,
-          height: tip.height - 
-            cached.block.hashes.length - 
+          height: tip.height -
+            cached.block.hashes.length -
             cached.block.hashes.indexOf(block.header.hash) - 1
         }
         txs.push(cached.tx.col.splice(t, 1)[0])
@@ -107,11 +104,11 @@ Network.prototype.getFilteredTxs = function (filter, next) {
         break
       }
     }
-    col.push(tx) 
+    col.push(tx)
     cached.tx.hashes.push(tx.hash)
     if (cached.tx.hashes.length > HASH_BUFFER) {
       cached.tx.hashes.shift()
-    } 
+    }
   }
 
   var loading = new Throbber()
@@ -137,7 +134,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
       return
     }
     var headers = message.headers
-    if (headers.length) {
+    if (headers.length) {
       var inventories = []
 
       for (var header, h = 0, l = headers.length; h < l; h++) {
@@ -146,7 +143,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
           break
         }
         header.hexPrevHash = header.toObject().prevHash
-        if (header.hexPrevHash === tip.hash.toString()) { 
+        if (header.hexPrevHash === tip.hash.toString()) {
           tip = {
             hash: header.hash,
             height: tip.height + 1
@@ -156,27 +153,27 @@ Network.prototype.getFilteredTxs = function (filter, next) {
             cached.block.hashes.shift()
           }
           inventories.push(new InventoryForFilteredBlock(header.hash))
-        } 
+        }
       }
       if (inventories.length) {
         loaderPeer.sendMessage(new GetData(inventories))
       }
     }
     if (headers.length && header) {
-      return loaderPeer.getHeaders(tip.hash) 
-    } 
+      return loaderPeer.getHeaders(tip.hash)
+    }
     pool.disconnect()
     loading.stop()
     next(null, txs)
   })
 
   pool.on('peermerkleblock', function (peer, message) {
-    pushBlock(message.merkleBlock) 
+    pushBlock(message.merkleBlock)
   })
 
   pool.on('peertx', function (peer, message) {
     var script
-    var tx = message.transaction  
+    var tx = message.transaction
     var address
     if (cached.tx.hashes.indexOf(tx.hash) > -1) {
       return
@@ -221,7 +218,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
 
   pool.on('peerdisconnect', function (peer, err) {
     if (peer.getHeaders) {
-      loaderPeer = null 
+      loaderPeer = null
     }
   })
 
