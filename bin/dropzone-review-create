@@ -10,8 +10,8 @@ program
     'The quality of the delivery itself. Between 0 (worst) to 8 (best)')
   .option('-o, --product_quality <points>',
     'The quality of the product. Between 0 (worst) to 8 (best)')
-  .option('-m, --communications_quality <points>',
-    "The seller's communications skill. Between 0 (worst) to 8 (best)")
+  .option('-m, --chat_quality <points>',
+    "The seller's communication skill. Between 0 (worst) to 8 (best)")
   .on('--help', function () {
     console.log(
       '  A review is primarily designed for the purposes of establishing\n' +
@@ -29,7 +29,7 @@ program
       "    --description='Fair exchange' \\\n" +
       '    --delivery_quality=8 \\\n' +
       '    --product_quality=7 \\\n' +
-      '    --communications_quality=3\n')
+      '    --chats_quality=3\n')
   })
 
 program.parse(process.argv)

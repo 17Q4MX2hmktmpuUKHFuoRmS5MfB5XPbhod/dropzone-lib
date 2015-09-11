@@ -1,9 +1,14 @@
 var util = require('util')
+var crypto = require('crypto')
+var async = require('async')
 var bitcore = require('bitcore')
+var cache = require('./cache')
 var messages = require('./messages')
 
-var BN = bitcore.BN
+var BN = bitcore.crypto.BN
 var Messages = messages.Messages
+var CommKeyCache = cache.models.CommKey
+var ChatCache = cache.models.Chat
 
 util.inherits(SessionError, Error)
 
@@ -13,8 +18,8 @@ function SessionError (message) {
   Error.captureStackTrace(this, this.constructor)
 }
 
-function InvalidWithSessionReceiver () {
-  SessionError.call(this, 'invalid with session receiver address')
+function InvalidInitReceiver () {
+  SessionError.call(this, 'invalid session init receiver address')
 }
 
 function MissingReceiver () {
@@ -23,41 +28,100 @@ function MissingReceiver () {
 
 function Session (privKey, sessionSecret, options) {
   this.privKey = privKey
-  this.sessionKey = BN(sessionSecret, 16)
+  this.sessionKey = new BN(sessionSecret, 16)
 
   options = options || {}
 
   if (options.receiverAddr) {
     this.receiverAddr = options.receiverAddr
-  } else if (options.withSession) {
-    var receiverAddr = options.withSession.receiverAddress
+  } else if (options.init) {
+    var receiverAddr = options.init.receiverAddr
     if (receiverAddr === this.getSenderAddr(receiverAddr.network)) {
-      throw new InvalidWithSessionReceiver()
+      throw new InvalidInitReceiver()
     }
-    this.withSession = options.withSession
-    this.receiverAddr = this.withSession.senderAddr
+    this.init = options.init
+    this.id = this.init.txId
+    this.receiverAddr = this.init.senderAddr
+    this.senderAddr = this.init.receiverAddr
   } else {
     throw new MissingReceiver()
   }
+
+  this.messages = []
+  if (options.messages) {
+    this.messages = options.messages
+  }
+}
+
+Session.prototype.syncUnreadMessages = function (next) {
+  var session = this
+  ChatCache.one({
+    sessionId: session.id
+  }, 'id', function (err, chat) {
+    if (err) return next(err)
+    var readMessages = chat && chat.readMessages || 0
+    session.unreadMessages = session.messages.length - readMessages
+    next(null, session)
+  })
+}
+
+Session.prototype.isAuthenticated = function () {
+  return this.init && this.messages.filter(function (messages) {
+    return messages.isAuth
+  }).length
 }
 
 Session.prototype.getSenderAddr = function (network) {
   return this.privKey.toAddress(network)
 }
 
-Session.all = function (addr, network, next) {
+Session.all = function (privKey, network, next) {
+  var addr = privKey.toAddress(network.test)
   Messages.find({
     addr: addr
   }, network, function (err, messages) {
     if (err) return next(err)
-    next(null, messages.filter(function (message) {
+    async.map(messages.filter(function (message) {
       return message.isInit
-    }))
+    }), function (init, next) {
+      var receiverAddr = addr
+      if (init.receiverAddr.toString() === addr.toString()) {
+        receiverAddr = init.senderAddr
+      }
+      async.waterfall([function (next) {
+        CommKeyCache.one({
+          receiverAddr: receiverAddr.toString(),
+          senderAddr: addr.toString()
+        }, function (err, key) {
+          if (err) return next(err)
+          if (!key) {
+            var secret = crypto.randomBytes(128).toString('hex')
+            return CommKeyCache.create({
+              receiverAddr: receiverAddr.toString(),
+              senderAddr: addr.toString(),
+              secret: secret
+            }, next)
+          }
+          next(null, key)
+        })
+      }, function (key, next) {
+        var opts = { init: init }
+        opts.messages = messages.filter(function (message) {
+          return !message.isInit && (
+          (message.senderAddr.toString() === init.senderAddr.toString() &&
+          message.receiverAddr.toString() === init.receiverAddr.toString()) ||
+          (message.receiverAddr.toString() === init.senderAddr.toString() &&
+          message.senderAddr.toString() === init.receiverAddr.toString()))
+        })
+        var session = new Session(privKey, key.secret, opts)
+        session.syncUnreadMessages(next)
+      }], next)
+    }, next)
   })
 }
 
 module.exports = {
   Session: Session,
-  InvalidWithSessionReceiver: InvalidWithSessionReceiver,
+  InvalidInitReceiver: InvalidInitReceiver,
   MissingReceiver: MissingReceiver
 }

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 var program = require('commander')
-var command = require('../src/commands').communication.list
+var command = require('../src/commands').chat.list
 
 program
   .usage('<private_key> [options]')
   .description(
-    'Show the available communications for a given testnet private key')
+    'Show the available chats for a given testnet private key')
   .on('--help', function () {
     console.log(
       '  This command lists all the conversations that have been \n' +
@@ -13,8 +13,8 @@ program
       '  with the specified <private_key>.\n')
     console.log(
       '  Example:\n\n' +
-      '  # List all communication sessions for a private key\n' +
-      '  dropzone communication list \\\n' +
+      '  # List all chat sessions for a private key\n' +
+      '  dropzone chat list \\\n' +
       '    92UvdTpmxA6cvD6YeJZSiHW8ff8DsZXL2PHZu9Mg7JY3zbaETJw\n')
   })
   .action(command)

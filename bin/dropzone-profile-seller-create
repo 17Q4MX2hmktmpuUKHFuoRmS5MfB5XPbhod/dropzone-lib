@@ -13,7 +13,7 @@ program
     tab + 'a one-way operation, and that you should be sure to control\n' +
     tab + 'the destination key. If you wish to deactivate your store\n' +
     tab + 'entirely, a 0 can be passed here')
-  .option('-c, --communications_addr <addr>',
+  .option('-c, --chat_addr <addr>',
     'Specifies through which testnet address you wish\n' +
     tab + 'to receive messages')
   .on('--help', function () {
@@ -32,7 +32,7 @@ program
       '    92thgQGx77ihBaA56W7B1Qm8nhYHRERo1UqrgT2p6P6QTqkRhRB \\\n' +
       "    --alias='Miracle Max' \\\n" +
       "    --description='First seller' \\\n" +
-      "    --communications_addr='mi37WkBomHJpUghCn7Vgh3ah33h6L9Nkqw'\n")
+      "    --chats_addr='mi37WkBomHJpUghCn7Vgh3ah33h6L9Nkqw'\n")
   })
 
 program.parse(process.argv)

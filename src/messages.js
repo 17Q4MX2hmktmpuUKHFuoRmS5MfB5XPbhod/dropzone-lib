@@ -25,13 +25,18 @@ Messages.find = function (query, network, next) {
   }
   async.waterfall([function (next) {
     async.concat(queries, function (query, next) {
-      TxCache.find(query, 'blockHeight', next)
+      TxCache.find(query, next)
     }, function (err, txs) {
       if (err) return next(err)
-      txs = txs.map(function (tx) {
+      next(null, txs.map(function (tx) {
         return Message.fromCachedTx(tx, network)
-      }).filter(Message.isValid)
-      next(null, txs)
+      }).filter(function (a, x, c) {
+        return !c.filter(function (b, y) {
+          return a.txId === b.txId && x > y
+        }).length && Message.isValid(a)
+      }).sort(function (a, b) {
+        return a.blockHeight - b.blockHeight
+      }))
     })
   }, function (ctxs, next) {
     var tip
@@ -47,6 +52,7 @@ Messages.find = function (query, network, next) {
           hash: cachedTx.blockId,
           height: cachedTx.blockHeight
         }
+        ctxs = ctxs.slice(0, c + 1)
       } else {
         ctxs = []
       }
@@ -55,7 +61,9 @@ Messages.find = function (query, network, next) {
       if (err) return next(err)
       txs = txs.map(function (tx) {
         return Message.fromTx(tx, network)
-      }).filter(Message.isValid)
+      }).filter(Message.isValid).sort(function (a, b) {
+        return a.blockHeight - b.blockHeight
+      })
       txs = ctxs.concat(txs)
       async.each(txs, function (tx, next) {
         TxCache.one({ txId: tx.txId }, function (err, ctx) {
@@ -89,7 +97,7 @@ Message.create = function (params) {
   var match = params.data.toString().match(prefix)
   if (match) {
     if (match[1] === 'COMMUN') {
-      msg = new CommunicationMessage()
+      msg = new ChatMessage()
       msg.fromBuffer(params.data.slice(6))
     }
   }
@@ -138,7 +146,7 @@ Message.isValid = function (message) {
   return Object.keys(message).length
 }
 
-function CommunicationMessage () {
+function ChatMessage () {
   this.attribs = {
     i: 'iv',
     c: 'contents',
@@ -147,7 +155,7 @@ function CommunicationMessage () {
   }
 }
 
-CommunicationMessage.prototype.fromBuffer = function (data) {
+ChatMessage.prototype.fromBuffer = function (data) {
   var buf = new BufferReader(data)
   while (!buf.eof()) {
     var attrib = buf.readVarLengthBuffer()
@@ -155,6 +163,7 @@ CommunicationMessage.prototype.fromBuffer = function (data) {
     this[this.attribs[attrib.toString()]] = value.toString()
   }
   this.isInit = !!(this.der && this.sessionPrivKey)
+  this.isAuth = !!this.sessionPrivKey
 }
 
 module.exports = {

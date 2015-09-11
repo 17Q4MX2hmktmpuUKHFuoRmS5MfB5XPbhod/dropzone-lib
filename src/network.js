@@ -75,8 +75,8 @@ Network.prototype.getFilteredTxs = function (filter, next) {
         cached.tx.col[t].block = {
           hash: block.header.hash,
           height: tip.height -
-            cached.block.hashes.length -
-            cached.block.hashes.indexOf(block.header.hash) - 1
+            (cached.block.hashes.length -
+            cached.block.hashes.indexOf(block.header.hash) - 1)
         }
         txs.push(cached.tx.col.splice(t, 1)[0])
         return
@@ -96,8 +96,8 @@ Network.prototype.getFilteredTxs = function (filter, next) {
         tx.block = {
           hash: hash,
           height: tip.height -
-            cached.block.hashes.length -
-            cached.block.hashes.indexOf(hash) - 1
+            (cached.block.hashes.length -
+            cached.block.hashes.indexOf(hash) - 1)
         }
         cached.block.col.splice(b, 1)
         col = txs

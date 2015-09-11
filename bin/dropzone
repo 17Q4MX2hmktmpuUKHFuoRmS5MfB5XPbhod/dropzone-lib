@@ -15,8 +15,8 @@ program
     'Set the transaction fee amount (default: 2000)', 2000)
   .command('balance', 'Display the balance on the provided address')
   .command('pay', 'Send value to a recipient')
-  .command('communication <command>',
-    'Manage communications between you and another party')
+  .command('chat <command>',
+    'Manage chats between you and another party')
   .command('listing <command>', 'Manage product listings')
   .command('profile <command>', 'Manage buyer and seller profiles')
   .command('review <command>', 'Manage sales reviews')

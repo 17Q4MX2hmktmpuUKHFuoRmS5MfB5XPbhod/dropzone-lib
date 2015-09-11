@@ -12,7 +12,7 @@ program
     console.log(
       '  Example:\n\n' +
       '  # Chat with another user over testnet\n' +
-      '  dropzone communication say \\\n' +
+      '  dropzone chat say \\\n' +
       '    92UvdTpmxA6cvD6YeJZSiHW8ff8DsZXL2PHZu9Mg7JY3zbaETJw \\\n' +
       '    0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098 \\\n' +
       "    'Thank you for your inquiry'\n")

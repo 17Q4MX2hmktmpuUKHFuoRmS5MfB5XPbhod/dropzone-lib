@@ -49,4 +49,42 @@ cache.define('Tx', {
   collection: 'transactions'
 })
 
+cache.define('CommKey', {
+  id: {
+    type: 'serial',
+    key: true
+  },
+  receiverAddr: {
+    type: 'text',
+    mapsTo: 'receiver_addr'
+  },
+  senderAddr: {
+    type: 'text',
+    mapsTo: 'sender_addr'
+  },
+  secret: {
+    type: 'text',
+    mapsTo: 'secret'
+  }
+}, {
+  collection: 'communication_keys'
+})
+
+cache.define('Chat', {
+  id: {
+    type: 'serial',
+    key: true
+  },
+  sessionId: {
+    type: 'text',
+    mapsTo: 'session_txid'
+  },
+  readMessages: {
+    type: 'integer',
+    mapsTo: 'last_read_message_count'
+  }
+}, {
+  collection: 'chats'
+})
+
 module.exports = cache
