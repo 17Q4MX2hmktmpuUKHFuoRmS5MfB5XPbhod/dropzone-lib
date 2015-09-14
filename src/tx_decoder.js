@@ -38,7 +38,9 @@ function TxDecoder (tx, options) {
 }
 
 TxDecoder.prototype.isPrefixed = function (data, offset) {
-  offset = offset || 1
+  if (typeof offset === "undefined" || offset === null) {
+    offset = 1
+  }
   data = data.slice(offset, offset + this.prefix.length).toString('utf-8')
   return data === this.prefix
 }
@@ -108,7 +110,7 @@ TxDecoder.prototype.fromOpReturn = function (data) {
 
   data = this.decrypt(new Buffer(data, 'hex'))
 
-  if (!this.prefixed(data, 0)) {
+  if (!this.isPrefixed(data, 0)) {
     throw new BadEncodingError()
   }
 
