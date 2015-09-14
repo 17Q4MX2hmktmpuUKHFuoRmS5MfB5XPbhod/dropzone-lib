@@ -9,7 +9,9 @@ var DB_URL = 'sqlite://' + path.join(CONFIG_DIR, 'cache.db')
 var cache = orm.connect(DB_URL)
 
 cache.ready = function (next) {
-  var task = new MigrateTask(cache.driver)
+  var task = new MigrateTask(cache.driver, {
+    dir: 'migrations/cache'
+  })
   task.up(function () {
     cache.sync(next)
   })
@@ -47,44 +49,6 @@ cache.define('Tx', {
   }
 }, {
   collection: 'transactions'
-})
-
-cache.define('CommKey', {
-  id: {
-    type: 'serial',
-    key: true
-  },
-  receiverAddr: {
-    type: 'text',
-    mapsTo: 'receiver_addr'
-  },
-  senderAddr: {
-    type: 'text',
-    mapsTo: 'sender_addr'
-  },
-  secret: {
-    type: 'text',
-    mapsTo: 'secret'
-  }
-}, {
-  collection: 'communication_keys'
-})
-
-cache.define('Chat', {
-  id: {
-    type: 'serial',
-    key: true
-  },
-  sessionId: {
-    type: 'text',
-    mapsTo: 'session_txid'
-  },
-  readMessages: {
-    type: 'integer',
-    mapsTo: 'last_read_message_count'
-  }
-}, {
-  collection: 'chats'
 })
 
 module.exports = cache
