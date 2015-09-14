@@ -29,6 +29,10 @@ function MissingReceiver () {
   SessionError.call(this, 'missing receiver')
 }
 
+function NotAuthorized () {
+  SessionError.call(this, 'the conversation is not yet authorized')
+}
+
 function Session (privKey, sessionSecret, options) {
   this.privKey = privKey
   this.sessionKey = new Buffer(sessionSecret, 'hex')
@@ -60,15 +64,39 @@ function Session (privKey, sessionSecret, options) {
   }
 }
 
-Session.prototype.syncUnreadMessages = function (next) {
+Session.prototype.getUnreadMessages = function (next) {
   var session = this
   ChatStore.one({
     sessionTxId: session.txId
   }, 'id', function (err, chat) {
     if (err) return next(err)
-    var readMessages = chat && chat.readMessages || 0
-    session.unreadMessages = session.messages.length - readMessages
+    var readMessages = 0
+    if (chat) {
+      readMessages = chat.readMessages
+    }
+    var messagesLen = session.messages.length
+    if (readMessages > messagesLen) {
+      readMessages = messagesLen
+    }
+    session.unreadMessages = messagesLen - readMessages
     next(null, session)
+  })
+}
+
+Session.prototype.setUnreadMessages = function (next) {
+  next = next || function () {}
+  var session = this
+  ChatStore.one({
+    sessionTxId: session.txId
+  }, 'id', function (err, chat) {
+    if (err) return next(err)
+    var unreadMessages = session.unreadMessages
+    if (unreadMessages < 0) {
+      unreadMessages = 0
+    }
+    var messagesLen = session.messages.length
+    chat.readMessages = messagesLen - unreadMessages
+    chat.save(next)
   })
 }
 
@@ -89,9 +117,13 @@ Session.prototype.genSymmKey = function () {
   var dh = crypto.createDiffieHellman(p, 'hex', g)
   dh.setPrivateKey(this.sessionKey)
   dh.generateKeys()
-  var theirSessionKey = this.getTheirs().sessionPrivKey
-  this.symmKey = dh.computeSecret(theirSessionKey)
-  return this.symmKey
+  if (this.auth) {
+    var theirSessionKey = this.getTheirs().sessionPrivKey
+    this.symmKey = dh.computeSecret(theirSessionKey)
+    return this.symmKey
+  } else {
+    throw new NotAuthorized()
+  }
 }
 
 Session.prototype.getTheirs = function () {
@@ -148,7 +180,7 @@ Session.fromMessages = function (messages, opts, next) {
         return !message.isAuth
       })
     })
-    session.syncUnreadMessages(next)
+    session.getUnreadMessages(next)
   }], next)
 }
 
@@ -189,5 +221,6 @@ Session.one = function (privKey, network, sessionTxId, next) {
 module.exports = {
   Session: Session,
   InvalidInitReceiver: InvalidInitReceiver,
-  MissingReceiver: MissingReceiver
+  MissingReceiver: MissingReceiver,
+  NotAuthorized: NotAuthorized
 }

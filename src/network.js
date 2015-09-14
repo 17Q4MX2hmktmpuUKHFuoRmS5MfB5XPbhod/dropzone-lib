@@ -17,7 +17,11 @@ function Network (options) {
   options = options || {}
 
   if (!options.relay) {
-    options.relay = false
+    options.relay = true
+  }
+
+  if (!options.maxSize) {
+    options.maxSize = 32
   }
 
   this.network = options.network
