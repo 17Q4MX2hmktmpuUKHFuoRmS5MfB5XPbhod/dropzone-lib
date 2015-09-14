@@ -95,8 +95,8 @@ Session.prototype.genSymmKey = function () {
 }
 
 Session.prototype.getTheirs = function () {
-  if (this.auth.senderAddr === this.receiverAddr.toString() &&
-    this.auth.receiverAddr === this.getSenderAddr().toString()) {
+  if (this.init.senderAddr === this.receiverAddr.toString() &&
+    this.init.receiverAddr === this.getSenderAddr().toString()) {
     return this.init
   }
   return this.auth
