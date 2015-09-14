@@ -1,3 +1,4 @@
+var crypto = require('crypto')
 var async = require('async')
 var bitcore = require('bitcore')
 var blockchain = require('./blockchain')
@@ -14,6 +15,7 @@ var BadEncodingError = tx_decoder.BadEncodingError
 var Messages = {}
 
 var MSGS_PREFIX = 'DZ'
+var CIPHER_ALGORITHM = 'AES-256-CBC'
 
 Messages.find = function (query, network, next) {
   query = query || {}
@@ -160,10 +162,19 @@ ChatMessage.prototype.fromBuffer = function (data) {
   while (!buf.eof()) {
     var attrib = buf.readVarLengthBuffer()
     var value = buf.readVarLengthBuffer()
-    this[this.attribs[attrib.toString()]] = value.toString()
+    this[this.attribs[attrib.toString()]] = value
   }
   this.isInit = !!(this.der && this.sessionPrivKey)
   this.isAuth = !!this.sessionPrivKey
+}
+
+ChatMessage.prototype.getPlain = function (symmKey) {
+  var key = symmKey.slice(0, 32)
+  var decipher = crypto.createDecipheriv(CIPHER_ALGORITHM, key, this.iv)
+  return Buffer.concat([
+    decipher.update(this.contents),
+    decipher.final()
+  ]).toString('utf-8')
 }
 
 module.exports = {

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 var program = require('commander')
+var command = require('../src/commands').chat.create
 
 program
   .usage('<private_key> <addr> [options]')
@@ -25,5 +26,6 @@ program
       '    92UvdTpmxA6cvD6YeJZSiHW8ff8DsZXL2PHZu9Mg7JY3zbaETJw \\\n' +
       '    mqVRfjepJTxxoDgDt892tCybhmjfKCFNyp\n')
   })
+  .action(command)
 
 program.parse(process.argv)
