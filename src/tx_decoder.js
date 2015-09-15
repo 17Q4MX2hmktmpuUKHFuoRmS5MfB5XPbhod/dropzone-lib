@@ -38,7 +38,7 @@ function TxDecoder (tx, options) {
 }
 
 TxDecoder.prototype.isPrefixed = function (data, offset) {
-  if (typeof offset === "undefined" || offset === null) {
+  if (typeof offset === 'undefined' || offset === null) {
     offset = 1
   }
   data = data.slice(offset, offset + this.prefix.length).toString('utf-8')

@@ -48,6 +48,7 @@ describe('TxDecode', function () {
       assert.strictEqual(record.senderAddr.toString(),
         '1MFHQCPGtcSfNPXAS6NryWja3TbUN9239Y')
     })
+
   it('Tokenly\'s getSampleCounterpartyTransactionProtocol5', function () {
       var tx = new Transaction(fixtures.getSampleCounterpartyTransactionProtocol5)
       var record = new TxDecoder(tx)
@@ -60,5 +61,20 @@ describe('TxDecode', function () {
         '1KUsjZKrkd7LYRV7pbnNJtofsq1HAiz6MF')
       assert.strictEqual(record.senderAddr.toString(),
         '12iVwKP7jCPnuYy7jbAbyXnZ3FxvgLwvGK')
+    })
+
+  it('decodes a random counterparty transaction', function () {
+      // This was from a random Counterparty Broadcast. Txid:
+      //   eae1fd843f267d756c765b3e84ff33cd3f7dcde4df671c53b2e3465ba9f1b94e
+
+      var tx = new Transaction(fixtures.randomCounterpartyTransaction)
+      var record = new TxDecoder(tx)
+
+      assert.deepEqual(record.data,
+        new Buffer([ 0x0, 0x0, 0x0, 0x1e, 0x55, 0x54, 0xa9, 0xa2, 0xbf, 0xf0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x28, 0x42, 0x4c, 0x4f, 0x43, 0x4b, 0x53, 0x43, 0x41, 0x4e, 0x20, 0x56, 0x45, 0x52, 0x49, 0x46, 0x59, 0x2d, 0x41, 0x44, 0x44, 0x52, 0x45, 0x53, 0x53, 0x20, 0x34, 0x6d, 0x6d, 0x71, 0x61, 0x36, 0x69, 0x63, 0x63, 0x62, 0x72, 0x72, 0x67, 0x6b, 0x79 ]))
+
+      assert.strictEqual(record.senderAddr.toString(),
+        '1HARUMuoSXftAwY6jxMUutc9uKSCK9zxzF')
+      assert.strictEqual(record.receiverAddr, undefined)
     })
 })
