@@ -1,9 +1,12 @@
+var crypto = require('crypto')
 var util = require('util')
 var bitcore = require('bitcore')
 var network = require('./network')
 
 var Address = bitcore.Address
 var PublicKey = bitcore.PublicKey
+var Base58Check = bitcore.encoding.Base58Check
+var Hash = bitcore.crypto.Hash
 
 var DEFAULT_PREFIX = 'CNTRPRTY'
 
@@ -39,11 +42,12 @@ function TxEncoder (key, data, options) {
   this.network = options.network || network.main
 
   this.encryptKey = key
-  this.sourceDate = data
+  this.sourceData = data
 
   if (options.senderPubkey) {
     this.senderPubkey = options.senderPubkey
-    this.senderAddr = Address.fromPublicKey(new PublicKey(this.senderPubkey))
+    this.senderAddr = Address.fromPublicKey(new PublicKey(this.senderPubkey), 
+        this.network)
   } else if (options.senderAddr) {
     this.senderAddr = options.senderAddr
   } else {
@@ -51,9 +55,8 @@ function TxEncoder (key, data, options) {
     throw new BadEncodingError()
   }
 
-  if (options.receiverAddr) {
+  if (options.receiverAddr)
     this.receiverAddr = options.receiverAddr
-  }
 }
 
 /* Take a too short data pubkey and make it look like a real pubkey.
@@ -65,72 +68,91 @@ function TxEncoder (key, data, options) {
  *
  * NOTE: This function is named "make_fully_valid" in the official code. */
 TxEncoder.prototype.dataToPubkey = function (bytes) {
-  /*
-  raise InvalidPubkey unless bytes.length == 31
+  if (bytes.length != 31)
+    throw new BadEncodingError()
 
-  random_bytes = Digest::SHA256.digest bytes
+  random_bytes = Hash.sha256(bytes)
 
-  # Deterministically generated, for unit tests.
-  sign = (random_bytes[0].ord & 1) + 2
-  nonce = initial_nonce = random_bytes[1].ord
+  // Deterministically generated, for unit tests.
+  sign = (random_bytes[0] & 1) + 2
 
-  begin
-    nonce += 1
-    next if nonce == initial_nonce
+  nonce = initial_nonce = random_bytes[1]
 
-    ret = (sign.chr + bytes + (nonce % 256).chr).unpack('H*').first
+  do {
+    nonce++
+    if (nonce == initial_nonce)
+      continue;
 
-  # Note that 256 is the exclusive limit:
-  end until Bitcoin.valid_pubkey? ret
+    // 33 is the size of a pubkey
+    ret = new Buffer(33)
+    ret.writeUInt8(sign, 0)
+    bytes.copy(ret, 1)
+    ret.writeUInt8(nonce % 256, 32)
 
-  # I don't actually think this is ever possible. Note that we return 66 bytes
-  # as this is string of hex, and not the bytes themselves:
-  raise InvalidPubkeyGenerated unless ret.length == 66
+  } while (Address.isValid(ret))
 
-  ret
-  */
+  // I don't actually think this is ever possible. Note that we return 66 bytes
+  // as this is string of hex, and not the bytes themselves:
+  if (ret.length != 33)
+    throw new BadEncodingError()
+
+  return ret
 }
 
 /* This is a little helper method that lets us split our binary data into 
  * chunks for further processing */
-TxEncoder.prototype.collectChunks = function (data,chunk_length, block) {
-  /*
-  (source_data.length.to_f / chunk_length).ceil.times.collect{|i| 
-    block.call source_data.slice(i*chunk_length, chunk_length) }
-  */
+TxEncoder.prototype.collectChunks = function (data, chunkLength, callback) {
+  var chunks = new Array(Math.ceil(data.length / chunkLength))
+
+  for (i = 0; i < chunks.length; i++) { 
+    var start = i*chunkLength
+    chunks[i] = callback(data.slice(start, start+chunkLength))
+  }
+
+  return chunks
 }
 
 TxEncoder.prototype.p2pkhWrap = function (operation) {
-  /*
-  [ (receiver_addr) ? P2PKH % Bitcoin.hash160_from_address(receiver_addr) : nil, 
-    operation,
-    P2PKH % Bitcoin.hash160_from_address(sender_addr) ].flatten.compact
-  */
+  addresses = [this.receiverAddr, this.senderAddr].map(function(addr) { 
+    return (addr) ? util.format( P2PKH,
+      Base58Check.decode(addr.toString()).toString('hex').slice(2,42) ) : null
+  })
+
+  return [].concat(
+    (addresses[0]) ? addresses[0] : null, operation,
+    (addresses[1]) ? addresses[1] : null).filter(Boolean)
 }
 
-TxEncoder.prototype.encrypt = function (chunk) {
-  /*
-  RC4.new(encrypt_key).encrypt chunk
-  */
+TxEncoder.prototype.encrypt = function (data) {
+  var cipher = crypto.createCipher('rc4', this.encryptKey)
+  return Buffer.concat([cipher.update(data), cipher.final()])
 }
 
 TxEncoder.prototype.toOpMultisig = function () {
-  return null
 
-  /*
-  raise MissingPubkey unless sender_pubkey
+  if (!this.senderPubkey)
+    throw new BadEncodingError()
 
-  data_length = BYTES_IN_MULTISIG-prefix.length
-  p2pkh_wrap collect_chunks(source_data,data_length){|chunk| 
-    padding = 0.chr * (data_length-chunk.length)
+  data_length = BYTES_IN_MULTISIG-this.prefix.length
+  var that = this
 
-    data = encrypt [(chunk.length+prefix.length).chr,prefix, chunk, padding].join
+  operations = this.collectChunks(this.sourceData, data_length, function (chunk) {
+    var new_chunk = new Buffer(BYTES_IN_MULTISIG+1) // not so sure about that +1
+    new_chunk.fill(0)
+    new_chunk.writeUInt8(chunk.length+that.prefix.length, 0)
+    new_chunk.write(that.prefix, 1)
+    chunk.copy(new_chunk, 1+that.prefix.length)
 
-    data_keys = [(0...31), (31...62)].collect{|r| data_to_pubkey data[r] }
+    new_chunk = that.encrypt(new_chunk)
 
-    MULTISIG % [(data_keys + [sender_pubkey]).join(' '), 3]
-  }
-  */
+    var multisig_keys = [that.dataToPubkey(new_chunk.slice(0,31)).toString('hex'), 
+      that.dataToPubkey(new_chunk.slice(31)).toString('hex'),
+      that.senderPubkey]
+
+    return util.format(MULTISIG, multisig_keys.join(' '), 3)
+  })
+
+  return this.p2pkhWrap(operations)
 }
 
 TxEncoder.prototype.toOpReturn = function () {
