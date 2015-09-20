@@ -80,6 +80,7 @@ TxEncoder.prototype.dataToPubkey = function (bytes) {
 
   do {
     nonce++
+
     if (nonce == initial_nonce)
       continue;
 
@@ -89,7 +90,11 @@ TxEncoder.prototype.dataToPubkey = function (bytes) {
     bytes.copy(ret, 1)
     ret.writeUInt8(nonce % 256, 32)
 
-  } while (Address.isValid(ret))
+    /* NOTE: The bitcore isValid() does not appear to be as sensitive as the
+        ::OpenSSL::PKey::EC::Point.from_hex(::OpenSSL::PKey::EC.new("secp256k1").group, key)
+       (aka is_fullyvalid())
+       call. Whether this matters is dubious... */
+  } while (!PublicKey.isValid(ret))
 
   // I don't actually think this is ever possible. Note that we return 66 bytes
   // as this is string of hex, and not the bytes themselves:
@@ -124,12 +129,12 @@ TxEncoder.prototype.p2pkhWrap = function (operation) {
 }
 
 TxEncoder.prototype.encrypt = function (data) {
-  var cipher = crypto.createCipher('rc4', this.encryptKey)
-  return Buffer.concat([cipher.update(data), cipher.final()])
+  var cipher = crypto.createCipheriv('rc4', this.encryptKey, '') // rc4-hmac-md5
+  
+  return Buffer.concat([cipher.update(data,'binary'), cipher.final()])
 }
 
 TxEncoder.prototype.toOpMultisig = function () {
-
   if (!this.senderPubkey)
     throw new BadEncodingError()
 
@@ -137,14 +142,14 @@ TxEncoder.prototype.toOpMultisig = function () {
   var that = this
 
   operations = this.collectChunks(this.sourceData, data_length, function (chunk) {
-    var new_chunk = new Buffer(BYTES_IN_MULTISIG+1) // not so sure about that +1
+    var new_chunk = new Buffer(BYTES_IN_MULTISIG+1)
     new_chunk.fill(0)
     new_chunk.writeUInt8(chunk.length+that.prefix.length, 0)
     new_chunk.write(that.prefix, 1)
     chunk.copy(new_chunk, 1+that.prefix.length)
 
     new_chunk = that.encrypt(new_chunk)
-
+  
     var multisig_keys = [that.dataToPubkey(new_chunk.slice(0,31)).toString('hex'), 
       that.dataToPubkey(new_chunk.slice(31)).toString('hex'),
       that.senderPubkey]
@@ -156,31 +161,32 @@ TxEncoder.prototype.toOpMultisig = function () {
 }
 
 TxEncoder.prototype.toOpReturn = function () {
-  return null
-  /*
-  # I'm fairly certain that using more than one OP_RETURN per transaction is
-  # unstandard behavior right now
-  raise DataTooLarge if (source_data.length + prefix.length) > BYTES_IN_OPRETURN
+  if (this.data.length + this.prefix.length > BYTES_IN_OPRETURN)
+    throw new BadEncodingError()
 
-  data = encrypt [prefix,source_data].join
-
-  p2pkh_wrap( OPRETURN % data.unpack('H*').first )
-  */
+  data = this.encrypt(Buffer.concat([new Buffer(this.prefix), this.data ]))
+  
+  return this.p2pkhWrap(util.format(OPRETURN, data.toString('hex')))
 }
 
 TxEncoder.prototype.toOpCheckSig = function () {
-  return null
-  /*
-  p2pkh_wrap collect_chunks(source_data, BYTES_IN_PUBKEYHASH-prefix.length){ |chunk|
-    data_length = prefix.length + chunk.length
+  chunk_length = BYTES_IN_PUBKEYHASH-this.prefix.length
+  var that = this
 
-    padding = 0.chr * (BYTES_IN_PUBKEYHASH - data_length)
+  operations = this.collectChunks(this.sourceData, chunk_length, function (chunk) {
+    var new_chunk = new Buffer(BYTES_IN_MULTISIG+1)
+    new_chunk.fill(0)
+    new_chunk.writeUInt8(that.prefix.length+chunk.length, 0)
+    new_chunk.write(that.prefix, 1)
 
-    enc_chunk = encrypt [(data_length).chr, prefix, chunk, padding].join
+    chunk.copy(new_chunk, 1+that.prefix.length)
 
-    P2PKH % enc_chunk.unpack('H*').first
-  }
-  */
+    new_chunk = that.encrypt(new_chunk)
+    
+    return util.format(P2PKH, new_chunk.toString('hex'))
+  } )
+
+  return this.p2pkhWrap(operations)
 }
 
 module.exports = {

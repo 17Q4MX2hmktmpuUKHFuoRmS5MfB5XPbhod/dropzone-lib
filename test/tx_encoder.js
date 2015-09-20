@@ -64,12 +64,12 @@ describe('TxEncode', function () {
     var encoder = new TxEncoder(new Buffer([ 100, 44, 103, 30, 153, 243, 181, 
       174, 84, 85, 10, 251, 21, 250, 195, 217, 143, 87, 80, 107, 170, 107, 190,
       149, 250, 21, 183, 240, 124, 102, 78, 27 ]),
-      new Buffer(fixtures.decoded.pubkeyHash),
+      new Buffer(fixtures.decoded.pubkeyHashEncoding),
       { receiverAddr: "1BdHqBSfUqv77XtBSeofH6XwHHczZxKRUF",
         senderAddr: '1Ko36AjTKYh6EzToLU737Bs2pxCsGReApK' } )
 
     assert.deepEqual(encoder.toOpCheckSig(), 
-      fixtures.asm.pubkeyHash)
+      fixtures.asm.pubkeyHashEncoding)
   })
 
   it('Encodes the gigantic multsig satoshi broadcast', function () {
