@@ -44,7 +44,7 @@ function InvalidGenPublicKeyError () {
 }
 
 function TxEncoder (key, data, options) {
-  this.key = key 
+  this.key = key
   this.data = data
 
   options = options || {}
@@ -83,17 +83,17 @@ TxEncoder.prototype.toOpMultisig = function () {
       chunk,
       padding
     ]))
-    var dataKeys = [[0, 31], [31, 62]].map(function (r) {
-      return this.dataToPubKey(data.slice.call(data, r[0], r[1])).toString('hex')
+    var dataKeys = [[0, 31], [31, 62]].map(function (r) {
+      return this.dataToPubKey(data.slice(r[0], r[1])).toString('hex')
     }.bind(this))
     var payload = dataKeys.concat(this.senderPubKey).join(' ')
 
-    return util.format(OP_MULTISIG_SCPT, payload, 3) 
+    return util.format(OP_MULTISIG_SCPT, payload, 3)
   }.bind(this)))
 }
 
 TxEncoder.prototype.toPubKeyHash = function () {
-  var len = BYTES_IN_PUBKEYHASH - this.prefix.length 
+  var len = BYTES_IN_PUBKEYHASH - this.prefix.length
 
   return this.p2pkhWrap(this.eachChunk(this.data, len, function (chunk) {
     var len = this.prefix.length + chunk.length
@@ -106,7 +106,7 @@ TxEncoder.prototype.toPubKeyHash = function () {
       padding
     ]))
 
-    return util.format(P2PKH_SCPT, data.toString('hex')) 
+    return util.format(P2PKH_SCPT, data.toString('hex'))
   }.bind(this)))
 }
 
@@ -116,7 +116,7 @@ TxEncoder.prototype.toOpReturn = function () {
   }
 
   var data = this.encrypt(Buffer.concat([
-    new Buffer(this.prefix), 
+    new Buffer(this.prefix),
     this.data
   ]))
 
@@ -133,12 +133,12 @@ TxEncoder.prototype.dataToPubKey = function (data) {
     throw new InvalidPublicKeyError()
   }
 
-  var hash = crypto.createHash('sha256').update(data).digest();
+  var hash = crypto.createHash('sha256').update(data).digest()
   var sign = (hash[0] & 1) + 2
   var origNonce = hash[1]
   var nonce = origNonce
   var pubKeyBytes
-  
+
   do {
     nonce += 1
     if (nonce === origNonce) {
@@ -167,8 +167,8 @@ TxEncoder.prototype.p2pkhWrap = function (script) {
 TxEncoder.prototype.eachChunk = function (data, len, fn) {
   var n = Math.ceil(this.data.length / len)
 
-  return new Array(n).fill().map(function (_, i) {
-    var start = i * len 
+  return new Array(n).fill().map(function (_, i) {
+    var start = i * len
     return fn(data.slice(start, start + len))
   })
 }

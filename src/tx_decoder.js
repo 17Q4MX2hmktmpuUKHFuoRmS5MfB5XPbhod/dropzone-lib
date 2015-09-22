@@ -19,7 +19,7 @@ function TxDecoderError (message) {
   Error.captureStackTrace(this, this.constructor)
 }
 
-function BadEncodingError () {
+function BadDecodingError () {
   TxDecoderError.call(this, 'bad encoding')
 }
 
@@ -38,7 +38,7 @@ function TxDecoder (tx, options) {
 }
 
 TxDecoder.prototype.isPrefixed = function (data, offset) {
-  if (typeof offset === "undefined" || offset === null) {
+  if (typeof offset === 'undefined' || offset === null) {
     offset = 1
   }
   data = data.slice(offset, offset + this.prefix.length).toString('utf-8')
@@ -105,13 +105,13 @@ TxDecoder.prototype.parse = function (outputs) {
 
 TxDecoder.prototype.fromOpReturn = function (data) {
   if (!data) {
-    throw new BadEncodingError()
+    throw new BadDecodingError()
   }
 
   data = this.decrypt(new Buffer(data, 'hex'))
 
   if (!this.isPrefixed(data, 0)) {
-    throw new BadEncodingError()
+    throw new BadDecodingError()
   }
 
   return data.slice(this.prefix.length)
@@ -121,7 +121,7 @@ TxDecoder.prototype.fromOpCheckSig = function (hexPubKey) {
   var data = this.decrypt(new Buffer(hexPubKey, 'hex'))
 
   if (!this.isPrefixed(data)) {
-    throw new BadEncodingError()
+    throw new BadDecodingError()
   }
 
   var length = data[0].length
@@ -140,7 +140,7 @@ TxDecoder.prototype.fromOpCheckMultisig = function (hexPubKeys) {
   data = this.decrypt(data)
 
   if (!this.isPrefixed(data)) {
-    throw new BadEncodingError()
+    throw new BadDecodingError()
   }
 
   return data.slice(1, 1 + data[0]).slice(this.prefix.length)
@@ -148,5 +148,5 @@ TxDecoder.prototype.fromOpCheckMultisig = function (hexPubKeys) {
 
 module.exports = {
   TxDecoder: TxDecoder,
-  BadEncodingError: BadEncodingError
+  BadDecodingError: BadDecodingError
 }
