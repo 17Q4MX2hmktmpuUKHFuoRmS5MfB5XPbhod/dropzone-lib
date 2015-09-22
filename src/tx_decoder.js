@@ -124,9 +124,10 @@ TxDecoder.prototype.fromOpCheckSig = function (hexPubKey) {
     throw new BadDecodingError()
   }
 
-  var length = data[0].length
+  var chunk_length = data[0]
   var start = 1 + this.prefix.length
-  return data.slice(start, start + length + 1)
+
+  return data.slice(start, chunk_length + 1)
 }
 
 TxDecoder.prototype.fromOpCheckMultisig = function (hexPubKeys) {

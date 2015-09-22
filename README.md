@@ -1,4 +1,4 @@
-# dropzone_js
+# node-dropzone
  An Anonymous Peer-To-Peer Local Contraband Marketplace
 
 [White Paper](http://www.metzdowd.com/pipermail/cryptography/2015-March/025212.html)
