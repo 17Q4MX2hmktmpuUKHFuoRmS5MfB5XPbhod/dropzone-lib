@@ -13,6 +13,14 @@ var BYTES_IN_MULTISIG = (33 * 2) - 1 - 2 - 2
 var BYTES_IN_PUBKEYHASH = 20 - 1
 var BYTES_IN_OPRETURN = 40
 
+function fill (arr, val) { // ES6 Simplified polyfill
+  if (Array.prototype.fill) return arr.fill(val)
+  for (var i = 0, l = arr.length; i<l; i++) {
+    arr[i] = val
+  }
+  return arr
+}
+
 function TxEncoderError (message) {
   this.name = this.constructor.name
   this.message = 'Transaction encoder error: ' + message
@@ -76,7 +84,7 @@ TxEncoder.prototype.toOpMultisig = function () {
 
   return this.p2pkhWrap(this.eachChunk(this.data, len, function (chunk) {
     var nul = String.fromCharCode(0)
-    var padding = new Buffer(new Array(len - chunk.length).fill(nul))
+    var padding = new Buffer(fill(new Array(len - chunk.length), nul))
     var data = this.encrypt(Buffer.concat([
       new Buffer([chunk.length + this.prefix.length]),
       new Buffer(this.prefix),
@@ -98,7 +106,7 @@ TxEncoder.prototype.toPubKeyHash = function () {
   return this.p2pkhWrap(this.eachChunk(this.data, len, function (chunk) {
     var len = this.prefix.length + chunk.length
     var nul = String.fromCharCode(0)
-    var padding = new Buffer(new Array(BYTES_IN_PUBKEYHASH - len).fill(nul))
+    var padding = new Buffer(fill(new Array(BYTES_IN_PUBKEYHASH - len), nul))
     var data = this.encrypt(Buffer.concat([
       new Buffer([len]),
       new Buffer(this.prefix),
@@ -167,7 +175,7 @@ TxEncoder.prototype.p2pkhWrap = function (script) {
 TxEncoder.prototype.eachChunk = function (data, len, fn) {
   var n = Math.ceil(this.data.length / len)
 
-  return new Array(n).fill().map(function (_, i) {
+  return fill(new Array(n)).map(function (_, i) {
     var start = i * len
     return fn(data.slice(start, start + len))
   })
