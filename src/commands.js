@@ -100,11 +100,13 @@ chat.create = function (wifPrivKey, wifReceiverAddr, program) {
     var session = new Session(privKey, key.secret, {
       receiverAddr: receiverAddr
     })
-    session.authenticate(Function())
-    /*var table = new Table({ head: ['Chat', session.txId] })
-    table.push(['Sender', addr])
-    table.push(['Receiver', receiverAddr])
-    console.log(table.toString())*/
+    session.authenticate(function () {})
+  /*
+  var table = new Table({ head: ['Chat', session.txId] })
+  table.push(['Sender', addr])
+  table.push(['Receiver', receiverAddr])
+  console.log(table.toString())
+  */
   })
 }
 

@@ -14,8 +14,8 @@ var BYTES_IN_PUBKEYHASH = 20 - 1
 var BYTES_IN_OPRETURN = 40
 
 // ES6 Simplified polyfill
-function fill (arr, val) { 
-  if (Array.prototype.fill) return arr.fill.apply(val)
+function fill (arr, val) {
+  if (Array.prototype.fill) return arr.fill(val)
   for (var i = 0, l = arr.length; i < l; i++) {
     arr[i] = val
   }

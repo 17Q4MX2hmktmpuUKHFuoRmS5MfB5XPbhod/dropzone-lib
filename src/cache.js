@@ -36,7 +36,7 @@ cache.define('Tip', {
     mapsTo: 'block_height'
   }
 }, {
-  collection: 'tips' 
+  collection: 'tips'
 })
 
 cache.define('Tx', {

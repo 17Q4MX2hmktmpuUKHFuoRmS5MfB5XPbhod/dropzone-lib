@@ -24,9 +24,9 @@ Blockchain.getUtxosByAddr = function (addr, next) {
     if (err) return next(err)
     var cutxos = []
     cutxos = cutxos.concat(ctxos.filter(function (txo) {
-      return !txo.spent 
+      return !txo.spent
     }))
-    TipCache.one({ 
+    TipCache.one({
       relevantAddr: addr.toString(),
       subject: 'txo'
     }, function (err, tip) {
@@ -39,25 +39,27 @@ Blockchain.getUtxosByAddr = function (addr, next) {
         }
       }
       Blockchain.getTxsByAddr(addr, tip, function (err, txs, ntip) {
+        if (err) return next(err)
         var txids = {}
-        for (var tx, t = 0, tl = txs.length; t < tl; t++) {
-          tx = txs[t] 
+        for (var tx, t = 0, tl = txs.length; t < tl; t++) {
+          tx = txs[t]
           txids[tx.hash.toString('hex')] = tx
         }
         var txos = Blockchain.txosFromTxs(addr, txids)
         var utxos = Blockchain.utxosFromTxTxos(addr, txids, txos)
-        async.each(txos, function (txoArr, next) {
-          async.each(txoArr, function (txo, next) {
+        async.each(txos, function (txoArr, next) {
+          async.each(txoArr, function (txo, next) {
             var txid = txo.tx.hash.toString('hex')
             var index = txo.index
             var ctxo = {
               txId: txid,
               spenderAddr: txo.script.toAddress(addr.network).toString(),
               index: index,
-              satoshis: txo.satoshis,   
-              spent: !(txid in utxos) || !utxos[txid].filter(function (utxo) {
-                return utxo.index === txo.index
-              }).length,
+              satoshis: txo.satoshis,
+              spent: !(txid in utxos) ||
+                !utxos[txid].filter(function (utxo) {
+                  return utxo.index === txo.index
+                }).length,
               isTesting: addr.network.name === 'testnet',
               blockId: txo.tx.block.hash,
               blockHeight: txo.tx.block.height
@@ -69,7 +71,7 @@ Blockchain.getUtxosByAddr = function (addr, next) {
                 cutxos.push(ctxo)
               }
               next(null)
-            }) 
+            })
           }, next)
         }, function (err) {
           if (err) return next(err)
@@ -84,7 +86,7 @@ Blockchain.getUtxosByAddr = function (addr, next) {
             relevantAddr: addr.toString(),
             subject: 'txo',
             blockId: ntip.blockId,
-            blockHeight: ntip.blockHeight   
+            blockHeight: ntip.blockHeight
           }, function (err) {
             next(err, cutxos)
           })
@@ -100,16 +102,16 @@ Blockchain.txosFromTxs = function (addr, txids) {
   var txoArr
   var tx
   var scptAddr
-  for (var txid in txids) {
-    tx = txids[txid] 
-    txoArr = tx.outputs.map(function (txo, n) { 
-      txo.index = n; 
-      txo.tx = tx 
-      return txo 
-    }).filter(function (txo) { 
+  for (var txid in txids) {
+    tx = txids[txid]
+    txoArr = tx.outputs.map(function (txo, n) {
+      txo.index = n
+      txo.tx = tx
+      return txo
+    }).filter(function (txo) {
       scptAddr = txo.script.toAddress(addr.network)
-      return scptAddr.toString() === addrStr 
-    }) 
+      return scptAddr.toString() === addrStr
+    })
     if (txoArr.length) {
       txos[txid] = txoArr
     }
@@ -120,35 +122,37 @@ Blockchain.txosFromTxs = function (addr, txids) {
 Blockchain.utxosFromTxTxos = function (addr, txids, txos) {
   var addrStr = addr.toString()
   var txis = {}
+  var tx
+  var txid
   var ptxid
   var scptAddr
-  for (var txid in txids) {
-    tx = txids[txid] 
+  for (txid in txids) {
+    tx = txids[txid]
     for (var txi, i = 0, il = tx.inputs.length; i < il; i++) {
       txi = tx.inputs[i]
       scptAddr = txi.script.toAddress(addr.network)
-      if (scptAddr.toString() !== addrStr) {
+      if (scptAddr.toString() !== addrStr) {
         continue
       }
       ptxid = txi.prevTxId.toString('hex')
       txis[ptxid] = txis[ptxid] || []
-      txis[ptxid].push(txi) 
+      txis[ptxid].push(txi)
     }
   }
   var utxos = {}
   var utxoArr
-  for (var txid in txos) {
-    utxoArr = txos[txid].filter(function (txo) {
+  for (txid in txos) {
+    utxoArr = txos[txid].filter(function (txo) {
       return !(txid in txis) ||
-        !txis[txid].filter(function (txi) {
-          return txi.outputIndex === txo.index
-        }).length
+      !txis[txid].filter(function (txi) {
+        return txi.outputIndex === txo.index
+      }).length
     })
     if (utxoArr.length) {
       utxos[txid] = utxoArr
     }
   }
-  return utxos 
+  return utxos
 }
 
 Blockchain.pushTx = function (data, privKey, next) {}

@@ -23,7 +23,7 @@ var CIPHER_ALGORITHM = 'AES-256-CBC'
 
 Messages.find = function (query, addr, network, next) {
   query = query || {}
-  async.waterfall([function (next) {
+  async.waterfall([ function (next) {
     TxCache.find(query, 'blockHeight', function (err, txs) {
       if (err) return next(err)
       next(null, txs.map(function (tx) {
@@ -31,13 +31,13 @@ Messages.find = function (query, addr, network, next) {
       }).filter(function (a, x, c) {
         return !c.filter(function (b, y) {
           return a.txId === b.txId && x > y
-        }).length       
+        }).length
       }).sort(function (a, b) {
         return a.blockHeight - b.blockHeight
       }))
     })
   }, function (ctxs, next) {
-    TipCache.one({ 
+    TipCache.one({
       relevantAddr: addr.toString(),
       subject: 'tx'
     }, function (err, tip) {
@@ -97,13 +97,13 @@ Messages.find = function (query, addr, network, next) {
             relevantAddr: addr.toString(),
             subject: 'tx',
             blockId: ntip.blockId,
-            blockHeight: ntip.blockHeight   
+            blockHeight: ntip.blockHeight
           }, function (err) {
             next(err, txs.filter(Message.isValid))
           })
         })
       })
-    }) 
+    })
   }], next)
 }
 
@@ -117,7 +117,7 @@ Message.create = function (params) {
     if (match[1] === CHATMSG_PREFIX) {
       msg = new ChatMessage()
       msg.fromBuffer(params.data.slice(6))
-    } 
+    }
   } else {
     return msg
   }
@@ -191,9 +191,8 @@ ChatMessage.prototype.fromBuffer = function (data) {
 }
 
 ChatMessage.prototype.toBuffer = function (network) {
-  var message = this
   var buf = new BufferWriter(new Buffer(CHATMSG_PREFIX), 'ascii')
-  for (var key in this) {
+  for (var key in this) {
     var value = this[key]
     if (value === parseInt(value, 10)) {
       buf.writeVarintNum(value)
@@ -215,13 +214,15 @@ ChatMessage.prototype.getPlain = function (symmKey) {
 }
 
 ChatMessage.prototype.send = function (privKey, network, next) {
-  var payload = this.toBuffer(network)
+  // var payload = this.toBuffer(network)
   var addr = privKey.toAddress(network)
   Blockchain.getUtxosByAddr(addr, function (err, utxos) {
-    debugger
+    if (err) return next(err)
+  /*
+  var outputs = new TxEncoder()
+  Blockchain.pushTx(outputs, privKey, next)
+  */
   })
-  /*var outputs = new TxEncoder()
-  Blockchain.pushTx(outputs, privKey, next)*/
 }
 
 module.exports = {

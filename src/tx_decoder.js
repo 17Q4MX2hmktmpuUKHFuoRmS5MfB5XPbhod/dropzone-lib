@@ -100,7 +100,6 @@ TxDecoder.prototype.parse = function (outputs) {
     return new Buffer(0)
   }.bind(this)))
 
-  console.log("DATA", this.data)
   return this.data
 }
 

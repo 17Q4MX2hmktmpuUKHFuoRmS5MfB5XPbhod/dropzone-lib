@@ -2,7 +2,6 @@ var util = require('util')
 var crypto = require('crypto')
 var asn = require('asn1.js')
 var async = require('async')
-var bitcore = require('bitcore')
 var storage = require('./storage')
 var messages = require('./messages')
 var cache = require('./cache')
@@ -143,22 +142,25 @@ Session.prototype.getTheirs = function () {
 
 Session.prototype.authenticate = function (der, next) {
   if (arguments.length === 1) {
-      next = der
-      der = null
+    next = der
+    der = null
   }
 
+  var p
+  var g
+  var dh
   if (!this.init || this.auth) {
     if (der) {
-      var p = der.p.toString(16)
-      var g = parseInt(der.g.toString(10), 10)
-      var dh = crypto.createDiffieHellman(p, 'hex', g)
+      p = der.p.toString(16)
+      g = parseInt(der.g.toString(10), 10)
+      dh = crypto.createDiffieHellman(p, 'hex', g)
     } else {
-      var dh = crypto.createDiffieHellman(1024)
+      dh = crypto.createDiffieHellman(1024)
     }
   } else {
-    var p = this.init.der.p.toString(16)
-    var g = parseInt(der.g.toString(10), 10)
-    var dh = crypto.createDiffieHellman(p, 'hex', g)
+    p = this.init.der.p.toString(16)
+    g = parseInt(der.g.toString(10), 10)
+    dh = crypto.createDiffieHellman(p, 'hex', g)
   }
 
   dh.setPrivateKey(this.sessionKey)
@@ -205,7 +207,7 @@ Session.fromMessages = function (messages, opts, next) {
   if (init.receiverAddr.toString() === addr.toString()) {
     receiverAddr = init.senderAddr
   }
-  async.waterfall([function (next) {
+  async.waterfall([ function (next) {
     Session.secretFor(addr, receiverAddr, next)
   }, function (key, next) {
     messages = messages.filter(function (message) {
@@ -251,14 +253,14 @@ Session.all = function (privKey, network, next) {
 Session.one = function (privKey, network, sessionTxId, next) {
   var addr = privKey.toAddress(network.test)
   var addrStr = addr.toString()
-  TxCache.one({ txId: sessionTxId }, function (err, tx) {
+  TxCache.one({ txId: sessionTxId }, function (err, tx) {
     if (err || !tx) return new SessionIdNotFound()
-    var otherAddr = tx.receiverAddr === addrStr ?
-      tx.senderAddr :
-      tx.receiverAddr
+    var otherAddr = tx.receiverAddr === addrStr
+      ? tx.senderAddr
+      : tx.receiverAddr
     Messages.find({
       or: [
-        { receiverAddr: addrStr, senderAddr: otherAddr }, 
+        { receiverAddr: addrStr, senderAddr: otherAddr },
         { senderAddr: addrStr, receiverAddr: otherAddr }
       ]
     }, addr, network, function (err, messages) {

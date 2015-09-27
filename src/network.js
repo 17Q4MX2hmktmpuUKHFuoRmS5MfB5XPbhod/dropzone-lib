@@ -74,9 +74,11 @@ Network.prototype.getFilteredTxs = function (filter, next) {
   }
 
   var pushBlock = function (block) {
+    var tx
     for (var t = 0, tl = cached.tx.col.length; t < tl; t++) {
-      if (block.hasTransaction(cached.tx.col[t])) {
-        cached.tx.col[t].block = {
+      tx = cached.tx.col[t]
+      if (block.hasTransaction(tx)) {
+        tx.block = {
           hash: block.header.hash,
           height: tip.blockHeight -
             (cached.block.hashes.length -
@@ -94,10 +96,12 @@ Network.prototype.getFilteredTxs = function (filter, next) {
 
   var pushTx = function (tx) {
     var col = cached.tx.col
+    var block
+    var hash
     for (var b = 0, bl = cached.block.col.length; b < bl; b++) {
-      var block = cached.block.col[b]
-      if (cached.block.col[b].hasTransaction(tx)) {
-        var hash = cached.block.col[b].header.hash
+      block = cached.block.col[b]
+      if (block.hasTransaction(tx)) {
+        hash = block.header.hash
         tx.block = {
           hash: hash,
           height: tip.blockHeight -
@@ -178,7 +182,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
   pool.on('peertx', function (peer, message) {
     var script
     var tx = message.transaction
-    var address 
+    var address
     if (cached.tx.hashes.indexOf(tx.hash) > -1) {
       return
     }
@@ -207,7 +211,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
         break
       }
       address = output.script.toAddress(network).toString()
-      if (filter.isRelevantAddress(address)) { 
+      if (filter.isRelevantAddress(address)) {
         pushTx(tx)
         break
       }
