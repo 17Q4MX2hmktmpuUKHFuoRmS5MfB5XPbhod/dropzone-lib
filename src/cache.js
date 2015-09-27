@@ -17,6 +17,28 @@ cache.ready = function (next) {
   })
 }
 
+cache.define('Tip', {
+  id: {
+    type: 'serial',
+    key: true
+  },
+  relevantAddr: {
+    type: 'text',
+    mapsTo: 'relevant_addr'
+  },
+  subject: String,
+  blockId: {
+    type: 'text',
+    mapsTo: 'blockid'
+  },
+  blockHeight: {
+    type: 'integer',
+    mapsTo: 'block_height'
+  }
+}, {
+  collection: 'tips' 
+})
+
 cache.define('Tx', {
   id: {
     type: 'serial',
@@ -49,6 +71,38 @@ cache.define('Tx', {
   }
 }, {
   collection: 'transactions'
+})
+
+cache.define('Txo', {
+  id: {
+    type: 'serial',
+    key: true
+  },
+  txId: {
+    type: 'text',
+    mapsTo: 'txid'
+  },
+  spenderAddr: {
+    type: 'text',
+    mapsTo: 'spender_addr'
+  },
+  index: Number,
+  satoshis: Number,
+  spent: Boolean,
+  isTesting: {
+    type: 'boolean',
+    mapsTo: 'is_testing'
+  },
+  blockId: {
+    type: 'text',
+    mapsTo: 'blockid'
+  },
+  blockHeight: {
+    type: 'integer',
+    mapsTo: 'block_height'
+  }
+}, {
+  collection: 'txos'
 })
 
 module.exports = cache

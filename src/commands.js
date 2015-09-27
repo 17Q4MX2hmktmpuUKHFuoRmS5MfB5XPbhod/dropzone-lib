@@ -10,11 +10,11 @@ var PrivateKey = bitcore.PrivateKey
 var Address = bitcore.Address
 var Session = session.Session
 
-var NotAuthorized = session.NotAuthorized
+var NotAuthenticated = session.NotAuthenticated
 
 var fail = function (err) {
   var label = colors.red('ERROR')
-  if (err instanceof NotAuthorized) {
+  if (err instanceof NotAuthenticated) {
     console.log(label, err.message)
   } else {
     throw err
@@ -41,9 +41,9 @@ chat.list = function (wifPrivKey, program) {
         })
         var senderAddr = session.senderAddr.toString()
         var isSender = senderAddr === addr.toString()
-        table.push(['Address', isSender
+        table.push(['With', isSender
           ? session.receiverAddr
-          : session.senderAddr])
+          : senderAddr])
         table.push(['Messages',
           session.unreadMessages + ' Unread / ' +
           session.messages.length + ' Total'])
@@ -100,11 +100,11 @@ chat.create = function (wifPrivKey, wifReceiverAddr, program) {
     var session = new Session(privKey, key.secret, {
       receiverAddr: receiverAddr
     })
-    session.authenticate()
-    var table = new Table({ head: ['Chat', session.txId] })
+    session.authenticate(Function())
+    /*var table = new Table({ head: ['Chat', session.txId] })
     table.push(['Sender', addr])
     table.push(['Receiver', receiverAddr])
-    console.log(table.toString())
+    console.log(table.toString())*/
   })
 }
 

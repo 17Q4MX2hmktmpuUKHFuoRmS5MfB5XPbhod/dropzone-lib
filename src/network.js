@@ -42,12 +42,12 @@ Network.prototype.getFilteredTxs = function (filter, next) {
 
   var tip = ({
     testnet: {
-      hash: '00000000aac43d0734c8a9346b58ac0ce539c94853ed15cfa03a6f4d698ddaf3',
-      height: 533832
+      blockId: '00000000aac43d0734c8a9346b58ac0ce539c94853ed15cfa03a6f4d698ddaf3',
+      blockHeight: 533832
     },
     livenet: {
-      hash: '000000000000000013341e0afa2edda3e22dcc3974b711c8c4fb3170d35bb39d',
-      height: 372184
+      blockId: '000000000000000013341e0afa2edda3e22dcc3974b711c8c4fb3170d35bb39d',
+      blockHeight: 372184
     }
   })[network.name]
 
@@ -78,7 +78,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
       if (block.hasTransaction(cached.tx.col[t])) {
         cached.tx.col[t].block = {
           hash: block.header.hash,
-          height: tip.height -
+          height: tip.blockHeight -
             (cached.block.hashes.length -
             cached.block.hashes.indexOf(block.header.hash) - 1)
         }
@@ -95,15 +95,15 @@ Network.prototype.getFilteredTxs = function (filter, next) {
   var pushTx = function (tx) {
     var col = cached.tx.col
     for (var b = 0, bl = cached.block.col.length; b < bl; b++) {
+      var block = cached.block.col[b]
       if (cached.block.col[b].hasTransaction(tx)) {
         var hash = cached.block.col[b].header.hash
         tx.block = {
           hash: hash,
-          height: tip.height -
+          height: tip.blockHeight -
             (cached.block.hashes.length -
             cached.block.hashes.indexOf(hash) - 1)
         }
-        cached.block.col.splice(b, 1)
         col = txs
         break
       }
@@ -120,7 +120,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
 
   pool.on('peerready', function (peer, addr) {
     peer.hash = addr.hash
-    if (!loaderPeer && peer.bestHeight > tip.height) {
+    if (!loaderPeer && peer.bestHeight >= tip.blockHeight) {
       loaderPeer = peer
       loaderPeer.sendMessage(new FilterLoad(filter))
       loaderPeer.getHeaders = function (hash) {
@@ -129,7 +129,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
           stops: new Array(33).join('0')
         }))
       }
-      loaderPeer.getHeaders(tip.hash)
+      loaderPeer.getHeaders(tip.blockId)
     }
   })
 
@@ -147,12 +147,12 @@ Network.prototype.getFilteredTxs = function (filter, next) {
           break
         }
         header.hexPrevHash = header.toObject().prevHash
-        if (header.hexPrevHash === tip.hash.toString()) {
+        if (header.hexPrevHash === tip.blockId) {
           tip = {
-            hash: header.hash,
-            height: tip.height + 1
+            blockId: header.hash.toString(),
+            blockHeight: tip.blockHeight + 1
           }
-          cached.block.hashes.push(tip.hash)
+          cached.block.hashes.push(tip.blockId)
           if (cached.block.hashes.length > HASH_BUFFER) {
             cached.block.hashes.shift()
           }
@@ -164,11 +164,11 @@ Network.prototype.getFilteredTxs = function (filter, next) {
       }
     }
     if (headers.length && header) {
-      return loaderPeer.getHeaders(tip.hash)
+      return loaderPeer.getHeaders(tip.blockId)
     }
     pool.disconnect()
     loading.stop()
-    next(null, txs)
+    next(null, txs, tip)
   })
 
   pool.on('peermerkleblock', function (peer, message) {
@@ -178,7 +178,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
   pool.on('peertx', function (peer, message) {
     var script
     var tx = message.transaction
-    var address
+    var address 
     if (cached.tx.hashes.indexOf(tx.hash) > -1) {
       return
     }
@@ -207,7 +207,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
         break
       }
       address = output.script.toAddress(network).toString()
-      if (filter.isRelevantAddress(address)) {
+      if (filter.isRelevantAddress(address)) { 
         pushTx(tx)
         break
       }

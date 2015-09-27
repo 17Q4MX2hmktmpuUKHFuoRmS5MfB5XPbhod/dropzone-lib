@@ -13,9 +13,10 @@ var BYTES_IN_MULTISIG = (33 * 2) - 1 - 2 - 2
 var BYTES_IN_PUBKEYHASH = 20 - 1
 var BYTES_IN_OPRETURN = 40
 
-function fill (arr, val) { // ES6 Simplified polyfill
-  if (Array.prototype.fill) return arr.fill(val)
-  for (var i = 0, l = arr.length; i<l; i++) {
+// ES6 Simplified polyfill
+function fill (arr, val) { 
+  if (Array.prototype.fill) return arr.fill.apply(val)
+  for (var i = 0, l = arr.length; i < l; i++) {
     arr[i] = val
   }
   return arr

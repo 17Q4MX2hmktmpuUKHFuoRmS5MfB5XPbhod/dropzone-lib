@@ -97,9 +97,10 @@ TxDecoder.prototype.parse = function (outputs) {
     if (match) {
       return this[method].apply(this, match.slice(1))
     }
-    return new Buffer()
+    return new Buffer(0)
   }.bind(this)))
 
+  console.log("DATA", this.data)
   return this.data
 }
 
