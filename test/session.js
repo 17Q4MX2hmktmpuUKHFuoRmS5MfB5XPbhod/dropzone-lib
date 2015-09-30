@@ -11,8 +11,7 @@ var Transaction = bitcore.Transaction
 var Session = session.Session
 
 describe('Session', function () {
-  it("performs a simple non-deterministic chat", function () {
-
+  it('performs a simple non-deterministic chat', function () {
     /*
     # Note that Der's and IV's are generated randomly on every iteration of this
     # test, which is unlike the extended test.
@@ -35,5 +34,5 @@ describe('Session', function () {
     expect(buyer_to_seller.communications.collect(&:contents_plain)).to eq([
       "Hello Seller", "Hello Buyer" ])
       */
-  } )
-} )
+  })
+})

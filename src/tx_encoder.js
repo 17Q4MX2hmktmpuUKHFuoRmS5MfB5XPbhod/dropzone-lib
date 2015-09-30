@@ -189,5 +189,8 @@ module.exports = {
   MissingSenderPubKeyError: MissingSenderPubKeyError,
   MissingSenderAddrError: MissingSenderAddrError,
   DataTooLargeError: DataTooLargeError,
-  InvalidGenPublicKeyError: InvalidGenPublicKeyError
+  InvalidGenPublicKeyError: InvalidGenPublicKeyError,
+  BYTES_IN_MULTISIG: BYTES_IN_MULTISIG,
+  BYTES_IN_PUBKEYHASH: BYTES_IN_PUBKEYHASH,
+  BYTES_IN_OPRETURN: BYTES_IN_OPRETURN
 }

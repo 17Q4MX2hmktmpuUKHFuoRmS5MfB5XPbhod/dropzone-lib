@@ -10,6 +10,10 @@ var TipCache = cache.models.Tip
 
 var Blockchain = {}
 
+Blockchain.pushTx = function (tx, network, next) {
+  new Network({ network: network }).pushTx(tx, next)
+}
+
 Blockchain.getTxsByAddr = function (addr, tip, next) {
   var filter = BloomFilter.create(1, 0.2, 0, BloomFilter.BLOOM_UPDATE_ALL)
   filter.insertAddress(addr)
@@ -50,11 +54,13 @@ Blockchain.getUtxosByAddr = function (addr, next) {
         async.each(txos, function (txoArr, next) {
           async.each(txoArr, function (txo, next) {
             var txid = txo.tx.hash.toString('hex')
+            var spenderAddr = txo.script.toAddress(addr.network).toString()
             var index = txo.index
-            var ctxo = {
+            TxoCache.create({
               txId: txid,
-              spenderAddr: txo.script.toAddress(addr.network).toString(),
+              spenderAddr: spenderAddr,
               index: index,
+              script: txo.script.toBuffer(),
               satoshis: txo.satoshis,
               spent: !(txid in utxos) ||
                 !utxos[txid].filter(function (utxo) {
@@ -63,14 +69,20 @@ Blockchain.getUtxosByAddr = function (addr, next) {
               isTesting: addr.network.name === 'testnet',
               blockId: txo.tx.block.hash,
               blockHeight: txo.tx.block.height
-            }
-            TxoCache.create(ctxo, function (err) {
+            }, function (err) {
               if (err) return next(err)
-              ctxos.push(ctxo)
-              if (!ctxo.spent) {
-                cutxos.push(ctxo)
-              }
-              next(null)
+              TxoCache.one({
+                txId: txid,
+                spenderAddr: spenderAddr,
+                index: index
+              }, function (err, ctxo) {
+                if (err) return next(err)
+                ctxos.push(ctxo)
+                if (!ctxo.spent) {
+                  cutxos.push(ctxo)
+                }
+                next(null)
+              })
             })
           }, next)
         }, function (err) {
@@ -154,8 +166,6 @@ Blockchain.utxosFromTxTxos = function (addr, txids, txos) {
   }
   return utxos
 }
-
-Blockchain.pushTx = function (data, privKey, next) {}
 
 module.exports = {
   Blockchain: Blockchain

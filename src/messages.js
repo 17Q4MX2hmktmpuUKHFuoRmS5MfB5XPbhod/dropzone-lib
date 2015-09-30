@@ -3,23 +3,40 @@ var async = require('async')
 var bitcore = require('bitcore')
 var blockchain = require('./blockchain')
 var tx_decoder = require('./tx_decoder')
+var tx_encoder = require('./tx_encoder')
 var cache = require('./cache')
 
 var BufferReader = bitcore.encoding.BufferReader
 var BufferWriter = bitcore.encoding.BufferWriter
 var Address = bitcore.Address
+var Script = bitcore.Script
+var Transaction = bitcore.Transaction
+var Output = bitcore.Transaction.Output
 var Blockchain = blockchain.Blockchain
 var TxDecoder = tx_decoder.TxDecoder
+var TxEncoder = tx_encoder.TxEncoder
 var TxCache = cache.models.Tx
 var TipCache = cache.models.Tip
 
+var InvalidStateError = bitcore.errors.InvalidState
 var BadEncodingError = tx_decoder.BadEncodingError
+
+function MessagesError (message) {
+  this.name = this.constructor.name
+  this.message = 'Messages error: ' + message
+  Error.captureStackTrace(this, this.constructor)
+}
+
+function InsufficientBalanceError () {
+  MessagesError.call(this, 'insufficient balance to make a transaction')
+}
 
 var Messages = {}
 
 var MSGS_PREFIX = 'DZ'
 var CHATMSG_PREFIX = 'COMMUN'
 var CIPHER_ALGORITHM = 'AES-256-CBC'
+var TXO_DUST = 5430
 
 Messages.find = function (query, addr, network, next) {
   query = query || {}
@@ -86,7 +103,7 @@ Messages.find = function (query, addr, network, next) {
           })
         }, function (err) {
           if (err) return next(err)
-          if (tip.id) {
+          if (tip && tip.id) {
             tip.blockId = ntip.blockId
             tip.blockHeight = ntip.blockHeight
             return tip.save(function (err) {
@@ -182,26 +199,51 @@ function ChatMessage (params) {
 ChatMessage.prototype.fromBuffer = function (data) {
   var buf = new BufferReader(data)
   while (!buf.eof()) {
-    var attrib = buf.readVarLengthBuffer()
-    var value = buf.readVarLengthBuffer()
-    this[this.attribs[attrib.toString()]] = value
+    try {
+      var attrib = buf.readVarLengthBuffer()
+      var value = buf.readVarLengthBuffer()
+      this[this.attribs[attrib.toString()]] = value
+    } catch (err) {
+      if (err instanceof InvalidStateError) {
+        return
+      }
+      throw err
+    }
   }
   this.isInit = !!(this.der && this.sessionPrivKey)
   this.isAuth = !!this.sessionPrivKey
 }
 
-ChatMessage.prototype.toBuffer = function (network) {
-  var buf = new BufferWriter(new Buffer(CHATMSG_PREFIX), 'ascii')
+ChatMessage.prototype.toBuffer = function () {
+  var network = this.receiverAddr.network
+  var buf = new BufferWriter()
+  buf.write(new Buffer(CHATMSG_PREFIX))
+  var revAttr = {}
+  var chunk
+  for (var attr in this.attribs) {
+    revAttr[this.attribs[attr]] = attr
+  }
   for (var key in this) {
-    var value = this[key]
-    if (value === parseInt(value, 10)) {
-      buf.writeVarintNum(value)
-    } else if (Address.isValid(value, network, 'pubkey')) {
-      buf.write(new Buffer(value.toObject().hash))
-    } else {
-      buf.write(new Buffer(value.toString()))
+    if (key in revAttr) {
+      var value = this[key]
+      if (value) {
+        chunk = new Buffer(revAttr[key])
+        buf.writeVarintNum(chunk.length)
+        buf.write(chunk)
+      }
+      if (value === parseInt(value, 10)) {
+        buf.writeVarintNum(value)
+      } else if (Address.isValid(value, network, 'pubkey')) {
+        chunk = new Buffer(value.toObject().hash, 'hex')
+        buf.writeVarintNum(chunk.length)
+        buf.write(chunk)
+      } else if (value) {
+        buf.writeVarintNum(value.length)
+        buf.write(value)
+      }
     }
   }
+  return buf.toBuffer()
 }
 
 ChatMessage.prototype.getPlain = function (symmKey) {
@@ -213,20 +255,81 @@ ChatMessage.prototype.getPlain = function (symmKey) {
   ]).toString('utf-8')
 }
 
-ChatMessage.prototype.send = function (privKey, network, next) {
-  // var payload = this.toBuffer(network)
+ChatMessage.prototype.send = function (privKey, next) {
+  var payload = this.toBuffer()
+  var network = this.receiverAddr.network
   var addr = privKey.toAddress(network)
+  var pubKey = privKey.toPublicKey()
   Blockchain.getUtxosByAddr(addr, function (err, utxos) {
     if (err) return next(err)
-  /*
-  var outputs = new TxEncoder()
-  Blockchain.pushTx(outputs, privKey, next)
-  */
-  })
+    var outputBytes = tx_encoder.BYTES_IN_MULTISIG
+    var outputNum = 2 + Math.ceil((payload.length + 3) / outputBytes)
+    var fee = 20000
+    var total = (outputNum * TXO_DUST) + fee
+    var tx = new Transaction()
+    var allocated = 0
+    var txis = []
+    var utxo
+
+    utxos.reverse()
+
+    for (var i = 0, l = utxos.length; i < l; i++) {
+      utxo = utxos[i]
+      allocated += utxo.satoshis
+      txis.push({
+        address: addr,
+        txId: utxo.txId,
+        outputIndex: utxo.index,
+        satoshis: utxo.satoshis,
+        script: utxo.script
+      })
+      utxo.spent = true
+      if (allocated >= total) {
+        break
+      }
+    }
+    if (allocated < total) {
+      return next(new InsufficientBalanceError())
+    }
+
+    tx.from(txis)
+
+    var txoScpts = new TxEncoder(tx.inputs[0].prevTxId, payload, {
+      receiverAddr: this.receiverAddr,
+      senderPubKey: pubKey,
+      prefix: MSGS_PREFIX
+    }).toOpMultisig()
+
+    var txoScpt
+    var satoshis
+    for (i = 0, l = txoScpts.length; i < l; i++) {
+      txoScpt = Script.fromASM(txoScpts[i])
+      satoshis = i === l - 1
+        ? allocated - fee - (TXO_DUST * (l - 1))
+        : TXO_DUST
+      tx.addOutput(new Output({
+        satoshis: satoshis,
+        script: txoScpt
+      }))
+    }
+
+    tx.fee(fee)
+    tx.sign(privKey)
+
+    Blockchain.pushTx(tx, addr.network, function (err, tx) {
+      if (err) return next(err)
+      async.each(utxos, function (utxo, next) {
+        utxo.save(next)
+      }, function (err) {
+        next(err, tx)
+      })
+    })
+  }.bind(this))
 }
 
 module.exports = {
   Messages: Messages,
   Message: Message,
-  ChatMessage: ChatMessage
+  ChatMessage: ChatMessage,
+  InsufficientBalanceError: InsufficientBalanceError
 }

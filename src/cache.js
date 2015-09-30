@@ -87,6 +87,7 @@ cache.define('Txo', {
     mapsTo: 'spender_addr'
   },
   index: Number,
+  script: Buffer,
   satoshis: Number,
   spent: Boolean,
   isTesting: {

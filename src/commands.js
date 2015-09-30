@@ -21,6 +21,25 @@ var fail = function (err) {
   }
 }
 
+var display = {}
+
+display.session = function (session, addr) {
+  var table = new Table({
+    head: ['Chat', session.txId],
+    colWidths: [10, 69],
+    truncate: false
+  })
+  var senderAddr = session.senderAddr.toString()
+  var isSender = senderAddr === addr.toString()
+  table.push(['With', isSender
+    ? session.receiverAddr
+    : senderAddr])
+  table.push(['Messages',
+    session.unreadMessages + ' Unread / ' +
+    session.messages.length + ' Total'])
+  console.log(table.toString())
+}
+
 var chat = {}
 
 chat.list = function (wifPrivKey, program) {
@@ -34,20 +53,7 @@ chat.list = function (wifPrivKey, program) {
           return a.txId === b.txId && x > y
         }).length
       }).forEach(function (session) {
-        var table = new Table({
-          head: ['Chat', session.txId],
-          colWidths: [10, 69],
-          truncate: false
-        })
-        var senderAddr = session.senderAddr.toString()
-        var isSender = senderAddr === addr.toString()
-        table.push(['With', isSender
-          ? session.receiverAddr
-          : senderAddr])
-        table.push(['Messages',
-          session.unreadMessages + ' Unread / ' +
-          session.messages.length + ' Total'])
-        console.log(table.toString())
+        display.session(session, addr)
       })
     } catch (err) {
       fail(err)
@@ -100,13 +106,10 @@ chat.create = function (wifPrivKey, wifReceiverAddr, program) {
     var session = new Session(privKey, key.secret, {
       receiverAddr: receiverAddr
     })
-    session.authenticate(function () {})
-  /*
-  var table = new Table({ head: ['Chat', session.txId] })
-  table.push(['Sender', addr])
-  table.push(['Receiver', receiverAddr])
-  console.log(table.toString())
-  */
+    session.authenticate(function (err) {
+      if (err) throw err
+      display.session(session, addr)
+    })
   })
 }
 

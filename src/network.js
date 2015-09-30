@@ -35,6 +35,38 @@ function Network (options) {
   this.pool = new Pool(options)
 }
 
+Network.prototype.pushTx = function (tx, next) {
+  var messages = this.messages
+  var pool = this.pool
+
+  var MIN_RELAY_PEERS = Math.ceil(pool.maxSize / 2)
+
+  var Transaction = messages.Transaction
+
+  var readyPeers = 0
+
+  pool.on('peerready', function (peer, addr) {
+    readyPeers++
+    if (readyPeers >= MIN_RELAY_PEERS) {
+      pool.sendMessage(new Transaction(tx))
+      pool.disconnect()
+      readyPeers = 0
+      next(null, tx)
+    }
+  })
+
+  pool.on('peerdisconnect', function (peer, err) {
+    readyPeers--
+  })
+
+  pool.on('error', function (err) {
+    next(err)
+    pool.disconnect()
+  })
+
+  pool.connect()
+}
+
 Network.prototype.getFilteredTxs = function (filter, next) {
   var network = this.network
   var messages = this.messages

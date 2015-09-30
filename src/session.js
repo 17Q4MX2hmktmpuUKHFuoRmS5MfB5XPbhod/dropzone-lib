@@ -149,7 +149,10 @@ Session.prototype.authenticate = function (der, next) {
   var p
   var g
   var dh
-  if (!this.init || this.auth) {
+
+  var isInit = !this.init || this.auth
+
+  if (isInit) {
     if (der) {
       p = der.p.toString(16)
       g = parseInt(der.g.toString(10), 10)
@@ -174,11 +177,23 @@ Session.prototype.authenticate = function (der, next) {
   var message = new ChatMessage({
     receiverAddr: this.receiverAddr,
     senderAddr: this.getSenderAddr(),
-    sessionPrivKey: dh.getPublicKey('hex'),
-    der: this.init ? der : ''
+    sessionPrivKey: dh.getPublicKey(),
+    der: isInit ? der : ''
   })
 
-  message.send(this.privKey, this.network, next)
+  message.send(this.privKey, function (err, tx) {
+    if (err) return next(err)
+    this.txId = tx.id
+    this.auth = message
+    this.messages = []
+    this.unreadMessages = 0
+    ChatStore.create({
+      sessionTxId: this.txId,
+      readMessages: 0
+    }, function (err) {
+      next(err)
+    })
+  }.bind(this))
 }
 
 Session.secretFor = function (addr, receiverAddr, next) {
