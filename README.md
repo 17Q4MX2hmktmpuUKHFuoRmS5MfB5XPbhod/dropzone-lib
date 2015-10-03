@@ -1,7 +1,7 @@
 # node-dropzone
  An Anonymous Peer-To-Peer Local Contraband Marketplace
 
-[White Paper](http://www.metzdowd.com/pipermail/cryptography/2015-March/025212.html)
+[White Paper](Drop Zone - Whitepaper.pdf)
 
 ## Author's Manifesto
 ![Drop Zone](dropzone-screenshot.jpg)
