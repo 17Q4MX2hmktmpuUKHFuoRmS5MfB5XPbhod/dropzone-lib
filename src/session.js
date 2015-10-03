@@ -25,15 +25,15 @@ function SessionError (message) {
   Error.captureStackTrace(this, this.constructor)
 }
 
-function MissingReceiver () {
+function MissingReceiverError () {
   SessionError.call(this, 'missing receiver')
 }
 
-function NotAuthenticated () {
+function NotAuthenticatedError () {
   SessionError.call(this, 'the conversation is not yet authenticated')
 }
 
-function SessionIdNotFound () {
+function SessionIdNotFoundError () {
   SessionError.call(this, 'session id not found')
 }
 
@@ -41,23 +41,21 @@ function Session (privKey, sessionSecret, options) {
   this.privKey = privKey
   this.sessionKey = new Buffer(sessionSecret, 'hex')
 
-  options = options || {}
-
   if (options.receiverAddr) {
     this.receiverAddr = options.receiverAddr
+    this.network = options.receiverAddr.network
+    this.senderAddr = this.getSenderAddr()
   } else if (options.init) {
-    this.receiverAddr = options.init.senderAddr
-    this.senderAddr = options.init.receiverAddr
+    this.network = options.init.senderAddr.network
+    this.senderAddr = this.privKey.toAddress(this.network)
+    this.receiverAddr = options.init.receiverAddr
+    if (this.senderAddr.toString() === this.receiverAddr.toString()) {
+      this.receiverAddr = options.init.senderAddr
+    }
     this.init = options.init
     this.txId = this.init.txId
   } else {
-    throw new MissingReceiver()
-  }
-
-  this.network = this.receiverAddr.network
-
-  if (!this.senderAddr) {
-    this.senderAddr = this.getSenderAddr()
+    throw new MissingReceiverError()
   }
 
   if (options.auth) {
@@ -107,9 +105,7 @@ Session.prototype.setUnreadMessages = function (next) {
 }
 
 Session.prototype.isAuthenticated = function () {
-  return this.init && this.messages.filter(function (messages) {
-    return messages.isAuth
-  }).length
+  return this.init && this.auth
 }
 
 Session.prototype.getSenderAddr = function () {
@@ -128,13 +124,13 @@ Session.prototype.genSymmKey = function () {
     this.symmKey = dh.computeSecret(theirSessionKey)
     return this.symmKey
   } else {
-    throw new NotAuthenticated()
+    throw new NotAuthenticatedError()
   }
 }
 
 Session.prototype.getTheirs = function () {
   if (this.init.senderAddr === this.receiverAddr.toString() &&
-    this.init.receiverAddr === this.getSenderAddr().toString()) {
+    this.init.receiverAddr === this.senderAddr.toString()) {
     return this.init
   }
   return this.auth
@@ -176,7 +172,7 @@ Session.prototype.authenticate = function (der, next) {
 
   var message = new ChatMessage({
     receiverAddr: this.receiverAddr,
-    senderAddr: this.getSenderAddr(),
+    senderAddr: this.senderAddr,
     sessionPrivKey: dh.getPublicKey(),
     der: isInit ? der : ''
   })
@@ -192,6 +188,26 @@ Session.prototype.authenticate = function (der, next) {
       readMessages: 0
     }, function (err) {
       next(err)
+    })
+  }.bind(this))
+}
+
+Session.prototype.sendMessage = function (message, next) {
+  message.receiverAddr = this.receiverAddr
+  message.senderAddr = this.senderAddr
+
+  message.send(this.privKey, function (err, tx) {
+    if (err) return next(err)
+    message.txId = tx.id
+    this.messages.push(message)
+    ChatStore.one({
+      sessionTxId: this.txId
+    }, function (err, chat) {
+      if (err) return next(err)
+      chat.readMessages += 1
+      chat.save(function (err) {
+        next(err, tx.id)
+      })
     })
   }.bind(this))
 }
@@ -225,6 +241,10 @@ Session.fromMessages = function (messages, opts, next) {
   async.waterfall([ function (next) {
     Session.secretFor(addr, receiverAddr, next)
   }, function (key, next) {
+    var auth = messages.filter(function (message) {
+      return message.isAuth &&
+      (receiverAddr.toString() !== message.receiverAddr.toString() || !message.isInit)
+    }).shift()
     messages = messages.filter(function (message) {
       return !message.isInit && (
       (message.senderAddr.toString() === init.senderAddr.toString() &&
@@ -232,14 +252,11 @@ Session.fromMessages = function (messages, opts, next) {
       (message.receiverAddr.toString() === init.senderAddr.toString() &&
       message.senderAddr.toString() === init.receiverAddr.toString()))
     })
-    var auth = messages.filter(function (message) {
-      return message.isAuth
-    }).pop()
     var session = new Session(privKey, key.secret, {
       init: init,
       auth: auth,
       messages: messages.filter(function (message) {
-        return !message.isAuth
+        return !auth || message.txId !== auth.txId
       })
     })
     session.getUnreadMessages(next)
@@ -259,6 +276,14 @@ Session.all = function (privKey, network, next) {
     }
     async.map(messages.filter(function (message) {
       return message.isInit
+    }).filter(function (a, x, c) {
+      return !c.filter(function (b, y) {
+        return ((a.senderAddr.toString() === b.senderAddr.toString() &&
+        a.receiverAddr.toString() === b.receiverAddr.toString()) ||
+        (a.senderAddr.toString() === b.receiverAddr.toString() &&
+        a.receiverAddr.toString() === b.senderAddr.toString())) &&
+        x > y
+      }).length
     }), function (init, next) {
       Session.fromMessages([init].concat(messages), opts, next)
     }, next)
@@ -269,7 +294,7 @@ Session.one = function (privKey, network, sessionTxId, next) {
   var addr = privKey.toAddress(network.test)
   var addrStr = addr.toString()
   TxCache.one({ txId: sessionTxId }, function (err, tx) {
-    if (err || !tx) return new SessionIdNotFound()
+    if (err || !tx) return new SessionIdNotFoundError()
     var otherAddr = tx.receiverAddr === addrStr
       ? tx.senderAddr
       : tx.receiverAddr
@@ -293,7 +318,7 @@ Session.one = function (privKey, network, sessionTxId, next) {
 
 module.exports = {
   Session: Session,
-  MissingReceiver: MissingReceiver,
-  NotAuthenticated: NotAuthenticated,
-  SessionIdNotFound: SessionIdNotFound
+  MissingReceiverError: MissingReceiverError,
+  NotAuthenticatedError: NotAuthenticatedError,
+  SessionIdNotFoundError: SessionIdNotFoundError
 }

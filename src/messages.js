@@ -93,8 +93,10 @@ Messages.find = function (query, addr, network, next) {
             }
             TxCache.create({
               txId: tx.txId,
-              receiverAddr: tx.receiverAddr,
-              senderAddr: tx.senderAddr,
+              receiverAddr: tx.receiverAddr &&
+                tx.receiverAddr.toString(),
+              senderAddr: tx.senderAddr &&
+                tx.senderAddr.toString(),
               data: tx.data,
               isTesting: tx.isTesting,
               blockId: tx.blockId,
@@ -147,8 +149,8 @@ Message.create = function (params) {
 Message.fromCachedTx = function (ctx, network) {
   return Message.create({
     txId: ctx.txId,
-    receiverAddr: ctx.receiverAddr,
-    senderAddr: ctx.senderAddr,
+    receiverAddr: new Address(ctx.receiverAddr),
+    senderAddr: new Address(ctx.senderAddr),
     data: ctx.data,
     blockId: ctx.blockId,
     blockHeight: ctx.blockHeight,
@@ -164,8 +166,8 @@ Message.fromTx = function (tx, network) {
     })
     return Message.create({
       txId: tx.hash,
-      receiverAddr: record.receiverAddr.toString(),
-      senderAddr: record.senderAddr.toString(),
+      receiverAddr: record.receiverAddr,
+      senderAddr: record.senderAddr,
       data: record.data,
       blockId: tx.block.hash,
       blockHeight: tx.block.height,
@@ -194,6 +196,16 @@ function ChatMessage (params) {
   for (var key in params) {
     this[key] = params[key]
   }
+}
+
+ChatMessage.prototype.encrypt = function (symmKey) {
+  this.iv = crypto.randomBytes(16)
+  var key = symmKey.slice(0, 32)
+  var cipher = crypto.createCipheriv(CIPHER_ALGORITHM, key, this.iv)
+  this.contents = Buffer.concat([
+    cipher.update(this.contents),
+    cipher.final()
+  ])
 }
 
 ChatMessage.prototype.fromBuffer = function (data) {

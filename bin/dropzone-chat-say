@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 var program = require('commander')
+var command = require('../src/commands').chat.say
 
 program
   .usage('<private_key> <session_id> <message> [options]')
@@ -17,5 +18,6 @@ program
       '    0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098 \\\n' +
       "    'Thank you for your inquiry'\n")
   })
+  .action(command)
 
 program.parse(process.argv)
