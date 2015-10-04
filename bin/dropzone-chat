@@ -10,6 +10,8 @@ program
     'Show the available chats for a given testnet private key')
   .command('show',
     'Show all the available messages for a given session')
+  .command('accept',
+    'Accept a conversation created by someone else over testnet')
   .command('say',
     'Communicate with someone in a private conversation over testnet')
 

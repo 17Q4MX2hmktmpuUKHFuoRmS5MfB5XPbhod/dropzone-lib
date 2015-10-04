@@ -33,6 +33,14 @@ function NotAuthenticatedError () {
   SessionError.call(this, 'the conversation is not yet authenticated')
 }
 
+function AlreadyAuthenticatedError () {
+  SessionError.call(this, 'the conversation it is already authenticated')
+}
+
+function NeedAuthenticationError () {
+  SessionError.call(this, 'the conversation needs to be authenticated by the receiver')
+}
+
 function SessionIdNotFoundError () {
   SessionError.call(this, 'session id not found')
 }
@@ -111,7 +119,7 @@ Session.prototype.setUnreadMessages = function (next) {
 }
 
 Session.prototype.isAuthenticated = function () {
-  return this.init && this.auth
+  return !!this.getOurAuth()
 }
 
 Session.prototype.getSenderAddr = function () {
@@ -126,7 +134,7 @@ Session.prototype.genSymmKey = function () {
   dh.setPrivateKey(this.sessionKey)
   dh.generateKeys()
   if (this.auth) {
-    var theirSessionKey = this.getTheirs().sessionPrivKey
+    var theirSessionKey = this.getTheirAuth().sessionPrivKey
     this.symmKey = dh.computeSecret(theirSessionKey)
     return this.symmKey
   } else {
@@ -134,10 +142,20 @@ Session.prototype.genSymmKey = function () {
   }
 }
 
-Session.prototype.getTheirs = function () {
-  if (this.init.senderAddr === this.receiverAddr.toString() &&
-    this.init.receiverAddr === this.senderAddr.toString()) {
-    return this.init
+Session.prototype.getOurAuth = function () {
+  var init = this.init
+  if (init.senderAddr.toString() === this.senderAddr.toString() &&
+    init.receiverAddr.toString() === this.receiverAddr.toString()) {
+    return init
+  }
+  return this.auth
+}
+
+Session.prototype.getTheirAuth = function () {
+  var init = this.init
+  if (init.senderAddr.toString() === this.receiverAddr.toString() &&
+    init.receiverAddr.toString() === this.senderAddr.toString()) {
+    return init
   }
   return this.auth
 }
@@ -163,7 +181,8 @@ Session.prototype.authenticate = function (der, next) {
       dh = crypto.createDiffieHellman(1024)
     }
   } else {
-    p = this.init.der.p.toString(16)
+    der = DHDER.decode(new Buffer(this.init.der), 'der')
+    p = der.p.toString(16)
     g = parseInt(der.g.toString(10), 10)
     dh = crypto.createDiffieHellman(p, 'hex', g)
   }
@@ -185,16 +204,20 @@ Session.prototype.authenticate = function (der, next) {
 
   message.send(this.privKey, function (err, tx) {
     if (err) return next(err)
-    this.txId = tx.id
-    this.auth = message
-    this.messages = []
-    this.unreadMessages = 0
-    ChatStore.create({
-      sessionTxId: this.txId,
-      readMessages: 0
-    }, function (err) {
+    if (!this.init) {
+      this.txId = tx.id
+      this.init = message
+      return ChatStore.create({
+        sessionTxId: this.txId,
+        readMessages: 0
+      }, function (err) {
+        next(err)
+      })
+    } else if (!this.isAuthenticated()) {
+      this.auth = message
+      this.auth.txId = tx.id
       next(err)
-    })
+    }
   }.bind(this))
 }
 
@@ -236,6 +259,27 @@ Session.secretFor = function (addr, receiverAddr, next) {
   })
 }
 
+Session.selectMessages = function (init, messages) {
+  return messages.filter(function (m) {
+    return ((m.senderAddr.toString() === init.senderAddr.toString() &&
+    m.receiverAddr.toString() === init.receiverAddr.toString()) ||
+    (m.senderAddr.toString() === init.receiverAddr.toString() &&
+    m.receiverAddr.toString() === init.senderAddr.toString()))
+  })
+}
+
+Session.uniqueInits = function (inits) {
+  return inits.filter(function (a, x, c) {
+    return !c.filter(function (b, y) {
+      return ((a.senderAddr.toString() === b.senderAddr.toString() &&
+      a.receiverAddr.toString() === b.receiverAddr.toString()) ||
+      (a.senderAddr.toString() === b.receiverAddr.toString() &&
+      a.receiverAddr.toString() === b.senderAddr.toString())) &&
+      x > y
+    }).length
+  })
+}
+
 Session.fromMessages = function (messages, opts, next) {
   var privKey = opts.privKey
   var addr = opts.addr
@@ -248,15 +292,10 @@ Session.fromMessages = function (messages, opts, next) {
     Session.secretFor(addr, receiverAddr, next)
   }, function (key, next) {
     var auth = messages.filter(function (message) {
-      return message.isAuth &&
-      (init.receiverAddr.toString() === addr.toString() || !message.isInit)
+      return !message.isInit && message.isAuth
     }).shift()
     messages = messages.filter(function (message) {
-      return !message.isInit && (
-      (message.senderAddr.toString() === init.senderAddr.toString() &&
-      message.receiverAddr.toString() === init.receiverAddr.toString()) ||
-      (message.receiverAddr.toString() === init.senderAddr.toString() &&
-      message.senderAddr.toString() === init.receiverAddr.toString()))
+      return !message.isInit
     })
     var session = new Session(privKey, key.secret, {
       init: init,
@@ -280,18 +319,12 @@ Session.all = function (privKey, network, next) {
       privKey: privKey,
       addr: addr
     }
-    async.map(messages.filter(function (message) {
+    var inits = messages.filter(function (message) {
       return message.isInit
-    }).filter(function (a, x, c) {
-      return !c.filter(function (b, y) {
-        return ((a.senderAddr.toString() === b.senderAddr.toString() &&
-        a.receiverAddr.toString() === b.receiverAddr.toString()) ||
-        (a.senderAddr.toString() === b.receiverAddr.toString() &&
-        a.receiverAddr.toString() === b.senderAddr.toString())) &&
-        x > y
-      }).length
-    }), function (init, next) {
-      Session.fromMessages([init].concat(messages), opts, next)
+    })
+    async.map(Session.uniqueInits(inits), function (init, next) {
+      var sessionMessages = Session.selectMessages(init, messages)
+      Session.fromMessages([init].concat(sessionMessages), opts, next)
     }, next)
   })
 }
@@ -315,9 +348,11 @@ Session.one = function (privKey, network, sessionTxId, next) {
         privKey: privKey,
         addr: addr
       }
-      Session.fromMessages(messages.filter(function (message) {
+      var init = messages.filter(function (message) {
         return message.isInit && message.txId === sessionTxId
-      }).concat(messages), opts, next)
+      }).shift()
+      var sessionMessages = Session.selectMessages(init, messages)
+      Session.fromMessages([init].concat(sessionMessages), opts, next)
     })
   })
 }
@@ -326,5 +361,7 @@ module.exports = {
   Session: Session,
   MissingReceiverError: MissingReceiverError,
   NotAuthenticatedError: NotAuthenticatedError,
+  AlreadyAuthenticatedError: AlreadyAuthenticatedError,
+  NeedAuthenticationError: NeedAuthenticationError,
   SessionIdNotFoundError: SessionIdNotFoundError
 }

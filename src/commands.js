@@ -13,6 +13,8 @@ var Session = session.Session
 var ChatMessage = messages.ChatMessage
 
 var NotAuthenticatedError = session.NotAuthenticatedError
+var AlreadyAuthenticatedError = session.AlreadyAuthenticatedError
+var NeedAuthenticationError = session.NeedAuthenticationError
 var InsufficientBalanceError = messages.InsufficientBalanceError
 
 var fail = function (err) {
@@ -36,13 +38,23 @@ display.session = function (session, addr) {
   var senderAddr = session.senderAddr.toString()
   var isSender = senderAddr === addr.toString()
   var sender = isSender ? session.receiverAddr.toString() : senderAddr
+  var initAddr = session.init.senderAddr
+  var isInit = initAddr.toString() === addr.toString()
+  var theirAuth = session.getTheirAuth()
+  theirAuth = theirAuth ? theirAuth.txId : 'Not accepted'
+  theirAuth = wordwrap.hard(78 - theirAuth.length, 78)(theirAuth)
+  theirAuth = colors.grey(theirAuth)
+  var ourAuth = session.getOurAuth()
+  ourAuth = ourAuth ? colors.grey(ourAuth.txId) : colors.red('Accept?')
+  var firstAuth = isInit ? ourAuth : theirAuth
+  var secondAuth = isInit ? theirAuth : ourAuth
   var messages = session.messages.length + ' Message'
   messages += session.messages.length !== 1 ? 's' : ''
   var newMessages = session.unreadMessages ? session.unreadMessages + ' New / ' : ''
   var info = colors.green(newMessages) + colors.grey(messages)
   var infoWidth = sender.length + messages.length + newMessages.length
   var right = wordwrap.hard(78 - infoWidth, 78)
-  table.push([sender + right(info)])
+  table.push([firstAuth], [secondAuth], [sender + right(info)])
   console.log(table.toString())
 }
 
@@ -113,6 +125,29 @@ chat.show = function (wifPrivKey, hexSessionTxId, program) {
   })
 }
 
+chat.accept = function (wifPrivKey, hexSessionTxId, program) {
+  var privKey = PrivateKey.fromWIF(wifPrivKey)
+  var addr = privKey.toAddress(network.test)
+  var txId = hexSessionTxId
+  Session.one(privKey, network.test, txId, function (err, session) {
+    try {
+      if (err) return fail(err)
+      if (session.isAuthenticated()) {
+        return fail(new AlreadyAuthenticatedError())
+      } else if (session.init.senderAddr.toString() === addr.toString()) {
+        return fail(new NeedAuthenticationError())
+      } else {
+        return session.authenticate(function (err) {
+          if (err) return fail(err)
+          display.session(session, addr)
+        })
+      }
+    } catch (err) {
+      fail(err)
+    }
+  })
+}
+
 chat.say = function (wifPrivKey, hexSessionTxId, messageStr, program) {
   var privKey = PrivateKey.fromWIF(wifPrivKey)
   var addr = privKey.toAddress(network.test)
@@ -121,15 +156,7 @@ chat.say = function (wifPrivKey, hexSessionTxId, messageStr, program) {
     try {
       if (err) return fail(err)
       if (!session.isAuthenticated()) {
-        if (session.init.senderAddr.toString() === addr.toString()) {
-          throw new NotAuthenticatedError()
-        } else {
-          return session.authenticate(function (err) {
-            if (err) return fail(err)
-            console.log('Authentication was sent. Please try again in some minutes.')
-            return
-          })
-        }
+        return fail(new NotAuthenticatedError())
       }
       var message = new ChatMessage({ contents: messageStr })
       var symmKey = session.genSymmKey()
