@@ -94,11 +94,17 @@ Session.prototype.setUnreadMessages = function (next) {
     sessionTxId: session.txId
   }, 'id', function (err, chat) {
     if (err) return next(err)
+    var messagesLen = session.messages.length
     var unreadMessages = session.unreadMessages
     if (unreadMessages < 0) {
       unreadMessages = 0
     }
-    var messagesLen = session.messages.length
+    if (!chat) {
+      return ChatStore.create({
+        sessionTxId: session.txId,
+        readMessages: messagesLen - unreadMessages
+      }, next)
+    }
     chat.readMessages = messagesLen - unreadMessages
     chat.save(next)
   })
@@ -243,7 +249,7 @@ Session.fromMessages = function (messages, opts, next) {
   }, function (key, next) {
     var auth = messages.filter(function (message) {
       return message.isAuth &&
-      (receiverAddr.toString() !== message.receiverAddr.toString() || !message.isInit)
+      (init.receiverAddr.toString() === addr.toString() || !message.isInit)
     }).shift()
     messages = messages.filter(function (message) {
       return !message.isInit && (
