@@ -17,7 +17,7 @@ cache.ready = function (next) {
   })
 }
 
-cache.define('Tip', {
+var Tip = cache.define('Tip', {
   id: {
     type: 'serial',
     key: true
@@ -39,7 +39,21 @@ cache.define('Tip', {
   collection: 'tips'
 })
 
-cache.define('Tx', {
+Tip.setTip = function (subj, cur, up, next) {
+  if (cur && cur.id) {
+    for (var key in up) {
+      if (key !== 'id' && key in cur) {
+        cur[key] = up[key]
+      }
+    }
+    cur.subject = subj
+    return cur.save(next)
+  }
+  up.subject = subj
+  this.create(up, next)
+}
+
+var Tx = cache.define('Tx', {
   id: {
     type: 'serial',
     key: true
@@ -72,6 +86,16 @@ cache.define('Tx', {
 }, {
   collection: 'transactions'
 })
+
+Tx.upsert = function (query, up, next) {
+  Tx.one(query, function (err, tx) {
+    if (err) return next(err)
+    if (!tx) {
+      return this.create(up, next)
+    }
+    next(null)
+  }.bind(this))
+}
 
 cache.define('Txo', {
   id: {

@@ -38,7 +38,8 @@ function AlreadyAuthenticatedError () {
 }
 
 function NeedAuthenticationError () {
-  SessionError.call(this, 'the conversation needs to be authenticated by the receiver')
+  SessionError.call(this,
+    'the conversation needs to be authenticated by the receiver')
 }
 
 function SessionIdNotFoundError () {
@@ -73,6 +74,7 @@ function Session (privKey, sessionSecret, options) {
   this.messages = []
   if (options.messages) {
     this.messages = options.messages
+    console.log(this.messages.length)
   }
 }
 
@@ -96,8 +98,8 @@ Session.prototype.getUnreadMessages = function (next) {
 }
 
 Session.prototype.setUnreadMessages = function (next) {
-  next = next || function () {}
   var session = this
+  next = next || function () {}
   ChatStore.one({
     sessionTxId: session.txId
   }, 'id', function (err, chat) {
@@ -164,6 +166,8 @@ Session.prototype.authenticate = function (der, next) {
   if (arguments.length === 1) {
     next = der
     der = null
+  } else if (!arguments.length) {
+    next = function () {}
   }
 
   var p
@@ -222,6 +226,7 @@ Session.prototype.authenticate = function (der, next) {
 }
 
 Session.prototype.sendMessage = function (message, next) {
+  next = next || function () {}
   message.receiverAddr = this.receiverAddr
   message.senderAddr = this.senderAddr
 
@@ -284,24 +289,21 @@ Session.fromMessages = function (messages, opts, next) {
   var privKey = opts.privKey
   var addr = opts.addr
   var init = messages.shift()
-  var receiverAddr = init.receiverAddr
-  if (init.receiverAddr.toString() === addr.toString()) {
-    receiverAddr = init.senderAddr
-  }
   async.waterfall([ function (next) {
-    Session.secretFor(addr, receiverAddr, next)
+    var theirAddr = init.receiverAddr
+    if (init.receiverAddr.toString() === addr.toString()) {
+      theirAddr = init.senderAddr
+    }
+    Session.secretFor(addr, theirAddr, next)
   }, function (key, next) {
     var auth = messages.filter(function (message) {
       return !message.isInit && message.isAuth
     }).shift()
-    messages = messages.filter(function (message) {
-      return !message.isInit
-    })
     var session = new Session(privKey, key.secret, {
       init: init,
       auth: auth,
       messages: messages.filter(function (message) {
-        return !auth || message.txId !== auth.txId
+        return message.isPrintable
       })
     })
     session.getUnreadMessages(next)

@@ -21,6 +21,11 @@ var TipCache = cache.models.Tip
 var InvalidStateError = bitcore.errors.InvalidState
 var BadEncodingError = tx_decoder.BadEncodingError
 
+var MSGS_PREFIX = 'DZ'
+var CHATMSG_PREFIX = 'COMMUN'
+var CIPHER_ALGORITHM = 'AES-256-CBC'
+var TXO_DUST = 5430
+
 function MessagesError (message) {
   this.name = this.constructor.name
   this.message = 'Messages error: ' + message
@@ -33,11 +38,6 @@ function InsufficientBalanceError () {
 
 var Messages = {}
 
-var MSGS_PREFIX = 'DZ'
-var CHATMSG_PREFIX = 'COMMUN'
-var CIPHER_ALGORITHM = 'AES-256-CBC'
-var TXO_DUST = 5430
-
 Messages.find = function (query, addr, network, next) {
   query = query || {}
   async.waterfall([ function (next) {
@@ -45,83 +45,35 @@ Messages.find = function (query, addr, network, next) {
       if (err) return next(err)
       next(null, txs.map(function (tx) {
         return Message.fromCachedTx(tx, network)
-      }).filter(function (a, x, c) {
-        return !c.filter(function (b, y) {
-          return a.txId === b.txId && x > y
-        }).length
-      }).sort(function (a, b) {
-        return a.blockHeight - b.blockHeight
-      }))
+      }).filter(Message.isValid))
     })
   }, function (ctxs, next) {
     TipCache.one({
       relevantAddr: addr.toString(),
       subject: 'tx'
     }, function (err, tip) {
+      next(err, ctxs, tip)
+    })
+  }, function (ctxs, tip, next) {
+    Blockchain.getTxsByAddr(addr, tip, function (err, txs, ntip) {
       if (err) return next(err)
-      if (!tip && ctxs.length) {
-        for (var cachedTx, c = ctxs.length; c--;) {
-          if (ctxs[c].blockId) {
-            cachedTx = ctxs[c]
-            break
-          }
-        }
-        if (cachedTx) {
-          tip = {
-            blockId: cachedTx.blockId,
-            blockHeight: cachedTx.blockHeight
-          }
-          ctxs = ctxs.slice(0, c + 1)
-        } else {
-          ctxs = []
-        }
-      }
-      Blockchain.getTxsByAddr(addr, tip, function (err, txs, ntip) {
-        if (err) return next(err)
-        txs = txs.map(function (tx) {
-          return Message.fromTx(tx, network)
-        }).sort(function (a, b) {
-          return a.blockHeight - b.blockHeight
-        })
-        txs = ctxs.concat(txs)
-        async.each(txs, function (tx, next) {
-          TxCache.one({ txId: tx.txId }, function (err, ctx) {
-            if (err) throw err
-            if (ctx) {
-              ctx.blockId = tx.blockId
-              return ctx.save(next)
-            }
-            TxCache.create({
-              txId: tx.txId,
-              receiverAddr: tx.receiverAddr &&
-                tx.receiverAddr.toString(),
-              senderAddr: tx.senderAddr &&
-                tx.senderAddr.toString(),
-              data: tx.data,
-              isTesting: tx.isTesting,
-              blockId: tx.blockId,
-              blockHeight: tx.blockHeight
-            }, next)
-          })
-        }, function (err) {
-          if (err) return next(err)
-          if (tip && tip.id) {
-            tip.blockId = ntip.blockId
-            tip.blockHeight = ntip.blockHeight
-            return tip.save(function (err) {
-              next(err, txs.filter(Message.isValid))
-            })
-          }
-          TipCache.create({
-            relevantAddr: addr.toString(),
-            subject: 'tx',
-            blockId: ntip.blockId,
-            blockHeight: ntip.blockHeight
-          }, function (err) {
-            next(err, txs.filter(Message.isValid))
-          })
-        })
-      })
+      txs = ctxs.concat(txs.map(function (tx) {
+        return Message.fromTx(tx, network)
+      }).filter(function (a, x, c) {
+        return Message.isValid(a) && Message.isUnique(a, x, c)
+      }))
+      return next(null, txs, tip, ntip)
+    })
+  }, function (txs, tip, ntip, next) {
+    async.each(txs, function (tx, next) {
+      TxCache.upsert({ txId: tx.txId },
+        tx.toObject ? tx.toObject() : tx, next)
+    }, function (err) {
+      next(err, txs, tip, ntip)
+    })
+  }, function (txs, tip, ntip, next) {
+    TipCache.setTip('tx', tip, ntip, function (err) {
+      next(err, txs)
     })
   }], next)
 }
@@ -185,6 +137,12 @@ Message.isValid = function (message) {
   return Object.keys(message).length
 }
 
+Message.isUnique = function (a, x, messages) {
+  return !messages.filter(function (b, y) {
+    return a.txId === b.txId && x > y
+  }).length
+}
+
 function ChatMessage (params) {
   params = params || {}
   this.attribs = {
@@ -224,6 +182,19 @@ ChatMessage.prototype.fromBuffer = function (data) {
   }
   this.isInit = !!(this.der && this.sessionPrivKey)
   this.isAuth = !!this.sessionPrivKey
+  this.isPrintable = !!(this.contents)
+}
+
+ChatMessage.prototype.toObject = function () {
+  return {
+    txId: this.txId,
+    receiverAddr: this.receiverAddr.toString(),
+    senderAddr: this.senderAddr.toString(),
+    data: this.data,
+    isTesting: this.isTesting,
+    blockId: this.blockId,
+    blockHeight: this.blockHeight
+  }
 }
 
 ChatMessage.prototype.toBuffer = function () {
@@ -268,16 +239,17 @@ ChatMessage.prototype.getPlain = function (symmKey) {
 }
 
 ChatMessage.prototype.send = function (privKey, next) {
+  next = next || function () {}
   var payload = this.toBuffer()
   var network = this.receiverAddr.network
   var addr = privKey.toAddress(network)
   var pubKey = privKey.toPublicKey()
   Blockchain.getUtxosByAddr(addr, function (err, utxos) {
     if (err) return next(err)
-    var outputBytes = tx_encoder.BYTES_IN_MULTISIG
-    var outputNum = 2 + Math.ceil((payload.length + 3) / outputBytes)
+    var bytes = tx_encoder.BYTES_IN_MULTISIG
+    var outn = 2 + Math.ceil((payload.length + 3) / bytes)
     var fee = 20000
-    var total = (outputNum * TXO_DUST) + fee
+    var total = (outn * TXO_DUST) + fee
     var tx = new Transaction()
     var allocated = 0
     var txis = []

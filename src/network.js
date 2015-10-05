@@ -49,9 +49,11 @@ Network.prototype.pushTx = function (tx, next) {
     readyPeers++
     if (readyPeers >= MIN_RELAY_PEERS) {
       pool.sendMessage(new Transaction(tx))
-      pool.disconnect()
       readyPeers = 0
-      next(null, tx)
+      setTimeout(function () {
+        pool.disconnect()
+        next(null, tx)
+      }, 1000)
     }
   })
 
