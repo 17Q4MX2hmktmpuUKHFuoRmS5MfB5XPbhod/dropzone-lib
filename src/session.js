@@ -74,7 +74,6 @@ function Session (privKey, sessionSecret, options) {
   this.messages = []
   if (options.messages) {
     this.messages = options.messages
-    console.log(this.messages.length)
   }
 }
 
