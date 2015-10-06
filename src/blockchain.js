@@ -5,7 +5,7 @@ var cache = require('./cache')
 
 var Network = network.Network
 var BloomFilter = filter.BloomFilter
-var TxoCache = cache.models.Txo
+var UtxoCache = cache.models.Utxo
 var TipCache = cache.models.Tip
 
 var Blockchain = {}
@@ -31,7 +31,7 @@ Blockchain.getUtxosByAddr = function (addr, next) {
     spenderAddr: addr.toString()
   }
   async.waterfall([ function (next) {
-    TxoCache.find(query, 'blockHeight', next)
+    UtxoCache.find(query, 'blockHeight', next)
   }, function (ctxos, next) {
     TipCache.one({
       relevantAddr: addr.toString(),
@@ -61,40 +61,42 @@ Blockchain.getUtxosByAddr = function (addr, next) {
         var txid = txo.tx.hash.toString('hex')
         var spenderAddr = txo.script.toAddress(addr.network).toString()
         var index = txo.index
-        TxoCache.create({
-          txId: txid,
-          spenderAddr: spenderAddr,
-          index: index,
-          script: txo.script.toBuffer(),
-          satoshis: txo.satoshis,
-          spent: !(txid in utxos) ||
-            !utxos[txid].filter(function (utxo) {
-              return utxo.index === txo.index
-            }).length,
-          isTesting: addr.network.name === 'testnet',
-          blockId: txo.tx.block.hash,
-          blockHeight: txo.tx.block.height
-        }, function (err) {
-          if (err) return next(err)
-          TxoCache.one({
+        var spent = !(txid in utxos) ||
+          !utxos[txid].filter(function (utxo) {
+            return utxo.index === txo.index
+          }).length
+        if (!spent) {
+          var cutxo = {
             txId: txid,
             spenderAddr: spenderAddr,
-            index: index
-          }, function (err, ctxo) {
+            index: index,
+            script: txo.script.toBuffer(),
+            satoshis: txo.satoshis,
+            isTesting: addr.network.name === 'testnet',
+            blockId: txo.tx.block.hash,
+            blockHeight: txo.tx.block.height
+          }
+          return UtxoCache.create(cutxo, function (err) {
             if (err) return next(err)
-            if (!ctxo.spent) {
-              cutxos.push(ctxo)
-            }
-            next(null)
+            UtxoCache.one({
+              txId: cutxo.txId,
+              spenderAddr: cutxo.spenderAddr,
+              index: cutxo.index
+            }, function (err, cutxo) {
+              if (err) return next(err)
+              cutxos.push(cutxo)
+              next(null)
+            })
           })
-        })
+        }
+        next(null)
       }, next)
     }, function (err) {
       next(err, cutxos, tip, ntip)
     })
   }, function (cutxos, tip, ntip, next) {
     TipCache.setTip('txo', tip, ntip, function (err) {
-      next(null, cutxos)
+      next(err, cutxos)
     })
   }], next)
 }

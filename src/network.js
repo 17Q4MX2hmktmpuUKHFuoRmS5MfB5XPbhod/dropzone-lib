@@ -158,7 +158,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
 
   pool.on('peerready', function (peer, addr) {
     peer.hash = addr.hash
-    if (!loaderPeer && peer.bestHeight > tip.blockHeight) {
+    if (!loaderPeer && peer.bestHeight >= tip.blockHeight) {
       loaderPeer = peer
       loaderPeer.sendMessage(new FilterLoad(filter))
       loaderPeer.getHeaders = function (hash) {
@@ -185,7 +185,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
           break
         }
         header.hexPrevHash = header.toObject().prevHash
-        if (header.hexPrevHash === tip.blockId) { 
+        if (header.hexPrevHash === tip.blockId) {
           inventories.push(new InventoryForFilteredBlock(tip.blockId))
           tip = {
             blockId: header.hash.toString(),

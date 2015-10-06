@@ -20,7 +20,7 @@ describe('Session', function () {
     tester_private_key = PrivateKey.fromWIF(globals.tester_private_key)
     tester2_private_key = PrivateKey.fromWIF(globals.tester2_private_key)
 
-    var buyer_to_seller = new Session(tester_private_key, 
+    var buyer_to_seller = new Session(tester_private_key,
       fixtures.buyer_session_secret, { receiverAddr: globals.tester2_public_key })
 
     buyer_to_seller.authenticate()
@@ -34,7 +34,7 @@ describe('Session', function () {
 
     //  seller_to_buyer.authenticate()
     var seller_to_buyer
-    Session.one(tester2_private_key, network, seller_to_buyer_tx_id, 
+    Session.one(tester2_private_key, network, seller_to_buyer_tx_id,
       function (err, session) { seller_to_buyer = session })
 
     seller_to_buyer.authenticate()
@@ -45,13 +45,12 @@ describe('Session', function () {
     message.encrypt(symmKey)
     session.sendMessage(message)
 
-
     var message = new ChatMessage({ contents: 'Hello Seller' })
     var symmKey = buyer_to_seller.genSymmKey()
     message.encrypt(symmKey)
     session.sendMessage(message)
 
-    assert.deepEqual(seller_to_buyer.messages, ["Hello Seller", "Hello Buyer"])
-    assert.deepEqual(buyer_to_seller.messages, ["Hello Seller", "Hello Buyer"])
+    assert.deepEqual(seller_to_buyer.messages, ['Hello Seller', 'Hello Buyer'])
+    assert.deepEqual(buyer_to_seller.messages, ['Hello Seller', 'Hello Buyer'])
   })
 })

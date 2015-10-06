@@ -253,9 +253,8 @@ ChatMessage.prototype.send = function (privKey, next) {
     var tx = new Transaction()
     var allocated = 0
     var txis = []
+    var txos = []
     var utxo
-
-    utxos.reverse()
 
     for (var i = 0, l = utxos.length; i < l; i++) {
       utxo = utxos[i]
@@ -267,7 +266,7 @@ ChatMessage.prototype.send = function (privKey, next) {
         satoshis: utxo.satoshis,
         script: utxo.script
       })
-      utxo.spent = true
+      txos.push(utxo)
       if (allocated >= total) {
         break
       }
@@ -302,8 +301,8 @@ ChatMessage.prototype.send = function (privKey, next) {
 
     Blockchain.pushTx(tx, addr.network, function (err, tx) {
       if (err) return next(err)
-      async.each(utxos, function (utxo, next) {
-        utxo.save(next)
+      async.each(txos, function (utxo, next) {
+        utxo.remove(next)
       }, function (err) {
         next(err, tx)
       })

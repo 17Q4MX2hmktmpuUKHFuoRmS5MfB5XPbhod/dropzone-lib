@@ -97,7 +97,7 @@ Tx.upsert = function (query, up, next) {
   }.bind(this))
 }
 
-cache.define('Txo', {
+cache.define('Utxo', {
   id: {
     type: 'serial',
     key: true
@@ -113,7 +113,6 @@ cache.define('Txo', {
   index: Number,
   script: Buffer,
   satoshis: Number,
-  spent: Boolean,
   isTesting: {
     type: 'boolean',
     mapsTo: 'is_testing'
@@ -127,7 +126,7 @@ cache.define('Txo', {
     mapsTo: 'block_height'
   }
 }, {
-  collection: 'txos'
+  collection: 'utxos'
 })
 
 module.exports = cache
