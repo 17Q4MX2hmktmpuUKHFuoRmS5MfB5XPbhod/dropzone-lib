@@ -94,7 +94,7 @@ Blockchain.getUtxosByAddr = function (addr, next) {
     })
   }, function (cutxos, tip, ntip, next) {
     TipCache.setTip('txo', tip, ntip, function (err) {
-      next(err, cutxos)
+      next(null, cutxos)
     })
   }], next)
 }
