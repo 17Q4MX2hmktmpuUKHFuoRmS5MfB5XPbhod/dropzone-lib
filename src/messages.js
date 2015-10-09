@@ -250,7 +250,7 @@ ChatMessage.prototype.send = function (privKey, next) {
     if (err) return next(err)
     var bytes = tx_encoder.BYTES_IN_MULTISIG
     var outn = 2 + Math.ceil((payload.length + 3) / bytes)
-    var fee = 40000
+    var fee = 20000
     var total = (outn * TXO_DUST) + fee
     var tx = new Transaction()
     var allocated = 0
