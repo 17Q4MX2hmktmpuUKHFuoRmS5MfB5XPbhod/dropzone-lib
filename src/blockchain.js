@@ -1,8 +1,10 @@
 var async = require('async')
+var bitcore = require('bitcore')
 var network = require('./network')
 var filter = require('./filter')
 var cache = require('./cache')
 
+var PublicKey = bitcore.PublicKey
 var Network = network.Network
 var BloomFilter = filter.BloomFilter
 var UtxoCache = cache.models.Utxo
@@ -16,7 +18,7 @@ Blockchain.pushTx = function (tx, network, next) {
 }
 
 Blockchain.getTxsByAddr = function (addr, tip, next) {
-  var filter = BloomFilter.create(1, 0.2, 0, BloomFilter.BLOOM_UPDATE_ALL)
+  var filter = BloomFilter.create(1, 0.0001, 0, BloomFilter.BLOOM_UPDATE_ALL)
   filter.insertAddress(addr)
   var network = new Network({ network: addr.network })
   network.getFilteredTxs(filter, tip, function (err, txs, ntip) {
@@ -27,8 +29,9 @@ Blockchain.getTxsByAddr = function (addr, tip, next) {
 }
 
 Blockchain.getUtxosByAddr = function (addr, next) {
+  var spenderAddr = addr.toString()
   var query = {
-    spenderAddr: addr.toString()
+    spenderAddr: spenderAddr
   }
   async.waterfall([ function (next) {
     UtxoCache.find(query, 'blockHeight', next)
@@ -59,7 +62,6 @@ Blockchain.getUtxosByAddr = function (addr, next) {
     async.each(txos, function (txoArr, next) {
       async.each(txoArr, function (txo, next) {
         var txid = txo.tx.hash.toString('hex')
-        var spenderAddr = txo.script.toAddress(addr.network).toString()
         var index = txo.index
         var spent = !(txid in utxos) ||
           !utxos[txid].filter(function (utxo) {
@@ -107,6 +109,8 @@ Blockchain.txosFromTxs = function (addr, txids) {
   var txoArr
   var tx
   var scptAddr
+  var opCount
+  var pubKeys
   for (var txid in txids) {
     tx = txids[txid]
     txoArr = tx.outputs.map(function (txo, n) {
@@ -114,8 +118,20 @@ Blockchain.txosFromTxs = function (addr, txids) {
       txo.tx = tx
       return txo
     }).filter(function (txo) {
-      scptAddr = txo.script.toAddress(addr.network)
-      return scptAddr.toString() === addrStr
+      var script = txo.script
+      scptAddr = script.toAddress(addr.network)
+      if (scptAddr) {
+        return scptAddr.toString() === addrStr
+      }
+      if (script.isMultisigOut() && script.chunks[0].opcodenum === 81) {
+        opCount = script.getSignatureOperationsCount()
+        pubKeys = script.chunks.slice(1, 1 + opCount)
+        return pubKeys.map(function (pubKey) {
+          return PublicKey.fromBuffer(pubKey.buf).toAddress(addr.network)
+        }).filter(function (pubKeyAddr) {
+          return pubKeyAddr.toString() === addrStr
+        }).length
+      }
     })
     if (txoArr.length) {
       txos[txid] = txoArr

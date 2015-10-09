@@ -21,7 +21,7 @@ function Network (options) {
   }
 
   if (!options.maxSize) {
-    options.maxSize = 32
+    options.maxSize = 16
   }
 
   this.network = options.network
@@ -57,7 +57,7 @@ Network.prototype.pushTx = function (tx, next) {
     }
   })
 
-  pool.on('peerdisconnect', function (peer, err) {
+  pool.on('peererror', function (peer, err) {
     readyPeers--
   })
 

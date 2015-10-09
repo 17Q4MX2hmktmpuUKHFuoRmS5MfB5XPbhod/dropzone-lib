@@ -1,0 +1,72 @@
+diff --git a/lib/crypto/point.js b/lib/crypto/point.js
+index b4155c3..60d072e 100644
+--- a/lib/crypto/point.js
++++ b/lib/crypto/point.js
+@@ -115,7 +115,7 @@ Point.prototype.validate = function validate() {
+   var xValidRange = (this.getX().gt(BN.Minus1) && this.getX().lt(Point.getN()));
+   var yValidRange = (this.getY().gt(BN.Minus1) && this.getY().lt(Point.getN()));
+ 
+-  if ( !xValidRange || !yValidRange ) {
++  if ( !xValidRange || !yValidRange || !this.curve.validate(this)) {
+     throw new Error('Point does not lie on the curve');
+   }
+ 
+diff --git a/lib/transaction/input/index.js b/lib/transaction/input/index.js
+index 1744ea7..7005ed0 100644
+--- a/lib/transaction/input/index.js
++++ b/lib/transaction/input/index.js
+@@ -2,4 +2,5 @@ module.exports = require('./input');
+ 
+ module.exports.PublicKey = require('./publickey');
+ module.exports.PublicKeyHash = require('./publickeyhash');
++module.exports.MultiSig = require('./multisig.js');
+ module.exports.MultiSigScriptHash = require('./multisigscripthash.js');
+diff --git a/lib/transaction/input/multisig.js b/lib/transaction/input/multisig.js
+new file mode 100644
+index 0000000..571e578
+--- /dev/null
++++ b/lib/transaction/input/multisig.js
+@@ -0,0 +1,43 @@
++'use strict';
++
++var _ = require('lodash');
++var inherits = require('inherits');
++var Input = require('./input');
++var MultiSigScriptHashInput = require('./multisigscripthash');
++var $ = require('../../util/preconditions');
++
++var Script = require('../../script');
++var Opcode = require('../../opcode');
++var BufferUtil = require('../../util/buffer');
++
++function MultiSigInput(input, pubkeys, threshold, signatures) {
++  Input.apply(this, arguments)
++  var self = this;
++  pubkeys = pubkeys || input.publicKeys;
++  threshold = threshold || input.threshold;
++  signatures = signatures || input.signatures;
++  this.publicKeys = _.sortBy(pubkeys, function(publicKey) { return publicKey.toString('hex'); });
++  this.publicKeyIndex = {};
++  _.each(this.publicKeys, function(publicKey, index) {
++    self.publicKeyIndex[publicKey.toString()] = index;
++  });
++  this.threshold = threshold;
++  this.redeemScript = this.output.script;
++  this.signatures = signatures ? this._deserializeSignatures(signatures) : new Array(this.publicKeys.length);
++}
++
++inherits(MultiSigInput, MultiSigScriptHashInput)
++
++MultiSigInput.prototype._updateScript = function() {
++  var s = new Script();
++  s.add(Opcode.OP_0);
++  _.each(this._createSignatures(), function(signature) {
++    $.checkArgument(BufferUtil.isBuffer(signature), 'Signatures must be an array of Buffers');
++    // TODO: allow signatures to be an array of Signature objects
++    s.add(signature);
++  });
++  this.setScript(s);
++  return this;
++};
++
++module.exports = MultiSigInput;

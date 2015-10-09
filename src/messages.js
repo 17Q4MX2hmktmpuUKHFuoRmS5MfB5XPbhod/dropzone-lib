@@ -11,6 +11,8 @@ var BufferWriter = bitcore.encoding.BufferWriter
 var Address = bitcore.Address
 var Script = bitcore.Script
 var Transaction = bitcore.Transaction
+var MultiSigInput = bitcore.Transaction.Input.MultiSig
+var PublicKey = bitcore.PublicKey
 var Output = bitcore.Transaction.Output
 var Blockchain = blockchain.Blockchain
 var TxDecoder = tx_decoder.TxDecoder
@@ -248,24 +250,49 @@ ChatMessage.prototype.send = function (privKey, next) {
     if (err) return next(err)
     var bytes = tx_encoder.BYTES_IN_MULTISIG
     var outn = 2 + Math.ceil((payload.length + 3) / bytes)
-    var fee = 20000
+    var fee = 40000
     var total = (outn * TXO_DUST) + fee
     var tx = new Transaction()
     var allocated = 0
-    var txis = []
     var txos = []
+    var opCount
+    var pubKeys
+    var txoScpt
     var utxo
+
+    utxos = utxos.sort(function (a, b) {
+      return a.satoshis - b.satoshis
+    })
 
     for (var i = 0, l = utxos.length; i < l; i++) {
       utxo = utxos[i]
       allocated += utxo.satoshis
-      txis.push({
-        address: addr,
-        txId: utxo.txId,
-        outputIndex: utxo.index,
-        satoshis: utxo.satoshis,
-        script: utxo.script
-      })
+      txoScpt = Script.fromBuffer(utxo.script)
+      if (txoScpt.isMultisigOut()) {
+        opCount = txoScpt.getSignatureOperationsCount()
+        pubKeys = txoScpt.chunks.slice(1, 1 + opCount).map(function (pubKey) {
+          return PublicKey.fromBuffer(pubKey.buf)
+        })
+        tx.addInput(new MultiSigInput({
+          output: new Output({
+            script: utxo.script,
+            satoshis: utxo.satoshis
+          }),
+          prevTxId: utxo.txId,
+          outputIndex: utxo.index,
+          script: Script.empty(),
+          publicKeys: pubKeys,
+          threshold: 1
+        }))
+      } else {
+        tx.from({
+          address: addr,
+          txId: utxo.txId,
+          outputIndex: utxo.index,
+          satoshis: utxo.satoshis,
+          script: utxo.script
+        })
+      }
       txos.push(utxo)
       if (allocated >= total) {
         break
@@ -275,16 +302,14 @@ ChatMessage.prototype.send = function (privKey, next) {
       return next(new InsufficientBalanceError())
     }
 
-    tx.from(txis)
-
     var txoScpts = new TxEncoder(tx.inputs[0].prevTxId, payload, {
       receiverAddr: this.receiverAddr,
       senderPubKey: pubKey,
       prefix: MSGS_PREFIX
     }).toOpMultisig()
 
-    var txoScpt
     var satoshis
+
     for (i = 0, l = txoScpts.length; i < l; i++) {
       txoScpt = Script.fromASM(txoScpts[i])
       satoshis = i === l - 1
