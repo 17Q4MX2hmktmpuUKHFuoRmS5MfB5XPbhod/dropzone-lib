@@ -21,7 +21,7 @@ function Network (options) {
   }
 
   if (!options.maxSize) {
-    options.maxSize = 16
+    options.maxSize = 24
   }
 
   this.network = options.network
@@ -50,10 +50,8 @@ Network.prototype.pushTx = function (tx, next) {
     if (readyPeers >= MIN_RELAY_PEERS) {
       pool.sendMessage(new Transaction(tx))
       readyPeers = 0
-      setTimeout(function () {
-        pool.disconnect()
-        next(null, tx)
-      }, 1000)
+      pool.disconnect()
+      next(null, tx)
     }
   })
 
@@ -221,31 +219,35 @@ Network.prototype.getFilteredTxs = function (filter, next) {
     if (cached.tx.hashes.indexOf(tx.hash) > -1) {
       return
     }
-    for (var input, i = 0, il = tx.inputs.length; i < il; i++) {
-      input = tx.inputs[i]
-      if (!input.script) {
-        break
+
+    for (var output, o = 0, ol = tx.outputs.length; o < ol; o++) {
+      output = tx.outputs[o]
+      if (!output.script) {
+        continue
       }
-      script = input.script
-      if (!script.isPublicKeyHashIn() && !script.isPublicKeyIn()) {
-        break
+      script = output.script
+      if (!script.isPublicKeyHashOut() && !script.isPublicKeyOut() && !script.isMultisigOut()) {
+        continue
       }
-      address = input.script.toAddress(network).toString()
-      if (filter.isRelevantAddress(address)) {
+      address = output.script.toAddress(network).toString()
+      if (filter.isRelevantAddress(address) || filter.isRelevantMultisigOut(script, network)) {
         pushTx(tx)
         break
       }
     }
-    for (var output, o = 0, ol = tx.outputs.length; o < ol; o++) {
-      output = tx.outputs[o]
-      if (!output.script) {
-        break
+    for (var input, i = 0, il = tx.inputs.length; i < il; i++) {
+      input = tx.inputs[i]
+      if (!input.script) {
+        continue
       }
-      script = output.script
-      if (!script.isPublicKeyHashOut() && !script.isPublicKeyOut()) {
-        break
+      script = input.script
+      if (!script.isPublicKeyHashIn() && !script.isPublicKeyIn()) {
+        continue
       }
-      address = output.script.toAddress(network).toString()
+      if (script.isMultisigIn()) {
+        debugger
+      }
+      address = input.script.toAddress(network).toString()
       if (filter.isRelevantAddress(address)) {
         pushTx(tx)
         break

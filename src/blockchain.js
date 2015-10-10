@@ -18,13 +18,13 @@ Blockchain.pushTx = function (tx, network, next) {
 }
 
 Blockchain.getTxsByAddr = function (addr, tip, next) {
-  var filter = BloomFilter.create(1, 0.0001, 0, BloomFilter.BLOOM_UPDATE_ALL)
+  var filter = BloomFilter.create(1, 0.2, 0, BloomFilter.BLOOM_UPDATE_ALL)
   filter.insertAddress(addr)
   var network = new Network({ network: addr.network })
   network.getFilteredTxs(filter, tip, function (err, txs, ntip) {
     if (err) return next(err)
     ntip.relevantAddr = addr.toString()
-    next(null, txs, ntip)
+    next(null, txs, ntip, filter)
   })
 }
 
@@ -43,17 +43,17 @@ Blockchain.getUtxosByAddr = function (addr, next) {
       next(err, ctxos, tip)
     })
   }, function (ctxos, tip, next) {
-    Blockchain.getTxsByAddr(addr, tip, function (err, txs, ntip) {
-      next(err, ctxos, tip, txs, ntip)
+    Blockchain.getTxsByAddr(addr, tip, function (err, txs, ntip, filter) {
+      next(err, ctxos, tip, txs, ntip, filter)
     })
-  }, function (ctxos, tip, txs, ntip, next) {
+  }, function (ctxos, tip, txs, ntip, filter, next) {
     var txids = {}
     for (var tx, t = 0, tl = txs.length; t < tl; t++) {
       tx = txs[t]
       txids[tx.hash.toString('hex')] = tx
     }
-    var txos = Blockchain.txosFromTxs(addr, txids)
-    var utxos = Blockchain.utxosFromTxos(addr, txids, txos)
+    var txos = Blockchain.txosFromTxs(addr, txids, filter)
+    var utxos = Blockchain.utxosFromTxos(addr, txids, txos, filter)
     var cutxos = ctxos.filter(function (txo) {
       return !txo.spent
     })
@@ -103,7 +103,7 @@ Blockchain.getUtxosByAddr = function (addr, next) {
   }], next)
 }
 
-Blockchain.txosFromTxs = function (addr, txids) {
+Blockchain.txosFromTxs = function (addr, txids, filter) {
   var addrStr = addr.toString()
   var txos = {}
   var txoArr
@@ -118,20 +118,8 @@ Blockchain.txosFromTxs = function (addr, txids) {
       txo.tx = tx
       return txo
     }).filter(function (txo) {
-      var script = txo.script
-      scptAddr = script.toAddress(addr.network)
-      if (scptAddr) {
-        return scptAddr.toString() === addrStr
-      }
-      if (script.isMultisigOut() && script.chunks[0].opcodenum === 81) {
-        opCount = script.getSignatureOperationsCount()
-        pubKeys = script.chunks.slice(1, 1 + opCount)
-        return pubKeys.map(function (pubKey) {
-          return PublicKey.fromBuffer(pubKey.buf).toAddress(addr.network)
-        }).filter(function (pubKeyAddr) {
-          return pubKeyAddr.toString() === addrStr
-        }).length
-      }
+      return addrStr === txo.script.toAddress(addr.network).toString() ||
+        filter.isRelevantMultisigOut(txo.script, addr.network)
     })
     if (txoArr.length) {
       txos[txid] = txoArr
@@ -140,21 +128,20 @@ Blockchain.txosFromTxs = function (addr, txids) {
   return txos
 }
 
-Blockchain.utxosFromTxos = function (addr, txids, txos) {
+Blockchain.utxosFromTxos = function (addr, txids, txos, filter) {
   var addrStr = addr.toString()
   var txis = {}
+  var txi
   var tx
   var txid
   var ptxid
+  var script
   var scptAddr
+  var isRelevantIn
   for (txid in txids) {
-    tx = txids[txid]
-    for (var txi, i = 0, il = tx.inputs.length; i < il; i++) {
+    tx = txids[txid] 
+    for (var i = 0, il = tx.inputs.length; i < il; i++) {
       txi = tx.inputs[i]
-      scptAddr = txi.script.toAddress(addr.network)
-      if (scptAddr.toString() !== addrStr) {
-        continue
-      }
       ptxid = txi.prevTxId.toString('hex')
       txis[ptxid] = txis[ptxid] || []
       txis[ptxid].push(txi)
