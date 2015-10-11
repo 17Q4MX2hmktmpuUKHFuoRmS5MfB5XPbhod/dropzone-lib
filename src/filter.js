@@ -14,22 +14,6 @@ BloomFilter.prototype.isRelevantAddress = function (address) {
   return this._addresses.indexOf(address) > -1
 }
 
-BloomFilter.prototype.isRelevantMultisigOut = function (script, network) {
-  if (script.isMultisigOut() && script.chunks[0].opcodenum === 81) {
-    var opCount = script.getSignatureOperationsCount()
-    var pubKeys = script.chunks.slice(1, 1 + opCount)
-    return !!pubKeys.map(function (pubKey) {
-      try {
-        return PublicKey.fromBuffer(pubKey.buf).toAddress(network).toString()
-      } catch (err) {
-        return '' 
-      }
-    }).filter(function (pubKeyAddrStr) {
-      return this._addresses.indexOf(pubKeyAddrStr) > -1
-    }.bind(this)).length
-  }
-}
-
 module.exports = {
   BloomFilter: BloomFilter
 }
