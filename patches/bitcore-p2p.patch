@@ -1,0 +1,13 @@
+diff --git a/lib/messages/commands/addr.js b/lib/messages/commands/addr.js
+index 609a7a9..2b29eeb 100644
+--- a/lib/messages/commands/addr.js
++++ b/lib/messages/commands/addr.js
+@@ -45,7 +45,7 @@ AddrMessage.prototype.setPayload = function(payload) {
+     this.addresses.push(addr);
+   }
+ 
+-  utils.checkFinished(parser);
++//  utils.checkFinished(parser);
+ };
+ 
+ AddrMessage.prototype.getPayload = function() {
