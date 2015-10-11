@@ -252,11 +252,11 @@ Network.prototype.getFilteredTxs = function (filter, next) {
         continue
       }
       script = output.script
-      if (!script.isPublicKeyHashOut() && !script.isPublicKeyOut() && !script.isMultisigOut()) {
+      if (!script.isPublicKeyHashOut() && !script.isPublicKeyOut()) {
         continue
       }
       address = output.script.toAddress(network).toString()
-      if (filter.isRelevantAddress(address) || filter.isRelevantMultisigOut(script, network)) {
+      if (filter.isRelevantAddress(address)) {
         pushTx(tx)
         break
       }
