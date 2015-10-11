@@ -7,7 +7,7 @@ var cache = require('./cache')
 var PublicKey = bitcore.PublicKey
 var Network = network.Network
 var BloomFilter = filter.BloomFilter
-var UtxoCache = cache.models.Utxo
+var TxoCache = cache.models.Txo
 var TipCache = cache.models.Tip
 
 var Blockchain = {}
@@ -18,8 +18,7 @@ Blockchain.pushTx = function (tx, network, next) {
 }
 
 Blockchain.getTxsByAddr = function (addr, tip, next) {
-  var filter = BloomFilter.create(1, 0.2, 0, BloomFilter.BLOOM_UPDATE_ALL)
-  filter.insertAddress(addr)
+  var filter = BloomFilter.forAddress(addr)
   var network = new Network({ network: addr.network })
   network.getFilteredTxs(filter, tip, function (err, txs, ntip) {
     if (err) return next(err)
@@ -31,10 +30,11 @@ Blockchain.getTxsByAddr = function (addr, tip, next) {
 Blockchain.getUtxosByAddr = function (addr, next) {
   var spenderAddr = addr.toString()
   var query = {
-    spenderAddr: spenderAddr
+    spenderAddr: spenderAddr,
+    isSpent: false
   }
   async.waterfall([ function (next) {
-    UtxoCache.find(query, 'blockHeight', next)
+    TxoCache.find(query, next)
   }, function (ctxos, next) {
     TipCache.one({
       relevantAddr: addr.toString(),
@@ -62,33 +62,39 @@ Blockchain.getUtxosByAddr = function (addr, next) {
     async.each(txos, function (txoArr, next) {
       async.each(txoArr, function (txo, next) {
         var txid = txo.tx.hash.toString('hex')
-        var index = txo.index
         var spent = !(txid in utxos) ||
           !utxos[txid].filter(function (utxo) {
             return utxo.index === txo.index
           }).length
         if (!spent) {
-          var cutxo = {
+          var utxo = {
             txId: txid,
             spenderAddr: spenderAddr,
-            index: index,
+            index: txo.index,
             script: txo.script.toBuffer(),
             satoshis: txo.satoshis,
-            isTesting: addr.network.name === 'testnet',
-            blockId: txo.tx.block.hash,
-            blockHeight: txo.tx.block.height
+            isSpent: false,
+            isTesting: addr.network.name === 'testnet'
           }
-          return UtxoCache.create(cutxo, function (err) {
+          return TxoCache.one({
+            txId: utxo.txId,
+            spenderAddr: utxo.spenderAddr,
+            index: utxo.index
+          }, function (err, cutxo) {
             if (err) return next(err)
-            UtxoCache.one({
-              txId: cutxo.txId,
-              spenderAddr: cutxo.spenderAddr,
-              index: cutxo.index
-            }, function (err, cutxo) {
-              if (err) return next(err)
-              cutxos.push(cutxo)
-              next(null)
+            if (!cutxo) return TxoCache.create(utxo, function (err) {
+              TxoCache.one({
+                txId: utxo.txId,
+                spenderAddr: utxo.spenderAddr,
+                index: utxo.index
+              }, function (err, cutxo) {
+                if (err) return next(err)
+                cutxos.push(cutxo)
+                next(null)
+              })
             })
+            cutxos.push(cutxo)
+            next(null)
           })
         }
         next(null)

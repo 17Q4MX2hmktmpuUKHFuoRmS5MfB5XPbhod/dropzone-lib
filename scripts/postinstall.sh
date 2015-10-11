@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 patch -s -p1 -d node_modules/bitcore < patches/bitcore.patch
+patch -s -p1 -d node_modules/bitcore-p2p < patches/bitcore-p2p.patch
+
 patch -s node_modules/commander/index.js < patches/commander.patch
 patch -s node_modules/bitcore-p2p/node_modules/buffers/index.js < patches/buffers.patch
 patch -s node_modules/throbber/index.js < patches/throbber.patch

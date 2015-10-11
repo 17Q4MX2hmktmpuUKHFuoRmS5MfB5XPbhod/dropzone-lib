@@ -5,6 +5,7 @@ var blockchain = require('./blockchain')
 var tx_decoder = require('./tx_decoder')
 var tx_encoder = require('./tx_encoder')
 var cache = require('./cache')
+var network = require('./network')
 
 var BufferReader = bitcore.encoding.BufferReader
 var BufferWriter = bitcore.encoding.BufferWriter
@@ -18,9 +19,11 @@ var TxDecoder = tx_decoder.TxDecoder
 var TxEncoder = tx_encoder.TxEncoder
 var TxCache = cache.models.Tx
 var TipCache = cache.models.Tip
+var TxoCache = cache.models.Txo
 
 var InvalidStateError = bitcore.errors.InvalidState
 var BadEncodingError = tx_decoder.BadEncodingError
+var PushTxTimeoutError = network.PushTxTimeoutError
 
 var MSGS_PREFIX = 'DZ'
 var CHATMSG_PREFIX = 'COMMUN'
@@ -305,12 +308,31 @@ ChatMessage.prototype.send = function (privKey, next) {
     tx.sign(privKey)
 
     Blockchain.pushTx(tx, addr.network, function (err, tx) {
+      if (err instanceof PushTxTimeoutError) {
+        console.log("tx dump:", tx.toString())
+        return next(err)
+      }
       if (err) return next(err)
       async.each(txos, function (utxo, next) {
-        utxo.remove(next)
+        utxo.isSpent = true
+        utxo.save(next)
       }, function (err) {
-        next(err, tx)
+        if (err) return next(err)
+        async.eachOf(tx.outputs.slice(1), function (txo, index, next) {
+          TxoCache.create({
+            txId: tx.id,
+            spenderAddr: addr.toString(),
+            index: index + 1,
+            script: txo.script.toBuffer(),
+            satoshis: txo.satoshis,
+            isTesting: addr.network.name === 'testnet',
+            isSpent: false
+          }, next)
+        }, function (err) {
+          next(err, tx)
+        })
       })
+      
     })
   }.bind(this))
 }

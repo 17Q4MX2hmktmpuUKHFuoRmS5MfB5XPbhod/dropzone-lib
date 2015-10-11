@@ -3,11 +3,23 @@ var p2p = require('bitcore-p2p')
 
 var Throbber = require('throbber')
 
+var BufferUtil = bitcore.util.buffer
+
 var Pool = p2p.Pool
 var Messages = p2p.Messages
 var Inventory = p2p.Inventory
 
 var HASH_BUFFER = 2000
+
+function NetworkError (message) {
+  this.name = this.constructor.name
+  this.message = 'Network error: ' + message
+  Error.captureStackTrace(this, this.constructor)
+}
+
+function PushTxTimeoutError () {
+  NetworkError.call(this, 'transaction propagation timeout')
+}
 
 function Network (options) {
   if (!(this instanceof Network)) {
@@ -21,7 +33,7 @@ function Network (options) {
   }
 
   if (!options.maxSize) {
-    options.maxSize = 24
+    options.maxSize = 32
   }
 
   this.network = options.network
@@ -39,30 +51,44 @@ Network.prototype.pushTx = function (tx, next) {
   var messages = this.messages
   var pool = this.pool
 
-  var MIN_RELAY_PEERS = Math.ceil(pool.maxSize / 2)
+  var PUSH_TIMEOUT = 30000
 
   var Transaction = messages.Transaction
 
-  var readyPeers = 0
+  var done = function (err) {
+    clearTimeout(timeout)
+    next(err, tx)
+    pool.disconnect() 
+  }
+
+  var role = 1
+  var timeout = -1
 
   pool.on('peerready', function (peer, addr) {
-    readyPeers++
-    if (readyPeers >= MIN_RELAY_PEERS) {
-      pool.sendMessage(new Transaction(tx))
-      readyPeers = 0
-      pool.disconnect()
-      next(null, tx)
+    if (role = (role + 1) % 2) {
+      peer.sendMessage(new Transaction(tx))
+    }
+    if (timeout === -1) {
+      timeout = setTimeout(function () {
+        done(new PushTxTimeoutError())
+      }, PUSH_TIMEOUT) 
     }
   })
 
-  pool.on('peererror', function (peer, err) {
-    readyPeers--
+  pool.on('peerinv', function (peer, message) {
+    var txid
+    var item
+
+    for (var i = message.inventory.length; i--;) {
+      item = message.inventory[i]
+      txid = BufferUtil.reverse(item.hash).toString('hex') 
+      if (item.type === 1 && txid === tx.id.toString()) {
+        done()
+      }
+    }
   })
 
-  pool.on('error', function (err) {
-    next(err)
-    pool.disconnect()
-  })
+  pool.on('error', done)
 
   pool.connect()
 }
@@ -270,5 +296,6 @@ Network.prototype.getFilteredTxs = function (filter, next) {
 module.exports = {
   Network: Network,
   main: bitcore.Networks.livenet,
-  test: bitcore.Networks.testnet
+  test: bitcore.Networks.testnet,
+  PushTxTimeoutError: PushTxTimeoutError
 }
