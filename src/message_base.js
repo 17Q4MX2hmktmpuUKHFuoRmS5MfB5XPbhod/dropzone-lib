@@ -3,10 +3,10 @@ var bitcore = require('bitcore')
 
 var Varint = bitcore.encoding.Varint
 
-DEFAULT_TIP = 20000
+var DEFAULT_TIP = 20000
 
 function toVarString(string) {
-  s = String(string)
+  var s = String(string)
   return new Buffer.concat([new Varint(s.length).buf, new Buffer(s)])
 }
 
@@ -27,7 +27,7 @@ MessageBase.prototype.toTransaction = function () {
 }
 
 MessageBase.prototype.dataToHex = function () {
-  payload = _.compact(_.map(this.dataToHash(), function(value, key) {
+  var payload = _.compact(_.map(this.dataToHash(), function(value, key) {
     if (_.isUndefined(value) || _.isNull(value) ) {
       return null
     }

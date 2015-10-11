@@ -16,7 +16,7 @@ var fake_connection = new FakeBitcoinConnection()
 
 chai.use(chaiJsFactories)
 chai.factory.define('buyer', function (args) {
-  basic = {
+  var basic = {
     description: "abc", alias: "Satoshi", 
     receiver_addr: globals.tester_public_key
   }
