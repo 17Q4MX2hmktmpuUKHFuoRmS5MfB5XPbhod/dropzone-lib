@@ -124,7 +124,8 @@ Blockchain.txosFromTxs = function (addr, txids, filter) {
       txo.tx = tx
       return txo
     }).filter(function (txo) {
-      return addrStr === txo.script.toAddress(addr.network).toString() 
+      return addrStr === txo.script.toAddress(addr.network).toString() ||
+        filter.isRelevantMultisigOut(txo.script, addr.network)
     })
     if (txoArr.length) {
       txos[txid] = txoArr
@@ -147,9 +148,6 @@ Blockchain.utxosFromTxos = function (addr, txids, txos, filter) {
     tx = txids[txid] 
     for (var i = 0, il = tx.inputs.length; i < il; i++) {
       txi = tx.inputs[i]
-      if (addrStr !== txi.script.toAddress(addr.network).toString()) {
-        continue
-      }
       ptxid = txi.prevTxId.toString('hex')
       txis[ptxid] = txis[ptxid] || []
       txis[ptxid].push(txi)
