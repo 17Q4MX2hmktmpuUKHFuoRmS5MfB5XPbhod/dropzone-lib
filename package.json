@@ -53,7 +53,7 @@
     "orm": "^2.1.27",
     "sqlite3": "^3.0.10",
     "throbber": "^1.0.1",
-    "underscore": "1.8.3",
+    "lodash": "=3.10.1",
     "wordwrap": "^1.0.0"
   },
   "browser": {
