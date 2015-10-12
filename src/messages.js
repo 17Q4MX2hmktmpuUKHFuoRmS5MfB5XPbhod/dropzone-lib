@@ -12,6 +12,7 @@ var BufferWriter = bitcore.encoding.BufferWriter
 var Address = bitcore.Address
 var Script = bitcore.Script
 var Transaction = bitcore.Transaction
+var MultiSigInput = bitcore.Transaction.Input.MultiSig
 var PublicKey = bitcore.PublicKey
 var Output = bitcore.Transaction.Output
 var Blockchain = blockchain.Blockchain
@@ -269,13 +270,32 @@ ChatMessage.prototype.send = function (privKey, next) {
     for (var i = 0, l = utxos.length; i < l; i++) {
       utxo = utxos[i]
       allocated += utxo.satoshis
-      tx.from({
-        address: addr,
-        txId: utxo.txId,
-        outputIndex: utxo.index,
-        satoshis: utxo.satoshis,
-        script: utxo.script
-      })
+      txoScpt = Script.fromBuffer(utxo.script)
+      if (txoScpt.isMultisigOut()) {
+        opCount = txoScpt.getSignatureOperationsCount()
+        pubKeys = txoScpt.chunks.slice(1, 1 + opCount).map(function (pubKey) {
+          return PublicKey.fromBuffer(pubKey.buf)
+        })
+        tx.addInput(new MultiSigInput({
+          output: new Output({
+            script: utxo.script,
+            satoshis: utxo.satoshis
+          }),
+          prevTxId: utxo.txId,
+          outputIndex: utxo.index,
+          script: Script.empty(),
+          publicKeys: pubKeys,
+          threshold: 1
+        }))
+      } else {
+        tx.from({
+          address: addr,
+          txId: utxo.txId,
+          outputIndex: utxo.index,
+          satoshis: utxo.satoshis,
+          script: utxo.script
+        })
+      }
       txos.push(utxo)
       if (allocated >= total) {
         break
