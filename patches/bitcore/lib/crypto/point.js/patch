@@ -1,0 +1,13 @@
+diff --git a/lib/crypto/point.js b/lib/crypto/point.js
+index b4155c3..60d072e 100644
+--- a/lib/crypto/point.js
++++ b/lib/crypto/point.js
+@@ -115,7 +115,7 @@ Point.prototype.validate = function validate() {
+   var xValidRange = (this.getX().gt(BN.Minus1) && this.getX().lt(Point.getN()));
+   var yValidRange = (this.getY().gt(BN.Minus1) && this.getY().lt(Point.getN()));
+ 
+-  if ( !xValidRange || !yValidRange ) {
++  if ( !xValidRange || !yValidRange || !this.curve.validate(this)) {
+     throw new Error('Point does not lie on the curve');
+   }
+ 

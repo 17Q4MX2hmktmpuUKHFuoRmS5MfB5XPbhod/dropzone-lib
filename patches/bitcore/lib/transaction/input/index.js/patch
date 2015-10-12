@@ -1,0 +1,10 @@
+diff --git a/lib/transaction/input/index.js b/lib/transaction/input/index.js
+index 1744ea7..7005ed0 100644
+--- a/lib/transaction/input/index.js
++++ b/lib/transaction/input/index.js
+@@ -2,4 +2,5 @@ module.exports = require('./input');
+ 
+ module.exports.PublicKey = require('./publickey');
+ module.exports.PublicKeyHash = require('./publickeyhash');
++module.exports.MultiSig = require('./multisig.js');
+ module.exports.MultiSigScriptHash = require('./multisigscripthash.js');
