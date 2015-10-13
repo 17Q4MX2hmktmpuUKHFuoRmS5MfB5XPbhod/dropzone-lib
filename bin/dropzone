@@ -13,6 +13,8 @@ program
     'Force transactions that would normally be on mainnet, onto testnet')
   .option('-f, --fee <satoshis>',
     'Set the transaction fee amount (default: 2000)', 2000)
+  .option('-d, --driver <name>',
+    'Connect to the blockchain using any of these drivers [spv]', 'spv')
   .command('balance', 'Display the balance on the provided address')
   .command('pay', 'Send value to a recipient')
   .command('chat <command>',

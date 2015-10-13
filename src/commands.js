@@ -1,12 +1,13 @@
 var bitcore = require('bitcore')
 var wordwrap = require('wordwrap')
 var colors = require('colors')
-var network = require('./network')
 var session = require('./session')
 var messages = require('./messages')
+var drivers = require('./drivers')
 
 var Table = require('cli-table')
 
+var Networks = bitcore.Networks
 var PrivateKey = bitcore.PrivateKey
 var Address = bitcore.Address
 var Session = session.Session
@@ -91,9 +92,12 @@ display.sessionMessages = function (session, symmKey, addr) {
 var chat = {}
 
 chat.list = function (wifPrivKey, program) {
+  messages.use(drivers.load(program.driver))
+
   var privKey = PrivateKey.fromWIF(wifPrivKey)
-  var addr = privKey.toAddress(network.test)
-  Session.all(privKey, network.test, function (err, sessions) {
+  var addr = privKey.toAddress(Networks.testnet)
+
+  Session.all(privKey, Networks.testnet, function (err, sessions) {
     try {
       if (err) return fail(err)
       sessions.filter(function (a, x, c) {
@@ -110,10 +114,13 @@ chat.list = function (wifPrivKey, program) {
 }
 
 chat.show = function (wifPrivKey, hexSessionTxId, program) {
+  messages.use(drivers.load(program.driver))
+
   var privKey = PrivateKey.fromWIF(wifPrivKey)
-  var addr = privKey.toAddress(network.test)
+  var addr = privKey.toAddress(Networks.testnet)
   var txId = hexSessionTxId
-  Session.one(privKey, network.test, txId, function (err, session) {
+
+  Session.one(privKey, Networks.testnet, txId, function (err, session) {
     try {
       if (err) return fail(err)
       var symmKey = session.genSymmKey()
@@ -126,10 +133,13 @@ chat.show = function (wifPrivKey, hexSessionTxId, program) {
 }
 
 chat.accept = function (wifPrivKey, hexSessionTxId, program) {
+  messages.use(drivers.load(program.driver))
+
   var privKey = PrivateKey.fromWIF(wifPrivKey)
-  var addr = privKey.toAddress(network.test)
+  var addr = privKey.toAddress(Networks.testnet)
   var txId = hexSessionTxId
-  Session.one(privKey, network.test, txId, function (err, session) {
+
+  Session.one(privKey, Networks.testnet, txId, function (err, session) {
     try {
       if (err) return fail(err)
       if (session.isAuthenticated()) {
@@ -149,10 +159,13 @@ chat.accept = function (wifPrivKey, hexSessionTxId, program) {
 }
 
 chat.say = function (wifPrivKey, hexSessionTxId, messageStr, program) {
+  messages.use(drivers.load(program.driver))
+
   var privKey = PrivateKey.fromWIF(wifPrivKey)
-  var addr = privKey.toAddress(network.test)
+  var addr = privKey.toAddress(Networks.testnet)
   var txId = hexSessionTxId
-  Session.one(privKey, network.test, txId, function (err, session) {
+
+  Session.one(privKey, Networks.testnet, txId, function (err, session) {
     try {
       if (err) return fail(err)
       if (!session.isAuthenticated()) {
@@ -174,9 +187,12 @@ chat.say = function (wifPrivKey, hexSessionTxId, messageStr, program) {
 }
 
 chat.create = function (wifPrivKey, wifReceiverAddr, program) {
+  messages.use(drivers.load(program.driver))
+
   var privKey = PrivateKey.fromWIF(wifPrivKey)
-  var addr = privKey.toAddress(network.test)
-  var receiverAddr = Address.fromString(wifReceiverAddr, network.test)
+  var addr = privKey.toAddress(Networks.testnet)
+  var receiverAddr = Address.fromString(wifReceiverAddr, Networks.testnet)
+
   Session.secretFor(addr, receiverAddr, function (err, key) {
     try {
       if (err) return fail(err)

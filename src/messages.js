@@ -1,11 +1,9 @@
 var crypto = require('crypto')
 var async = require('async')
 var bitcore = require('bitcore')
-var blockchain = require('./blockchain')
 var tx_decoder = require('./tx_decoder')
 var tx_encoder = require('./tx_encoder')
 var cache = require('./cache')
-var network = require('./network')
 
 var BufferReader = bitcore.encoding.BufferReader
 var BufferWriter = bitcore.encoding.BufferWriter
@@ -15,16 +13,24 @@ var Transaction = bitcore.Transaction
 var MultiSigInput = bitcore.Transaction.Input.MultiSig
 var PublicKey = bitcore.PublicKey
 var Output = bitcore.Transaction.Output
-var Blockchain = blockchain.Blockchain
 var TxDecoder = tx_decoder.TxDecoder
 var TxEncoder = tx_encoder.TxEncoder
 var TxCache = cache.models.Tx
 var TipCache = cache.models.Tip
 var TxoCache = cache.models.Txo
 
+var driver 
+var Blockchain
+var PushTxTimeoutError
+
+var use = function (driver) {
+  driver = driver
+  Blockchain = driver.Blockchain
+  PushTxTimeoutError = driver.PushTxTimeoutError
+}
+
 var InvalidStateError = bitcore.errors.InvalidState
 var BadEncodingError = tx_decoder.BadEncodingError
-var PushTxTimeoutError = network.PushTxTimeoutError
 
 var MSGS_PREFIX = 'DZ'
 var CHATMSG_PREFIX = 'COMMUN'
@@ -358,6 +364,7 @@ ChatMessage.prototype.send = function (privKey, next) {
 }
 
 module.exports = {
+  use: use,
   Messages: Messages,
   Message: Message,
   ChatMessage: ChatMessage,

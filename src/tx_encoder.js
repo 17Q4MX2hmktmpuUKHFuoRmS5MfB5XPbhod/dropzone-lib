@@ -1,8 +1,8 @@
 var util = require('util')
 var crypto = require('crypto')
 var bitcore = require('bitcore')
-var network = require('./network')
 
+var Networks = bitcore.Networks
 var PublicKey = bitcore.PublicKey
 
 var DEFAULT_PREFIX = 'CNTRPRTY'
@@ -58,7 +58,7 @@ function TxEncoder (key, data, options) {
 
   options = options || {}
 
-  this.network = options.network || network.main
+  this.network = options.network || Networks.livenet
 
   if (options.senderPubKey) {
     this.senderPubKey = options.senderPubKey
