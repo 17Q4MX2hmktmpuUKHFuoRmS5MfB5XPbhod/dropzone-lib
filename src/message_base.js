@@ -1,5 +1,6 @@
-var _ = require('underscore')
+var _ = require('lodash')
 var bitcore = require('bitcore')
+var $ = bitcore.util.preconditions
 
 var Varint = bitcore.encoding.Varint
 
@@ -11,14 +12,58 @@ function toVarString(string) {
 }
 
 function MessageBase (connection, options) {
+  $.checkArgument(connection, 
+    'First argument is required, please include a connection.')
+
   _.extend(this, options || {})
 
-  this.messageAttribs = {}
-  this.messageIntegers = []
-  this.messagePkeys = []
-  this.typesInclude = []
+  var messageAttribs = {}
+  var messageIntegers = []
+  var messagePkeys = []
+  var typesInclude = []
 
   this.connection = connection
+
+  this._pushAttrMessage = function(attrs){
+    _.extend(messageAttribs, attrs)
+  }
+
+  this._pushAttrMessagePkey = function(attrs){
+    messagePkeys = messagePkeys.concat(_.keys(attrs))
+    this._pushAttrMessage(attrs)
+  }
+
+  this._pushAttrMessageInt = function(attrs){
+    messageIntegers = messageIntegers.concat(_.keys(attrs))
+    this._pushAttrMessage(attrs)
+  }
+
+  this._setMessageType = function(type){
+      typesInclude.push(type)
+  }
+
+  this.messageType = function(){
+      return typesInclude[0]
+  }
+
+  this.isAttrInt = function(key){
+    $.checkArgument(key, 'First argument is required, please include a key.')
+
+    return _.contains(messageIntegers, key)
+  }
+
+  this.isAttrPkey = function(key){
+    $.checkArgument(key, 'First argument is required, please include a key.')
+
+    return _.contains(messagePkeys, key)
+  }
+
+  this.dataToHash = function () {
+    return _.reduce(messageAttribs, function(memo, full, abbrev) {
+      memo[abbrev] = this[full]
+      return memo
+    }, {}, this)
+  }
 }
 
 MessageBase.prototype.toTransaction = function () {
@@ -38,12 +83,9 @@ MessageBase.prototype.dataToHex = function () {
       encodedValue = new Varint(parseInt(value)).buf
     }
     else if (this.isAttrPkey(key)) {
-      /*
-       * TODO: This should call the attached connection's hash160_from_address
-        Bitcoin::Protocol.pack_var_string(
-          (value == 0) ? 0.chr : 
-            [anynet_for_address(:hash160_from_address, value)].pack('H*'))
-      */
+      // TODO: This is currently untested
+      encodedValue = toVarString(
+        new Buffer(this.connection.hash160ToAddr(String(value)),'hex'))
     } else {
       encodedValue = toVarString(value)
     }
@@ -54,41 +96,19 @@ MessageBase.prototype.dataToHex = function () {
   return Buffer.concat( [new Buffer(this.messageType())].concat( payload ) )
 }
 
-MessageBase.prototype.dataToHash = function () {
-  return _.reduce(this.messageAttribs, function(memo, full, abbrev) {
-    memo[abbrev] = this[full]
-    return memo
-  }, {}, this)
+MessageBase.prototype.save = function (privateKey) {
+  return this.connection.save(this.toTransaction(), privateKey)
 }
 
-MessageBase.prototype.pushAttrMessage = function(attrs){
-  _.extend(this.messageAttribs, attrs)
-}
+MessageBase.find = function (connection, txid) {
+  $.checkArgument(connection, 
+    'First argument is required, please include a connection.')
 
-MessageBase.prototype.pushAttrMessagePkey = function(attrs){
-  this.messagePkeys = this.messagePkeys.concat(_.keys(attrs))
-  this.pushAttrMessage(attrs)
-}
-
-MessageBase.prototype.pushAttrMessageInt = function(attrs){
-  this.messageIntegers = this.messageIntegers.concat(_.keys(attrs))
-  this.pushAttrMessage(attrs)
-}
-
-MessageBase.prototype.setMessageType = function(type){
-  this.typesInclude.push(type)
-}
-
-MessageBase.prototype.messageType = function(){
-  return this.typesInclude[0]
-}
-
-MessageBase.prototype.isAttrInt = function(key){
-  return _.contains(this.messageIntegers, key)
-}
-
-MessageBase.prototype.isAttrPkey = function(key){
-  return _.contains(this.messagePkeys, key)
+  var tx = connection.txById(txid)
+  console.log("Hmm"+util.inspect(txid))
+  console.log("Me"+util.inspect(this))
+  // TODO
+  // return (tx) ? this.new(tx) : nil
 }
 
 module.exports = {

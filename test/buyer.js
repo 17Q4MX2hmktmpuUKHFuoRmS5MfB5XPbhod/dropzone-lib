@@ -3,16 +3,16 @@
 
 var chai = require('chai')
 var chaiJsFactories = require('chai-js-factories')
-var _ = require('underscore')
+var _ = require('lodash')
 
+var fakeConnection = require('../test/src/fake_connection')
 var buyer = require('../src/buyer')
 var globals = require('./fixtures/globals')
 
 var expect = chai.expect
 var Buyer = buyer.Buyer
 
-var FakeBitcoinConnection = function() {}
-var fake_connection = new FakeBitcoinConnection()
+var connection = new fakeConnection.FakeBitcoinConnection()
 
 chai.use(chaiJsFactories)
 chai.factory.define('buyer', function (args) {
@@ -20,12 +20,12 @@ chai.factory.define('buyer', function (args) {
     description: "abc", alias: "Satoshi", 
     receiver_addr: globals.tester_public_key
   }
-  return new Buyer(fake_connection, _.extend(basic, args))
+  return new Buyer(connection, _.extend(basic, args))
 })
 
 describe('Buyer', function () {
   after(function() {
-    // TODO: clear the blockchain on fake_connection
+    connection.clearTransactions()
   })
 
   it('has accessors', function () {
@@ -67,7 +67,7 @@ describe('Buyer', function () {
     })
 
     it("validates minimal buyer", function() {
-      var buyer = new Buyer( fake_connection, 
+      var buyer = new Buyer( connection, 
         {receiver_addr: globals.tester_public_key})
 
       expect(buyer.isValid()).to.be.true
