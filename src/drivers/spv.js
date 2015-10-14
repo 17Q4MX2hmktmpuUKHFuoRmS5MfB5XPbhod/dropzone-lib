@@ -14,6 +14,17 @@ var Messages = p2p.Messages
 var Inventory = p2p.Inventory
 
 var HASH_BUFFER = 2000
+var PUSH_TIMEOUT = 30000
+
+function NetworkError (message) {
+  this.name = this.constructor.name
+  this.message = 'Network error: ' + message
+  Error.captureStackTrace(this, this.constructor)
+}
+
+function PushTxTimeoutError () {
+  NetworkError.call(this, 'transaction propagation timeout')
+}
 
 var BloomFilter = p2p.BloomFilter
 
@@ -35,7 +46,7 @@ BloomFilter.prototype.isRelevantMultisigOut = function (script, network) {
       try {
         return PublicKey.fromBuffer(pubKey.buf).toAddress(network).toString()
       } catch (err) {
-        return '' 
+        return ''
       }
     }).filter(function (pubKeyAddrStr) {
       return this._addresses.indexOf(pubKeyAddrStr) > -1
@@ -47,16 +58,6 @@ BloomFilter.forAddress = function (address) {
   var filter = BloomFilter.create(1, 0.2, 0, BloomFilter.BLOOM_UPDATE_ALL)
   filter.insertAddress(address)
   return filter
-}
-
-function NetworkError (message) {
-  this.name = this.constructor.name
-  this.message = 'Network error: ' + message
-  Error.captureStackTrace(this, this.constructor)
-}
-
-function PushTxTimeoutError () {
-  NetworkError.call(this, 'transaction propagation timeout')
 }
 
 function Network (options) {
@@ -89,27 +90,30 @@ Network.prototype.pushTx = function (tx, next) {
   var messages = this.messages
   var pool = this.pool
 
-  var PUSH_TIMEOUT = 30000
-
   var Transaction = messages.Transaction
+
+  var waiting = new Throbber()
+  waiting.start('Waiting for transaction to propagate...')
 
   var done = function (err) {
     clearTimeout(timeout)
+    waiting.stop()
     next(err, tx)
-    pool.disconnect() 
+    pool.disconnect()
   }
 
   var role = 1
   var timeout = -1
 
   pool.on('peerready', function (peer, addr) {
-    if (role = (role + 1) % 2) {
+    role = (role + 1) % 2
+    if (role) {
       peer.sendMessage(new Transaction(tx))
     }
     if (timeout === -1) {
       timeout = setTimeout(function () {
         done(new PushTxTimeoutError())
-      }, PUSH_TIMEOUT) 
+      }, PUSH_TIMEOUT)
     }
   })
 
@@ -119,7 +123,7 @@ Network.prototype.pushTx = function (tx, next) {
 
     for (var i = message.inventory.length; i--;) {
       item = message.inventory[i]
-      txid = BufferUtil.reverse(item.hash).toString('hex') 
+      txid = BufferUtil.reverse(item.hash).toString('hex')
       if (item.type === 1 && txid === tx.id.toString()) {
         done()
       }
@@ -169,7 +173,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
     block: { col: [], hashes: [] }
   }
 
-  var pushBlock = function (block) {
+  var storeBlock = function (block) {
     var tx
     for (var t = 0, tl = cached.tx.col.length; t < tl; t++) {
       tx = cached.tx.col[t]
@@ -190,7 +194,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
     cached.block.col.push(block)
   }
 
-  var pushTx = function (tx) {
+  var storeTx = function (tx) {
     var col = cached.tx.col
     var block
     var hash
@@ -215,8 +219,8 @@ Network.prototype.getFilteredTxs = function (filter, next) {
     }
   }
 
-  var loading = new Throbber()
-  loading.start('Scanning transactions...')
+  var scanning = new Throbber()
+  scanning.start('Scanning transactions...')
 
   pool.on('peerready', function (peer, addr) {
     peer.hash = addr.hash
@@ -267,12 +271,12 @@ Network.prototype.getFilteredTxs = function (filter, next) {
       return loaderPeer.getHeaders(tip.blockId)
     }
     pool.disconnect()
-    loading.stop()
+    scanning.stop()
     next(null, txs, tip)
   })
 
   pool.on('peermerkleblock', function (peer, message) {
-    pushBlock(message.merkleBlock)
+    storeBlock(message.merkleBlock)
   })
 
   pool.on('peertx', function (peer, message) {
@@ -295,7 +299,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
       }
       address = output.script.toAddress(network).toString()
       if (filter.isRelevantAddress(address) || filter.isRelevantMultisigOut(script, network)) {
-        pushTx(tx)
+        storeTx(tx)
         break
       }
     }
@@ -310,7 +314,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
       }
       address = input.script.toAddress(network).toString()
       if (filter.isRelevantAddress(address)) {
-        pushTx(tx)
+        storeTx(tx)
         break
       }
     }
@@ -318,7 +322,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
 
   pool.on('error', function (err) {
     pool.disconnect()
-    loading.stop()
+    scanning.stop()
     next(err)
   })
 
@@ -331,55 +335,63 @@ Network.prototype.getFilteredTxs = function (filter, next) {
   pool.connect()
 }
 
-var Blockchain = {}
-
-Blockchain.pushTx = function (tx, network, next) {
+var pushTx = function (tx, network, next) {
   next = next || function () {}
   new Network({ network: network }).pushTx(tx, next)
 }
 
-Blockchain.getTxsByAddr = function (addr, tip, next) {
+var getTxsByAddr = function (addr, tip, next) {
   var filter = BloomFilter.forAddress(addr)
   var network = new Network({ network: addr.network })
   network.getFilteredTxs(filter, tip, function (err, txs, ntip) {
     if (err) return next(err)
-    ntip.relevantAddr = addr.toString()
-    next(null, txs, ntip, filter)
+    getUtxosFromTxs(txs, addr, filter, function (err, cutxos) {
+      if (err) return next(err)
+      ntip.relevantAddr = addr.toString()
+      next(null, txs, ntip, filter)
+    })
   })
 }
 
-Blockchain.getUtxosByAddr = function (addr, next) {
-  var spenderAddr = addr.toString()
-  var query = {
-    spenderAddr: spenderAddr,
-    isSpent: false
-  }
+var getUtxosByAddr = function (addr, next) {
   async.waterfall([ function (next) {
-    TxoCache.find(query, next)
-  }, function (ctxos, next) {
     TipCache.one({
-      relevantAddr: addr.toString(),
-      subject: 'txo'
-    }, function (err, tip) {
-      next(err, ctxos, tip)
+      relevantAddr: addr.toString()
+    }, next)
+  }, function (tip, next) {
+    getTxsByAddr(addr, tip, function (err, txs, ntip, filter) {
+      next(err, txs, filter)
     })
-  }, function (ctxos, tip, next) {
-    Blockchain.getTxsByAddr(addr, tip, function (err, txs, ntip, filter) {
-      next(err, ctxos, tip, txs, ntip, filter)
+  }, function (txs, filter, next) {
+    getUtxosFromTxs(txs, addr, filter, function (err, cutxos) {
+      next(err, cutxos)
     })
-  }, function (ctxos, tip, txs, ntip, filter, next) {
+  }], next)
+}
+
+var getUtxosFromTxs = function (txs, addr, filter, next) {
+  var spenderAddr = addr.toString()
+  async.waterfall([ function (next) {
+    var query = {
+      spenderAddr: spenderAddr,
+      isSpent: false
+    }
+    TxoCache.find(query, function (err, ctxos) {
+      next(err, ctxos, txs, filter)
+    })
+  }, function (ctxos, txs, filter, next) {
     var txids = {}
     for (var tx, t = 0, tl = txs.length; t < tl; t++) {
       tx = txs[t]
       txids[tx.hash.toString('hex')] = tx
     }
-    var txos = Blockchain.txosFromTxs(addr, txids, filter)
-    var utxos = Blockchain.utxosFromTxos(addr, txids, txos, filter)
+    var txos = txosFromTxs(addr, txids, filter)
+    var utxos = utxosFromTxos(addr, txids, txos, filter)
     var cutxos = ctxos.filter(function (txo) {
       return !txo.spent
     })
-    next(null, txos, utxos, cutxos, tip, ntip)
-  }, function (txos, utxos, cutxos, tip, ntip, next) {
+    next(null, txos, utxos, cutxos)
+  }, function (txos, utxos, cutxos, next) {
     async.each(txos, function (txoArr, next) {
       async.each(txoArr, function (txo, next) {
         var txid = txo.tx.hash.toString('hex')
@@ -401,43 +413,38 @@ Blockchain.getUtxosByAddr = function (addr, next) {
             txId: utxo.txId,
             spenderAddr: utxo.spenderAddr,
             index: utxo.index
-          }, function (err, cutxo) {
+          }, function (err, cutxo) {
             if (err) return next(err)
-            if (!cutxo) return TxoCache.create(utxo, function (err) {
-              TxoCache.one({
-                txId: utxo.txId,
-                spenderAddr: utxo.spenderAddr,
-                index: utxo.index
-              }, function (err, cutxo) {
+            if (!cutxo) {
+              return TxoCache.create(utxo, function (err) {
                 if (err) return next(err)
-                cutxos.push(cutxo)
-                next(null)
+                TxoCache.one({
+                  txId: utxo.txId,
+                  spenderAddr: utxo.spenderAddr,
+                  index: utxo.index
+                }, function (err, cutxo) {
+                  if (err) return next(err)
+                  cutxos.push(cutxo)
+                  next(null)
+                })
               })
-            })
-            cutxos.push(cutxo)
+            }
             next(null)
           })
         }
         next(null)
       }, next)
     }, function (err) {
-      next(err, cutxos, tip, ntip)
-    })
-  }, function (cutxos, tip, ntip, next) {
-    TipCache.setTip('txo', tip, ntip, function (err) {
       next(err, cutxos)
     })
   }], next)
 }
 
-Blockchain.txosFromTxs = function (addr, txids, filter) {
+var txosFromTxs = function (addr, txids, filter) {
   var addrStr = addr.toString()
   var txos = {}
   var txoArr
   var tx
-  var scptAddr
-  var opCount
-  var pubKeys
   for (var txid in txids) {
     tx = txids[txid]
     txoArr = tx.outputs.map(function (txo, n) {
@@ -446,7 +453,7 @@ Blockchain.txosFromTxs = function (addr, txids, filter) {
       return txo
     }).filter(function (txo) {
       return addrStr === txo.script.toAddress(addr.network).toString() ||
-        filter.isRelevantMultisigOut(txo.script, addr.network) 
+      filter.isRelevantMultisigOut(txo.script, addr.network)
     })
     if (txoArr.length) {
       txos[txid] = txoArr
@@ -455,18 +462,14 @@ Blockchain.txosFromTxs = function (addr, txids, filter) {
   return txos
 }
 
-Blockchain.utxosFromTxos = function (addr, txids, txos, filter) {
-  var addrStr = addr.toString()
+var utxosFromTxos = function (addr, txids, txos, filter) {
   var txis = {}
   var txi
   var tx
   var txid
   var ptxid
-  var script
-  var scptAddr
-  var isRelevantIn
   for (txid in txids) {
-    tx = txids[txid] 
+    tx = txids[txid]
     for (var i = 0, il = tx.inputs.length; i < il; i++) {
       txi = tx.inputs[i]
       ptxid = txi.prevTxId.toString('hex')
@@ -491,8 +494,8 @@ Blockchain.utxosFromTxos = function (addr, txids, txos, filter) {
 }
 
 module.exports = {
-  Blockchain: Blockchain,
-  Network: Network,
-  BloomFilter: BloomFilter,
+  pushTx: pushTx,
+  getTxsByAddr: getTxsByAddr,
+  getUtxosByAddr: getUtxosByAddr,
   PushTxTimeoutError: PushTxTimeoutError
 }

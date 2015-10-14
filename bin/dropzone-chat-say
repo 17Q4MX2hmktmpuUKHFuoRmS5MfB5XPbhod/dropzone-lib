@@ -6,6 +6,14 @@ program
   .usage('<private_key> <session_id> <message> [options]')
   .description(
     'Communicate with someone in a private conversation over testnet')
+  .option('-s, --socks <server:port>',
+    'Route all connections through the specified socks server & port')
+  .option('-r, --driver <name>',
+    'Connect to the blockchain using any of these drivers [spv]', 'spv')
+  .option('-m, --mainnet',
+    'Force sessions that would normally be on testnet, onto mainnet')
+  .option('-f, --fee <satoshis>',
+    'Set the transaction fee amount (default: 2000)', 2000)
   .on('--help', function () {
     console.log(
       '  Append a <message> to the conversation identified by <session_id>\n' +

@@ -1,8 +1,10 @@
 var spv = require('./spv')
 
-module.exports = {
+var drivers = {
   load: function (name) {
-    return exports[name] || spv
+    return drivers[name] || spv
   },
   spv: spv
 }
+
+module.exports = drivers

@@ -30,7 +30,7 @@ function TxDecoder (tx, options) {
 
   this.prefix = options.prefix || DEFAULT_PREFIX
   this.decryptKey = options.decryptKey || tx.inputs[0].prevTxId
-  this.network = options.network || network.livenet
+  this.network = options.network || Networks.livenet
 
   this.parse(tx.outputs.map(function (output) {
     return output.script.toASM()

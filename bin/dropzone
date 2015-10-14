@@ -6,15 +6,6 @@ program
   .version(require('../package').version)
   .description('Dropzone: A marketplace built on the Blockchain.')
   .usage('<command> [options]')
-  .option('-d, --debug', 'Display detailed data on program activity')
-  .option('-s, --socks <server:port>',
-    'Route all connections through the specified socks server & port')
-  .option('-t, --testnet',
-    'Force transactions that would normally be on mainnet, onto testnet')
-  .option('-f, --fee <satoshis>',
-    'Set the transaction fee amount (default: 2000)', 2000)
-  .option('-d, --driver <name>',
-    'Connect to the blockchain using any of these drivers [spv]', 'spv')
   .command('balance', 'Display the balance on the provided address')
   .command('pay', 'Send value to a recipient')
   .command('chat <command>',

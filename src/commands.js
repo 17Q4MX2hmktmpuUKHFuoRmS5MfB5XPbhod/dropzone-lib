@@ -1,21 +1,18 @@
 var bitcore = require('bitcore')
 var wordwrap = require('wordwrap')
 var colors = require('colors')
+var actions = require('./actions')
 var session = require('./session')
 var messages = require('./messages')
-var drivers = require('./drivers')
+var blockchain = require('./blockchain')
 
 var Table = require('cli-table')
 
 var Networks = bitcore.Networks
 var PrivateKey = bitcore.PrivateKey
 var Address = bitcore.Address
-var Session = session.Session
-var ChatMessage = messages.ChatMessage
 
 var NotAuthenticatedError = session.NotAuthenticatedError
-var AlreadyAuthenticatedError = session.AlreadyAuthenticatedError
-var NeedAuthenticationError = session.NeedAuthenticationError
 var InsufficientBalanceError = messages.InsufficientBalanceError
 
 var fail = function (err) {
@@ -59,14 +56,14 @@ display.session = function (session, addr) {
   console.log(table.toString())
 }
 
-display.sessionMessages = function (session, symmKey, addr) {
+display.sessionMessages = function (messages, session, symmKey, addr) {
   var table = new Table({
     head: ['Chat ' + session.txId],
     colWidths: [80],
     truncate: false
   })
   var rows = []
-  session.messages.forEach(function (message) {
+  messages.forEach(function (message) {
     session.unreadMessages -= 1
     try {
       var text = wordwrap.hard(0, 78)(message.getPlain(symmKey))
@@ -91,122 +88,77 @@ display.sessionMessages = function (session, symmKey, addr) {
 
 var chat = {}
 
-chat.list = function (wifPrivKey, program) {
-  messages.use(drivers.load(program.driver))
-
-  var privKey = PrivateKey.fromWIF(wifPrivKey)
-  var addr = privKey.toAddress(Networks.testnet)
-
-  Session.all(privKey, Networks.testnet, function (err, sessions) {
-    try {
+chat.list = function (strPrivKey, program) {
+  try {
+    blockchain.use(program.driver)
+    var privKey = PrivateKey.fromWIF(strPrivKey)
+    actions.getAllSessions(privKey, function (err, sessions, addr) {
       if (err) return fail(err)
-      sessions.filter(function (a, x, c) {
-        return !c.filter(function (b, y) {
-          return a.txId === b.txId && x > y
-        }).length
-      }).forEach(function (session) {
+      sessions.forEach(function (session) {
         display.session(session, addr)
       })
-    } catch (err) {
-      fail(err)
-    }
-  })
+    })
+  } catch (err) {
+    fail(err)
+  }
 }
 
-chat.show = function (wifPrivKey, hexSessionTxId, program) {
-  messages.use(drivers.load(program.driver))
-
-  var privKey = PrivateKey.fromWIF(wifPrivKey)
-  var addr = privKey.toAddress(Networks.testnet)
-  var txId = hexSessionTxId
-
-  Session.one(privKey, Networks.testnet, txId, function (err, session) {
-    try {
-      if (err) return fail(err)
-      var symmKey = session.genSymmKey()
-      display.sessionMessages(session, symmKey, addr)
-      session.setUnreadMessages()
-    } catch (err) {
-      fail(err)
-    }
-  })
-}
-
-chat.accept = function (wifPrivKey, hexSessionTxId, program) {
-  messages.use(drivers.load(program.driver))
-
-  var privKey = PrivateKey.fromWIF(wifPrivKey)
-  var addr = privKey.toAddress(Networks.testnet)
-  var txId = hexSessionTxId
-
-  Session.one(privKey, Networks.testnet, txId, function (err, session) {
-    try {
-      if (err) return fail(err)
-      if (session.isAuthenticated()) {
-        return fail(new AlreadyAuthenticatedError())
-      } else if (session.init.senderAddr.toString() === addr.toString()) {
-        return fail(new NeedAuthenticationError())
-      } else {
-        return session.authenticate(function (err) {
-          if (err) return fail(err)
-          display.session(session, addr)
-        })
-      }
-    } catch (err) {
-      fail(err)
-    }
-  })
-}
-
-chat.say = function (wifPrivKey, hexSessionTxId, messageStr, program) {
-  messages.use(drivers.load(program.driver))
-
-  var privKey = PrivateKey.fromWIF(wifPrivKey)
-  var addr = privKey.toAddress(Networks.testnet)
-  var txId = hexSessionTxId
-
-  Session.one(privKey, Networks.testnet, txId, function (err, session) {
-    try {
-      if (err) return fail(err)
-      if (!session.isAuthenticated()) {
-        return fail(new NotAuthenticatedError())
-      }
-      var message = new ChatMessage({ contents: messageStr })
-      var symmKey = session.genSymmKey()
-      message.encrypt(symmKey)
-      session.sendMessage(message, function (err, txId) {
+chat.show = function (strPrivKey, txId, program) {
+  try {
+    blockchain.use(program.driver)
+    var privKey = PrivateKey.fromWIF(strPrivKey)
+    actions.getAllChatMessages(privKey, txId,
+      function (err, messages, session, symmKey, addr) {
         if (err) return fail(err)
-        session.messages = session.messages.slice(-1)
-        session.unreadMessages = 0
-        display.sessionMessages(session, symmKey, addr)
+        display.sessionMessages(messages, session, symmKey, addr)
+        session.setUnreadMessages()
       })
-    } catch (err) {
-      fail(err)
-    }
-  })
+  } catch (err) {
+    fail(err)
+  }
 }
 
-chat.create = function (wifPrivKey, wifReceiverAddr, program) {
-  messages.use(drivers.load(program.driver))
-
-  var privKey = PrivateKey.fromWIF(wifPrivKey)
-  var addr = privKey.toAddress(Networks.testnet)
-  var receiverAddr = Address.fromString(wifReceiverAddr, Networks.testnet)
-
-  Session.secretFor(addr, receiverAddr, function (err, key) {
-    try {
-      if (err) return fail(err)
-      var session = new Session(privKey, key.secret, {
-        receiverAddr: receiverAddr
-      })
-      session.authenticate(function (err) {
+chat.create = function (strPrivKey, strReceiverAddr, program) {
+  try {
+    blockchain.use(program.driver)
+    var privKey = PrivateKey.fromWIF(strPrivKey)
+    var receiverAddr = Address.fromString(strReceiverAddr, Networks.testnet)
+    actions.createSession(privKey, receiverAddr,
+      function (err, session, addr) {
         if (err) return fail(err)
         display.session(session, addr)
       })
-    } catch (err) {
-      fail(err)
-    }
-  })
+  } catch (err) {
+    fail(err)
+  }
+}
+
+chat.accept = function (strPrivKey, txId, program) {
+  try {
+    blockchain.use(program.driver)
+    var privKey = PrivateKey.fromWIF(strPrivKey)
+    actions.acceptSession(privKey, txId,
+      function (err, session, addr) {
+        if (err) return fail(err)
+        display.session(session, addr)
+      })
+  } catch (err) {
+    fail(err)
+  }
+}
+
+chat.say = function (strPrivKey, txId, text, program) {
+  try {
+    blockchain.use(program.driver)
+    var privKey = PrivateKey.fromWIF(strPrivKey)
+    actions.sendChatMessage(privKey, txId, text,
+      function (err, messages, session, symmKey, addr) {
+        if (err) return fail(err)
+        display.sessionMessages(messages, session, symmKey, addr)
+      })
+  } catch (err) {
+    fail(err)
+  }
 }
 
 module.exports = {

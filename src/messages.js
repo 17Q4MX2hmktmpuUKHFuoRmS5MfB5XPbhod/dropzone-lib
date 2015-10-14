@@ -4,6 +4,7 @@ var bitcore = require('bitcore')
 var tx_decoder = require('./tx_decoder')
 var tx_encoder = require('./tx_encoder')
 var cache = require('./cache')
+var blockchain = require('./blockchain')
 
 var BufferReader = bitcore.encoding.BufferReader
 var BufferWriter = bitcore.encoding.BufferWriter
@@ -18,16 +19,6 @@ var TxEncoder = tx_encoder.TxEncoder
 var TxCache = cache.models.Tx
 var TipCache = cache.models.Tip
 var TxoCache = cache.models.Txo
-
-var driver 
-var Blockchain
-var PushTxTimeoutError
-
-var use = function (driver) {
-  driver = driver
-  Blockchain = driver.Blockchain
-  PushTxTimeoutError = driver.PushTxTimeoutError
-}
 
 var InvalidStateError = bitcore.errors.InvalidState
 var BadEncodingError = tx_decoder.BadEncodingError
@@ -60,13 +51,12 @@ Messages.find = function (query, addr, network, next) {
     })
   }, function (ctxs, next) {
     TipCache.one({
-      relevantAddr: addr.toString(),
-      subject: 'tx'
+      relevantAddr: addr.toString()
     }, function (err, tip) {
       next(err, ctxs, tip)
     })
   }, function (ctxs, tip, next) {
-    Blockchain.getTxsByAddr(addr, tip, function (err, txs, ntip) {
+    blockchain.getTxsByAddr(addr, tip, function (err, txs, ntip) {
       if (err) return next(err)
       txs = ctxs.concat(txs.map(function (tx) {
         return Message.fromTx(tx, network)
@@ -83,7 +73,7 @@ Messages.find = function (query, addr, network, next) {
       next(err, txs, tip, ntip)
     })
   }, function (txs, tip, ntip, next) {
-    TipCache.setTip('tx', tip, ntip, function (err) {
+    TipCache.setTip(tip, ntip, function (err) {
       next(err, txs)
     })
   }], next)
@@ -251,11 +241,15 @@ ChatMessage.prototype.getPlain = function (symmKey) {
 
 ChatMessage.prototype.send = function (privKey, next) {
   next = next || function () {}
+
   var payload = this.toBuffer()
   var network = this.receiverAddr.network
   var addr = privKey.toAddress(network)
   var pubKey = privKey.toPublicKey()
-  Blockchain.getUtxosByAddr(addr, function (err, utxos) {
+
+  var PushTxTimeoutError = blockchain.PushTxTimeoutError
+
+  blockchain.getUtxosByAddr(addr, function (err, utxos) {
     if (err) return next(err)
     var bytes = tx_encoder.BYTES_IN_MULTISIG
     var outn = 2 + Math.ceil((payload.length + 3) / bytes)
@@ -333,9 +327,9 @@ ChatMessage.prototype.send = function (privKey, next) {
     tx.fee(fee)
     tx.sign(privKey)
 
-    Blockchain.pushTx(tx, addr.network, function (err, tx) {
+    blockchain.pushTx(tx, addr.network, function (err, tx) {
       if (err instanceof PushTxTimeoutError) {
-        console.log("tx dump:", tx.toString())
+        console.log('tx dump:', tx.toString())
         return next(err)
       }
       if (err) return next(err)
@@ -358,13 +352,11 @@ ChatMessage.prototype.send = function (privKey, next) {
           next(err, tx)
         })
       })
-      
     })
   }.bind(this))
 }
 
 module.exports = {
-  use: use,
   Messages: Messages,
   Message: Message,
   ChatMessage: ChatMessage,

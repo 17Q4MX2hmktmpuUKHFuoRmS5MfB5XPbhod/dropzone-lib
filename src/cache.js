@@ -26,7 +26,6 @@ var Tip = cache.define('Tip', {
     type: 'text',
     mapsTo: 'relevant_addr'
   },
-  subject: String,
   blockId: {
     type: 'text',
     mapsTo: 'blockid'
@@ -39,17 +38,15 @@ var Tip = cache.define('Tip', {
   collection: 'tips'
 })
 
-Tip.setTip = function (subj, cur, up, next) {
+Tip.setTip = function (cur, up, next) {
   if (cur && cur.id) {
     for (var key in up) {
       if (key !== 'id' && key in cur) {
         cur[key] = up[key]
       }
     }
-    cur.subject = subj
     return cur.save(next)
   }
-  up.subject = subj
   this.create(up, next)
 }
 
@@ -120,7 +117,7 @@ cache.define('Txo', {
   isTesting: {
     type: 'boolean',
     mapsTo: 'is_testing'
-  },
+  }
 }, {
   collection: 'txos'
 })

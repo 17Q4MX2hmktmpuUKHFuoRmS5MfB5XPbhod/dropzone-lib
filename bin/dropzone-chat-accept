@@ -5,6 +5,14 @@ var command = require('../src/commands').chat.accept
 program
   .usage('<private_key> <session_id> [options]')
   .description('Accept a conversation created by someone else')
+  .option('-s, --socks <server:port>',
+    'Route all connections through the specified socks server & port')
+  .option('-r, --driver <name>',
+    'Connect to the blockchain using any of these drivers [spv]', 'spv')
+  .option('-m, --mainnet',
+    'Force sessions that would normally be on testnet, onto mainnet')
+  .option('-f, --fee <satoshis>',
+    'Set the transaction fee amount (default: 2000)', 2000)
   .on('--help', function () {
     console.log(
       '  Accept the conversation identified by <session_id>\n' +
