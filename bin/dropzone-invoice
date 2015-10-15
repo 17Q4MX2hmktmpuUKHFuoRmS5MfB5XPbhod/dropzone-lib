@@ -6,5 +6,4 @@ program
   .description('Manage invoices')
   .command('create', 'Create an invoice to a potential buyer')
   .command('show', 'Show invoice details')
-
-program.parse(process.argv)
+  .parse(process.argv)

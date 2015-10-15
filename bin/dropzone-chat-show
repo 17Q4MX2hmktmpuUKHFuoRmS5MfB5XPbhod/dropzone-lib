@@ -1,18 +1,11 @@
 #!/usr/bin/env node
+var main = require('./dropzone')
 var program = require('commander')
 var command = require('../src/commands').chat.show
 
-program
+main.configure(program, { network: 'testnet' })
   .usage('<private_key> <session_id> [options]')
   .description('Show all the available messages for a given session')
-  .option('-s, --socks <server:port>',
-    'Route all connections through the specified socks server & port')
-  .option('-r, --driver <name>',
-    'Connect to the blockchain using any of these drivers [spv]', 'spv')
-  .option('-m, --mainnet',
-    'Force sessions that would normally be on testnet, onto mainnet')
-  .option('-f, --fee <satoshis>',
-    'Set the transaction fee amount (default: 2000)', 2000)
   .on('--help', function () {
     console.log(
       '  Outputs a full conversation, start to finish, between the\n' +
@@ -26,5 +19,4 @@ program
       '    0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098\n')
   })
   .action(command)
-
-program.parse(process.argv)
+  .parse(process.argv)

@@ -92,7 +92,7 @@ chat.list = function (strPrivKey, program) {
   try {
     blockchain.use(program.driver)
     var privKey = PrivateKey.fromWIF(strPrivKey)
-    actions.getAllSessions(privKey, function (err, sessions, addr) {
+    actions.getAllSessions(privKey, program, function (err, sessions, addr) {
       if (err) return fail(err)
       sessions.forEach(function (session) {
         display.session(session, addr)
@@ -107,7 +107,7 @@ chat.show = function (strPrivKey, txId, program) {
   try {
     blockchain.use(program.driver)
     var privKey = PrivateKey.fromWIF(strPrivKey)
-    actions.getAllChatMessages(privKey, txId,
+    actions.getAllChatMessages(privKey, txId, program,
       function (err, messages, session, symmKey, addr) {
         if (err) return fail(err)
         display.sessionMessages(messages, session, symmKey, addr)
@@ -123,7 +123,7 @@ chat.create = function (strPrivKey, strReceiverAddr, program) {
     blockchain.use(program.driver)
     var privKey = PrivateKey.fromWIF(strPrivKey)
     var receiverAddr = Address.fromString(strReceiverAddr, Networks.testnet)
-    actions.createSession(privKey, receiverAddr,
+    actions.createSession(privKey, receiverAddr, program,
       function (err, session, addr) {
         if (err) return fail(err)
         display.session(session, addr)
@@ -137,7 +137,7 @@ chat.accept = function (strPrivKey, txId, program) {
   try {
     blockchain.use(program.driver)
     var privKey = PrivateKey.fromWIF(strPrivKey)
-    actions.acceptSession(privKey, txId,
+    actions.acceptSession(privKey, txId, program,
       function (err, session, addr) {
         if (err) return fail(err)
         display.session(session, addr)
@@ -151,7 +151,7 @@ chat.say = function (strPrivKey, txId, text, program) {
   try {
     blockchain.use(program.driver)
     var privKey = PrivateKey.fromWIF(strPrivKey)
-    actions.sendChatMessage(privKey, txId, text,
+    actions.sendChatMessage(privKey, txId, text, program,
       function (err, messages, session, symmKey, addr) {
         if (err) return fail(err)
         display.sessionMessages(messages, session, symmKey, addr)

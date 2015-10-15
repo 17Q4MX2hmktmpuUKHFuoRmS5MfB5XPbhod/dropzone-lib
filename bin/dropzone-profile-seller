@@ -1,10 +1,10 @@
 #!/usr/bin/env node
+var main = require('./dropzone')
 var program = require('commander')
 
-program
+main.configure(program)
   .usage('<command> [options]')
   .description('Manage seller profiles')
   .command('create', 'Create a seller profile')
   .command('show', 'Show a seller profile')
-
-program.parse(process.argv)
+  .parse(process.argv)

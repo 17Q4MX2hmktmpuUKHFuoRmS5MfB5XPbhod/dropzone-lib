@@ -1,19 +1,12 @@
 #!/usr/bin/env node
+var main = require('./dropzone')
 var program = require('commander')
 var command = require('../src/commands').chat.list
 
-program
+main.configure(program, { network: 'testnet' })
   .usage('<private_key> [options]')
   .description(
     'Show the available chats for a given testnet private key')
-  .option('-s, --socks <server:port>',
-    'Route all connections through the specified socks server & port')
-  .option('-r, --driver <name>',
-    'Connect to the blockchain using any of these drivers [spv]', 'spv')
-  .option('-m, --mainnet',
-    'Force sessions that would normally be on testnet, onto mainnet')
-  .option('-f, --fee <satoshis>',
-    'Set the transaction fee amount (default: 2000)', 2000)
   .on('--help', function () {
     console.log(
       '  This command lists all the conversations that have been \n' +
@@ -26,5 +19,4 @@ program
       '    92UvdTpmxA6cvD6YeJZSiHW8ff8DsZXL2PHZu9Mg7JY3zbaETJw\n')
   })
   .action(command)
-
-program.parse(process.argv)
+  .parse(process.argv)

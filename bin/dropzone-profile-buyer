@@ -6,5 +6,4 @@ program
   .description('Manage buyer profiles')
   .command('create', 'Create a buyer profile')
   .command('show', 'Show a buyer profile')
-
-program.parse(process.argv)
+  .parse(process.argv)

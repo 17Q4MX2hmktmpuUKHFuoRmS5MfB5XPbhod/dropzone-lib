@@ -1,17 +1,10 @@
 #!/usr/bin/env node
+var main = require('./dropzone')
 var program = require('commander')
 
-program
+main.configure(program)
   .usage('<addr> [options]')
   .description('Show a buyer profile')
-  .option('-s, --socks <server:port>',
-    'Route all connections through the specified socks server & port')
-  .option('-r, --driver <name>',
-    'Connect to the blockchain using any of these drivers [spv]', 'spv')
-  .option('-t, --testnet',
-    'Force transactions that would normally be on mainnet, onto testnet')
-  .option('-f, --fee <satoshis>',
-    'Set the transaction fee amount (default: 2000)', 2000)
   .on('--help', function () {
     console.log(
       '  Displays information associated with a buyer at a given address.\n')
@@ -20,5 +13,4 @@ program
       "  # Look up a user's buyer profile\n" +
       '  dropzone profile buyer show mgDprFdTS61x1ejowYqJSmoWiqwpEiGrcy\n')
   })
-
-program.parse(process.argv)
+  .parse(process.argv)

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
+var main = require('./dropzone')
 var program = require('commander')
-var tab = new Array(32).join(' ')
 
-program
+main.configure(program)
   .usage('<private_key> <tx_id> [options]')
   .description('Update your item listing')
   .option('-s, --description <text>',
@@ -21,14 +21,6 @@ program
     tab + 'field indicates no expiration. Note that clients will likely\n' +
     tab + "override the seller's preference to list an item for a very\n" +
     tab + "long time by restricting the block depth of users' searches")
-  .option('-s, --socks <server:port>',
-    'Route all connections through the specified socks server & port')
-  .option('-r, --driver <name>',
-    'Connect to the blockchain using any of these drivers [spv]', 'spv')
-  .option('-t, --testnet',
-    'Force transactions that would normally be on mainnet, onto testnet')
-  .option('-f, --fee <satoshis>',
-    'Set the transaction fee amount (default: 2000)', 2000)
   .on('--help', function () {
     console.log(
       '  Given the provided item transaction id <txid> on your\n' +
@@ -43,5 +35,4 @@ program
       '    0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098 \\\n' +
       "    --description 'Second description'\n")
   })
-
-program.parse(process.argv)
+  .parse(process.argv)

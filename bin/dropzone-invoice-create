@@ -1,8 +1,8 @@
 #!/usr/bin/env node
+var main = require('./dropzone')
 var program = require('commander')
-var tab = new Array(32).join(' ')
 
-program
+main.configure(program)
   .usage('<private_key> <recipient_addr> [options]')
   .description('Create an invoice to a potential buyer')
   .option('-n, --amount_due <btc>',
@@ -15,14 +15,6 @@ program
     tab + 'expiration is useful for locking in an exchange rate\n' +
     tab + 'when closing a sale.\n',
     parseInt)
-  .option('-s, --socks <server:port>',
-    'Route all connections through the specified socks server & port')
-  .option('-r, --driver <name>',
-    'Connect to the blockchain using any of these drivers [spv]', 'spv')
-  .option('-t, --testnet',
-    'Force transactions that would normally be on mainnet, onto testnet')
-  .option('-f, --fee <satoshis>',
-    'Set the transaction fee amount (default: 2000)', 2000)
   .on('--help', function () {
     console.log(
       '  An invoice is needed to lock in currency exchange rates for\n' +
@@ -40,5 +32,4 @@ program
       "    --amount_due='0.5' \\\n" +
       '    --expires_in=6\n')
   })
-
-program.parse(process.argv)
+  .parse(process.argv)

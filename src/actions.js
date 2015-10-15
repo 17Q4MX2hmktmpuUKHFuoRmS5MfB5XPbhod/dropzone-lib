@@ -10,9 +10,9 @@ var NeedAuthenticationError = session.NeedAuthenticationError
 var AlreadyAuthenticatedError = session.AlreadyAuthenticatedError
 var NotAuthenticatedError = session.NotAuthenticatedError
 
-var getAllSessions = function (privKey, next) {
-  var addr = privKey.toAddress(Networks.testnet)
-  Session.all(privKey, Networks.testnet, function (err, sessions) {
+var getAllSessions = function (privKey, opts, next) {
+  var addr = privKey.toAddress(Networks[opts.network])
+  Session.all(privKey, Networks[opts.network], function (err, sessions) {
     if (err) return next(err)
     next(null, sessions.filter(function (a, x, c) {
       return !c.filter(function (b, y) {
@@ -22,17 +22,17 @@ var getAllSessions = function (privKey, next) {
   })
 }
 
-var getAllChatMessages = function (privKey, txId, next) {
-  var addr = privKey.toAddress(Networks.testnet)
-  Session.one(privKey, Networks.testnet, txId, function (err, session) {
+var getAllChatMessages = function (privKey, txId, opts, next) {
+  var addr = privKey.toAddress(Networks[opts.network])
+  Session.one(privKey, Networks[opts.network], txId, function (err, session) {
     if (err) return next(err)
     var symmKey = session.genSymmKey()
     next(null, session.messages, session, symmKey, addr)
   })
 }
 
-var createSession = function (privKey, receiverAddr, next) {
-  var addr = privKey.toAddress(Networks.testnet)
+var createSession = function (privKey, receiverAddr, opts, next) {
+  var addr = privKey.toAddress(Networks[opts.network])
   Session.secretFor(addr, receiverAddr, function (err, key) {
     if (err) return next(err)
     var session = new Session(privKey, key.secret, {
@@ -45,9 +45,9 @@ var createSession = function (privKey, receiverAddr, next) {
   })
 }
 
-var acceptSession = function (privKey, txId, next) {
-  var addr = privKey.toAddress(Networks.testnet)
-  Session.one(privKey, Networks.testnet, txId, function (err, session) {
+var acceptSession = function (privKey, txId, opts, next) {
+  var addr = privKey.toAddress(Networks[opts.network])
+  Session.one(privKey, Networks[opts.network], txId, function (err, session) {
     if (err) return next(err)
     if (session.isAuthenticated()) {
       return next(new AlreadyAuthenticatedError())
@@ -62,9 +62,9 @@ var acceptSession = function (privKey, txId, next) {
   })
 }
 
-var sendChatMessage = function (privKey, txId, text, next) {
-  var addr = privKey.toAddress(Networks.testnet)
-  Session.one(privKey, Networks.testnet, txId, function (err, session) {
+var sendChatMessage = function (privKey, txId, text, opts, next) {
+  var addr = privKey.toAddress(Networks[opts.network])
+  Session.one(privKey, Networks[opts.network], txId, function (err, session) {
     if (err) return next(err)
     if (!session.isAuthenticated()) {
       return next(new NotAuthenticatedError())

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
+var main = require('./dropzone')
 var program = require('commander')
-var tab = new Array(35).join(' ')
 
-program
+main.configure(program)
   .usage('<private_key> [options]')
   .description('Create a seller profile')
   .option('-s, --description <text>', 'A description of yourself')
@@ -16,14 +16,6 @@ program
   .option('-c, --chat_addr <addr>',
     'Specifies through which testnet address you wish\n' +
     tab + 'to receive messages')
-  .option('-s, --socks <server:port>',
-    'Route all connections through the specified socks server & port')
-  .option('-r, --driver <name>',
-    'Connect to the blockchain using any of these drivers [spv]', 'spv')
-  .option('-t, --testnet',
-    'Force transactions that would normally be on mainnet, onto testnet')
-  .option('-f, --fee <satoshis>',
-    'Set the transaction fee amount (default: 2000)', 2000)
   .on('--help', function () {
     console.log(
       '  A seller profile is required to precede all item declarations\n' +
@@ -42,5 +34,4 @@ program
       "    --description='First seller' \\\n" +
       "    --chats_addr='mi37WkBomHJpUghCn7Vgh3ah33h6L9Nkqw'\n")
   })
-
-program.parse(process.argv)
+  .parse(process.argv)

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
+var main = require('./dropzone')
 var program = require('commander')
 
-program
+main.configure(program)
   .usage('<private_key> <tx_id> [options]')
   .description('Leave a review on a generated invoice')
   .option('-s, --description <text>',
@@ -12,14 +13,6 @@ program
     'The quality of the product. Between 0 (worst) to 8 (best)')
   .option('-m, --chat_quality <points>',
     "The seller's communication skill. Between 0 (worst) to 8 (best)")
-  .option('-s, --socks <server:port>',
-    'Route all connections through the specified socks server & port')
-  .option('-r, --driver <name>',
-    'Connect to the blockchain using any of these drivers [spv]', 'spv')
-  .option('-t, --testnet',
-    'Force transactions that would normally be on mainnet, onto testnet')
-  .option('-f, --fee <satoshis>',
-    'Set the transaction fee amount (default: 2000)', 2000)
   .on('--help', function () {
     console.log(
       '  A review is primarily designed for the purposes of establishing\n' +
@@ -39,5 +32,4 @@ program
       '    --product_quality=7 \\\n' +
       '    --chats_quality=3\n')
   })
-
-program.parse(process.argv)
+  .parse(process.argv)

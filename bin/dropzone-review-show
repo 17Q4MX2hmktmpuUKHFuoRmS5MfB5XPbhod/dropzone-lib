@@ -1,17 +1,10 @@
 #!/usr/bin/env node
+var main = require('./dropzone')
 var program = require('commander')
 
-program
+main.configure(program)
   .usage('<tx_id> [options]')
   .description('Show review details')
-  .option('-s, --socks <server:port>',
-    'Route all connections through the specified socks server & port')
-  .option('-r, --driver <name>',
-    'Connect to the blockchain using any of these drivers [spv]', 'spv')
-  .option('-t, --testnet',
-    'Force transactions that would normally be on mainnet, onto testnet')
-  .option('-f, --fee <satoshis>',
-    'Set the transaction fee amount (default: 2000)', 2000)
   .on('--help', function () {
     console.log(
       '  Example:\n\n' +
@@ -19,5 +12,4 @@ program
       '  dropzone review show \\\n' +
       '    0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098\n')
   })
-
-program.parse(process.argv)
+  .parse(process.argv)
