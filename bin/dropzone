@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 var cache = require('../src/cache')
 
-
-var configure = exports.configure = function (commander, defaults) {
+exports.configure = function (commander, defaults) {
   defaults = defaults || {}
   var options = {
     socks: 0,
@@ -15,7 +14,7 @@ var configure = exports.configure = function (commander, defaults) {
     defaults[opt] = defaults[opt] || options[opt]
     current[opt] = '(' + defaults[opt] + ')'
   }
-  return commander 
+  return commander
     .option('-s, --socks <server:port>',
       'Route all connections through the specified socks server & port ' + current.socks,
       defaults.socks)
@@ -45,8 +44,8 @@ if (!module.parent) {
     .command('profile <command>', 'Manage buyer and seller profiles')
     .command('review <command>', 'Manage sales reviews')
     .command('invoice <command>', 'Manage invoices')
-    
-  cache.ready(function() {
+
+  cache.ready(function () {
     program.parse(process.argv)
   })
 }

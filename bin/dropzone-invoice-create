@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 var main = require('./dropzone')
 var program = require('commander')
+var tab = new Array(32).join(' ')
 
 main.configure(program)
   .usage('<private_key> <recipient_addr> [options]')
