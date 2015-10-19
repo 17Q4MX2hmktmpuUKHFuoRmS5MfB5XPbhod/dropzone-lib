@@ -50,7 +50,7 @@ describe('Buyer', function () {
       var buyer_txid = chai.factory.create('buyer').save(globals.tester_private_key)
       expect(buyer_txid).to.be.a('string')
 
-      var buyer = Buyer.find(buyer_txid)
+      var buyer = Buyer.find(connection, buyer_txid)
 
       expect(buyer.description).to.equal("abc")
       expect(buyer.alias).to.equal("Satoshi")
@@ -119,7 +119,7 @@ describe('Buyer', function () {
       var buyer_txid = chai.factory.create('buyer', 
         {receiver_addr: globals.tester2_public_key}).save(test_privkey)
 
-      var buyer = Buyer.find(buyer_txid)
+      var buyer = Buyer.find(connection, buyer_txid)
 
       expect(buyer.isValid()).to.be.false
       expect(buyer.errors.count).to.equal(1)

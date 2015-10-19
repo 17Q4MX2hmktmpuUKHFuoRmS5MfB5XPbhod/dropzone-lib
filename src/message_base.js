@@ -1,4 +1,5 @@
 var _ = require('lodash')
+var util = require('util')
 var bitcore = require('bitcore')
 var $ = bitcore.util.preconditions
 
@@ -64,6 +65,8 @@ function MessageBase (connection, options) {
       return memo
     }, {}, this)
   }
+
+  this.$initialize(this)
 }
 
 MessageBase.prototype.toTransaction = function () {
@@ -105,11 +108,34 @@ MessageBase.find = function (connection, txid) {
     'First argument is required, please include a connection.')
 
   var tx = connection.txById(txid)
-  console.log("Hmm"+util.inspect(txid))
-  console.log("Me"+util.inspect(this))
+
+  //console.log("Found"+util.inspect(tx))
   // TODO
   // return (tx) ? this.new(tx) : nil
 }
+
+// Borrowed from: 
+// https://github.com/bfanger/angular-activerecord/blob/master/src/angular-activerecord.js
+MessageBase.extend = function(protoProps, staticProps) {
+  var parent = this;
+  var child;
+
+  if (protoProps && typeof protoProps.$constructor === 'function') {
+    child = protoProps.$constructor;
+  } else {
+    child = function () { return parent.apply(this, arguments); };
+  }
+  _.extend(child, parent, staticProps);
+  var Surrogate = function () { this.$constructor = child; };
+  Surrogate.prototype = parent.prototype;
+  child.prototype = new Surrogate();
+  if (protoProps) {
+    _.extend(child.prototype, protoProps);
+  }
+  child.__super__ = parent.prototype;
+  return child;
+};
+
 
 module.exports = {
   MessageBase: MessageBase
