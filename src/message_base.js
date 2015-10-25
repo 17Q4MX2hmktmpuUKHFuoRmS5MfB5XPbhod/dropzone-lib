@@ -1,6 +1,8 @@
 var _ = require('lodash')
-var util = require('util')
 var bitcore = require('bitcore')
+var validator = require('node-validator')
+var util = require('util')
+
 var $ = bitcore.util.preconditions
 
 var Varint = bitcore.encoding.Varint
@@ -61,7 +63,7 @@ function MessageBase (connection, options) {
     if (options['data']) {
       var data = options['data']
       delete options['data']
-      _.merge(options, this.dataFromHex(data))
+      _.merge(options, this.dataFromBin(data))
     }
 
     _.forEach(options, function(val, key) {
@@ -73,19 +75,29 @@ function MessageBase (connection, options) {
 }
 
 MessageBase.prototype.toTransaction = function () {
-  return {receiverAddr: this.receiverAddr, data: this.dataToHex(), 
+  return {receiverAddr: this.receiverAddr, data: this.dataToBin(), 
     tip: DEFAULT_TIP }
 }
 
-MessageBase.prototype.dataToHash = function () {
-    return _.reduce(this.messageAttribs, function(memo, full, abbrev) {
-      memo[abbrev] = this[full]
-      return memo
-    }, {}, this)
-  }
+MessageBase.prototype.toHash = function () {
+  var baseAttrs = ['receiverAddr', 'senderAddr', 'txid', 'tip', 'messageType']
 
-MessageBase.prototype.dataToHex = function () {
-  var payload = _.compact(_.map(this.dataToHash(), function(value, key) {
+  return _.reduce(_.values(this.messageAttribs).concat(baseAttrs), 
+    function(memo, attr) {
+    if (this[attr])
+      memo[attr] = this[attr]
+
+    return memo
+  }, {}, this)
+}
+
+MessageBase.prototype.dataToBin = function () {
+  var dataAttribs =  _.reduce(this.messageAttribs, function(memo, full, abbrev) {
+    memo[abbrev] = this[full]
+    return memo
+  }, {}, this)
+
+  var payload = _.compact(_.map(dataAttribs, function(value, key) {
     if (_.isUndefined(value) || _.isNull(value) ) {
       return null
     }
@@ -109,7 +121,7 @@ MessageBase.prototype.dataToHex = function () {
   return Buffer.concat( [new Buffer(this.messageType)].concat( payload ) )
 }
 
-MessageBase.prototype.dataFromHex = function (data) {
+MessageBase.prototype.dataFromBin = function (data) {
   var ret = {}
 
   var dataType = data.slice(0, 6).toString()
@@ -143,6 +155,14 @@ MessageBase.prototype.dataFromHex = function (data) {
   return ret
 }
 
+MessageBase.prototype.isValid = function (cb) {
+   
+  if (this.$validator)
+    validator.run( this.$validator, this.toHash(), cb)
+  else
+    cb(0, [])
+}
+
 MessageBase.prototype.save = function (privateKey, cb) {
   var that = this
   this.connection.save(this.toTransaction(), privateKey, function(err, record) {
@@ -173,24 +193,24 @@ MessageBase.find = function (connection, txid, cb) {
 // Borrowed from: 
 // https://github.com/bfanger/angular-activerecord/blob/master/src/angular-activerecord.js
 MessageBase.extend = function(protoProps, staticProps) {
-  var parent = this;
-  var child;
+  var parent = this
+  var child
 
   if (protoProps && typeof protoProps.$constructor === 'function') {
-    child = protoProps.$constructor;
+    child = protoProps.$constructor
   } else {
-    child = function () { return parent.apply(this, arguments); };
+    child = function () { return parent.apply(this, arguments) }
   }
-  _.assign(child, parent, staticProps);
-  var Surrogate = function () { this.$constructor = child; };
-  Surrogate.prototype = parent.prototype;
-  child.prototype = new Surrogate();
+  _.assign(child, parent, staticProps)
+  var Surrogate = function () { this.$constructor = child }
+  Surrogate.prototype = parent.prototype
+  child.prototype = new Surrogate()
   if (protoProps) {
-    _.assign(child.prototype, protoProps);
+    _.assign(child.prototype, protoProps)
   }
-  child.__super__ = parent.prototype;
-  return child;
-};
+  child.__super__ = parent.prototype
+  return child
+}
 
 
 module.exports = {

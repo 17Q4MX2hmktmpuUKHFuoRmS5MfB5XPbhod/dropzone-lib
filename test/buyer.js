@@ -78,73 +78,105 @@ describe('Buyer', function () {
       })
     })
   })
-/*
+
   describe("validations", function() {
-    it("validates default build", function() {
-      expect(chai.factory.create('buyer').isValid()).to.be.true
+    it("validates default build", function(next) {
+      var buyer = chai.factory.create('buyer', connection)
+
+      buyer.isValid(function(count, errors) {
+        expect(count).to.equal(0)
+        expect(errors).to.be.empty
+        next()
+      })
     })
 
-    it("validates minimal buyer", function() {
+    it("validates minimal buyer", function(next) {
       var buyer = new Buyer( connection, 
-        {receiver_addr: globals.tester_public_key})
+        {receiverAddr: globals.tester_public_key})
 
-      expect(buyer.isValid()).to.be.true
+      buyer.isValid(function(count, errors) {
+        expect(count).to.equal(0)
+        expect(errors).to.be.empty
+        next()
+      })
     })
 
-    it("validates output address must be present", function() {
-      var buyer = chai.factory.create('buyer', {receiver_addr: nil})
+    it("validates output address must be present", function(next) {
+      var buyer = chai.factory.create('buyer', connection, {receiverAddr: null})
 
-      expect(buyer.isValid()).to.be.false
-      expect(buyer.errors.count).to.equal(1)
-      expect(buyer.errors.on('receiver_addr')).to.equal(['is not present'])
+      buyer.isValid(function(count, errors) {
+        expect(count).to.equal(1)
+        expect(errors).to.deep.equal([ {parameter: 'receiverAddr', 
+          value: undefined, message: 'Required value.'} ])
+        next()
+      })
     })
 
-    it("description must be string", function() {
-      var buyer = chai.factory.create('buyer', {description: 1})
+    it("description must be string", function(next) {
+      var buyer = chai.factory.create('buyer', connection, {description: 1})
 
-      expect(buyer.isValid()).to.be.false
-      expect(buyer.errors.count).to.equal(1)
-      expect(buyer.errors.on('description')).to.equal(['is not a string'])
+      buyer.isValid(function(count, errors) {
+        expect(count).to.equal(1)
+        expect(errors).to.deep.equal([ {parameter: 'description', 
+          value: 1, message: 'Incorrect type. Expected string.'} ])
+        next()
+      })
     })
 
-    it("alias must be string", function() {
-      var buyer = chai.factory.create('buyer', {alias: 1})
+    it("alias must be string", function(next) {
+      var buyer = chai.factory.create('buyer', connection, {alias: 1})
 
-      expect(buyer.isValid()).to.be.false
-      expect(buyer.errors.count).to.equal(1)
-      expect(buyer.errors.on('alias')).to.equal(['is not a string'])
+      buyer.isValid(function(count, errors) {
+        expect(count).to.equal(1)
+        expect(errors).to.deep.equal([ {parameter: 'alias', 
+          value: 1, message: 'Incorrect type. Expected string.'} ])
+        next()
+      })
     })
 
-    it("transfer_pkey must be pkey", function() {
-      var buyer = chai.factory.create('buyer', {transfer_pkey: 'bad-key'})
+    it("transferPkey must be pkey", function(next) {
+      var buyer = chai.factory.create('buyer', connection, {transferPkey: 'bad-key'})
 
-      expect(buyer.isValid()).to.be.false
-      expect(buyer.errors.count).to.equal(2)
-      expect(buyer.errors.on('transfer_pkey')).to.equal([
-        'does not match receiver_addr', 'is not a public key' ])
+      buyer.isValid(function(count, errors) {
+        expect(count).to.equal(2)
+        expect(errors).to.deep.equal([ 
+          {parameter: 'transferPkey', value: 'bad-key', 
+            message: 'Incorrect type. Expected public address.'},
+          {parameter: 'transferPkey', value: undefined, 
+            message: 'does not match receiverAddr'} ])
+        next()
+      })
     })
 
-    it("transfer_pkey must be receiver_addr", function() {
-      var buyer = chai.factory.create('buyer', 
-        {transfer_pkey: globals.tester2_public_key})
+    it("transferPkey must be receiverAddr", function(next) {
+      var buyer = chai.factory.create('buyer',  connection,
+        {transferPkey: globals.tester2_public_key})
 
-      expect(buyer.isValid()).to.be.false
-      expect(buyer.errors.count).to.equal(1)
-      expect(buyer.errors.on('transfer_pkey')).to.equal(['does not match receiver_addr'])
+      buyer.isValid(function(count, errors) {
+        expect(count).to.equal(1)
+        expect(errors).to.deep.equal([ {parameter: 'transferPkey',
+          value: 'mqVRfjepJTxxoDgDt892tCybhmjfKCFNyp', 
+          message: 'does not match receiverAddr'} ])
+        next()
+      })
     })
 
-    it("declaration must be addressed to self", function() {
-      var buyer_txid = chai.factory.create('buyer', 
-        {receiver_addr: globals.tester2_public_key}).save(test_privkey)
+    it("declaration must be addressed to self", function(next) {
+      var buyer_txid = chai.factory.create('buyer', connection,
+        {receiverAddr: globals.tester2_public_key}).save(globals.test_privkey,
+        function(err, create_buyer) {
 
-      var buyer = Buyer.find(connection, buyer_txid)
-
-      expect(buyer.isValid()).to.be.false
-      expect(buyer.errors.count).to.equal(1)
-      expect(buyer.errors.on('receiver_addr')).to.equal(['does not match sender_addr'])
+        Buyer.find(connection, create_buyer.txid, function(err, find_buyer) {
+          find_buyer.isValid(function(count, errors) {
+            expect(count).to.equal(1)
+            expect(errors).to.deep.equal([ {parameter: 'receiverAddr',
+              value: 'mqVRfjepJTxxoDgDt892tCybhmjfKCFNyp', 
+              message: 'does not match senderAddr'} ])
+            next()
+          })
+        })
+      })
     })
-
   })
-  */
 
 })

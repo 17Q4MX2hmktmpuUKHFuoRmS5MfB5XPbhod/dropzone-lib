@@ -86,7 +86,7 @@ FakeBitcoinConnection.prototype.txById = function (id, cb) {
 }
 
 /*
- * TODO: Remaininig methods
+ * TODO: Remaining methods
 class FakeBitcoinConnection
 
 

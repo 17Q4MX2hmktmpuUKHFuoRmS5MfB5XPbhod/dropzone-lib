@@ -55,7 +55,8 @@
     "sqlite3": "^3.0.10",
     "throbber": "^1.0.1",
     "lodash": "=3.10.1",
-    "wordwrap": "^1.0.0"
+    "wordwrap": "^1.0.0",
+    "node-validator": "^0.1.16"
   },
   "browser": {
     "bitcore-p2p": "bitcore-p2p-browserify"
