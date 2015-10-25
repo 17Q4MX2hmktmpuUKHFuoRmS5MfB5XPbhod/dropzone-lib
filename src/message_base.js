@@ -4,6 +4,7 @@ var bitcore = require('bitcore')
 var $ = bitcore.util.preconditions
 
 var Varint = bitcore.encoding.Varint
+var BufferReader = bitcore.encoding.BufferReader
 
 var DEFAULT_TIP = 20000
 
@@ -15,8 +16,6 @@ function toVarString(string) {
 function MessageBase (connection, options) {
   $.checkArgument(connection, 
     'First argument is required, please include a connection.')
-
-  _.extend(this, options || {})
 
   var messageAttribs = {}
   var messageIntegers = []
@@ -43,6 +42,10 @@ function MessageBase (connection, options) {
       typesInclude.push(type)
   }
 
+  this.messageAttribs = function() {
+    return messageAttribs
+  }
+
   this.messageType = function(){
       return typesInclude[0]
   }
@@ -66,11 +69,31 @@ function MessageBase (connection, options) {
     }, {}, this)
   }
 
+  // TODO: Get this out.
   this.$initialize(this)
+
+
+  if (options['data']) {
+    var data = options['data']
+    delete options['data']
+    _.merge(options, this.dataFromHex(data))
+  }
+
+  // TODO: this should be some getters and validated
+  _.extend(this, options || {})
+
+  /*
+   * TODO options.each(
+  attrs.merge(data_hash_from_hex(data)).each do |attr, value|
+
+    instance_variable_set '@%s' % attr, value
+  end
+  */
+
 }
 
 MessageBase.prototype.toTransaction = function () {
-  return {receiver_addr: this.receiver_addr, data: this.dataToHex(), 
+  return {receiverAddr: this.receiverAddr, data: this.dataToHex(), 
     tip: DEFAULT_TIP }
 }
 
@@ -99,19 +122,65 @@ MessageBase.prototype.dataToHex = function () {
   return Buffer.concat( [new Buffer(this.messageType())].concat( payload ) )
 }
 
-MessageBase.prototype.save = function (privateKey) {
-  return this.connection.save(this.toTransaction(), privateKey)
+MessageBase.prototype.dataFromHex = function (data) {
+  var ret = {}
+
+  var messageType = data.slice(0, 6).toString()
+  var pairs = data.slice(6, data.length)
+
+  if ( (this.messageType() != messageType) || (pairs.length == 0) )
+    return {}
+
+  br = BufferReader(pairs)
+  
+  while (!br.eof()) {
+    var shortKey = br.read(br.readVarintBN().toNumber()).toString()
+
+    var value = (this.isAttrInt(shortKey)) ?
+      br.readVarintBN().toNumber() :
+      br.read(br.readVarintBN().toNumber()).toString()
+
+      if (this.isAttrPkey(shortKey) && value) {
+      /* TODO
+        value = (value == 0.chr) ? 0 : 
+          anynet_for_address(:hash160_to_address, value.unpack('H*')[0])
+      */
+      }
+
+    var longKey = this.messageAttribs()[shortKey]
+
+    if (longKey)
+      ret[longKey] = value
+  }
+
+  return ret
 }
 
-MessageBase.find = function (connection, txid) {
+MessageBase.prototype.save = function (privateKey, cb) {
+  var that = this
+  this.connection.save(this.toTransaction(), privateKey, function(err, record) {
+    if (err)
+      cb(err)
+    else
+      cb(null, new that.$constructor( that.connection, record ) )
+  })
+}
+
+MessageBase.find = function (connection, txid, cb) {
   $.checkArgument(connection, 
     'First argument is required, please include a connection.')
 
-  var tx = connection.txById(txid)
+  $.checkArgument(txid, 
+    'Second argument is required, please include a transaction id.')
 
-  //console.log("Found"+util.inspect(tx))
-  // TODO
-  // return (tx) ? this.new(tx) : nil
+  var that = this
+
+  connection.txById(txid, function(err, tx) {
+    if (err)
+      cb(err)
+    else
+      cb(null, (tx) ? new that(connection, tx) : null)
+  })
 }
 
 // Borrowed from: 
@@ -125,12 +194,12 @@ MessageBase.extend = function(protoProps, staticProps) {
   } else {
     child = function () { return parent.apply(this, arguments); };
   }
-  _.extend(child, parent, staticProps);
+  _.assign(child, parent, staticProps);
   var Surrogate = function () { this.$constructor = child; };
   Surrogate.prototype = parent.prototype;
   child.prototype = new Surrogate();
   if (protoProps) {
-    _.extend(child.prototype, protoProps);
+    _.assign(child.prototype, protoProps);
   }
   child.__super__ = parent.prototype;
   return child;

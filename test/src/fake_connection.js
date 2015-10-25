@@ -3,60 +3,47 @@ var orm = require('orm')
 var bitcore = require('bitcore')
 
 var async = require('async')
-var Q = require('q')
 
 var testnet = bitcore.Networks.testnet
 var PrivateKey = bitcore.PrivateKey
 var Address = bitcore.Address
 var Hash = bitcore.crypto.Hash
 
-var FakeBitcoinConnection = function() {
-  db = orm.connect("sqlite://")
-
-  this.Transaction = db.define("transactions", {
-    txid:         { type: 'serial', key: true },
-    data:         { type: 'binary'},
-    receiverAddr: { type: 'text', mapsTo: 'receiver_addr'},
-    senderAddr:   { type: 'text', mapsTo: 'sender_addr'},
-    tip:          { type: 'integer' },
-    blockHeight:  { type: 'integer' }
-  })
-
-  console.log("Before connect")
-
-  function setupDatabase() {
-    var deferred = Q.defer()
-
-    db.on('connect', function (err) {
-      console.log("inside connect")
-
-      if (err) {
-        deferred.reject(new Error(err))
-      } else {
-        this.Transaction.sync()
-        deferred.resolve('whew')
-      }
-    }) 
-    return deferred.promise
-  }
-
-  Q.nfcall(setupDatabase).then(function(ret) {
-    console.log("ret"+ret)
-  })
-
-  console.log("after connect")
+var FakeBitcoinConnection = function(cb) {
 
   var height = 0
 
   this.height = function(){ return height }
-  this.clearTransactions = function() {
-    //  TODO: Delete all transactions this.Transaction.delete()
+  this.clearTransactions = function(cb) {
     height = 0
+    this.Transaction.all().remove(cb)
   }
 
   this.incrementBlockHeight = function() {
     return ++height
   }
+
+  var that = this
+  var storage = orm.connect("sqlite://", function(err, db) {
+    if (err) return cb(err)
+
+    that.Transaction = db.define("transactions", {
+      txid:         { type: 'serial', key: true },
+      data:         { type: 'binary'},
+      receiverAddr: { type: 'text', mapsTo: 'receiver_addr'},
+      senderAddr:   { type: 'text', mapsTo: 'sender_addr'},
+      tip:          { type: 'integer' },
+      blockHeight:  { type: 'integer' }
+    }, {
+      methods: { toMessageParams: function () {
+        return { data: this.data, receiverAddr: this.receiverAddr, 
+          senderAddr: this.senderAddr, tip: this.tip, 
+          txid: (this.txid) ? String(this.txid) : null} 
+      }
+    }})
+
+    db.sync(cb)
+  })
 }
 
 FakeBitcoinConnection.prototype.isTesting = function () {
@@ -79,7 +66,7 @@ FakeBitcoinConnection.prototype.isValidAddr = function (addr) {
   return Address.isValid(addr, testnet)
 }
 
-FakeBitcoinConnection.prototype.save = function (tx, privateKey) {
+FakeBitcoinConnection.prototype.save = function (tx, privateKey, cb) {
   /*
    * We ignore the private key in this connection. We return the database id 
    * in lieue of transaction id.
@@ -87,21 +74,14 @@ FakeBitcoinConnection.prototype.save = function (tx, privateKey) {
   var blockchainState = {blockHeight: this.height(), 
     senderAddr: this.privkeyToAddr(privateKey)}
 
-this.Transaction.create({data: 'test'}, function(err, tx) {
-  console.log('TODO:'+err)
-})
-
-
-  this.Transaction.create( _.merge(tx, blockchainState), function(err, tx) {
-    console.log("Error"+err)  
-    console.log(tx.id)  
+  this.Transaction.create( _.merge(tx, blockchainState), function(err, record) {
+    cb(err, (record) ? record.toMessageParams() : null)
   })
 }
 
-FakeBitcoinConnection.prototype.txById = function (id) {
-
-  return this.Transaction.get(parseInt(id), function(err, tx) {
-    return tx
+FakeBitcoinConnection.prototype.txById = function (id, cb) {
+  this.Transaction.get(parseInt(id), function(err, record) {
+    cb(err, (record) ? record.toMessageParams() : null)
   })
 }
 
