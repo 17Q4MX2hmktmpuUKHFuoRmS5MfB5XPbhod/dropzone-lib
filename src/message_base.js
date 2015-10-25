@@ -22,80 +22,67 @@ function MessageBase (connection, options) {
   var messagePkeys = []
   var typesInclude = []
 
-  this.connection = connection
+  this.__defineGetter__('connection', function(){
+    return connection
+  })
 
-  this._pushAttrMessage = function(attrs){
-    _.extend(messageAttribs, attrs)
-  }
-
-  this._pushAttrMessagePkey = function(attrs){
-    messagePkeys = messagePkeys.concat(_.keys(attrs))
-    this._pushAttrMessage(attrs)
-  }
-
-  this._pushAttrMessageInt = function(attrs){
-    messageIntegers = messageIntegers.concat(_.keys(attrs))
-    this._pushAttrMessage(attrs)
-  }
-
-  this._setMessageType = function(type){
-      typesInclude.push(type)
-  }
-
-  this.messageAttribs = function() {
+  this.__defineGetter__('messageAttribs', function(){
     return messageAttribs
-  }
+  })
 
-  this.messageType = function(){
-      return typesInclude[0]
-  }
+  this.__defineGetter__('messageType', function(){
+    return typesInclude[0]
+  })
 
   this.isAttrInt = function(key){
     $.checkArgument(key, 'First argument is required, please include a key.')
-
     return _.contains(messageIntegers, key)
   }
 
   this.isAttrPkey = function(key){
     $.checkArgument(key, 'First argument is required, please include a key.')
-
     return _.contains(messagePkeys, key)
   }
 
-  this.dataToHash = function () {
-    return _.reduce(messageAttribs, function(memo, full, abbrev) {
-      memo[abbrev] = this[full]
-      return memo
-    }, {}, this)
+  // Load up our attributes for quick reference:
+  _.extend(messageAttribs, this.$attrString, this.$attrInt, this.$attrPkey)
+
+  if (this.$attrInt)
+    messageIntegers = messageIntegers.concat(_.keys(attrs))
+
+  if (this.$attrPkey)
+    messagePkeys = messagePkeys.concat(_.keys(this.$attrPkey))
+
+  if (this.$type)
+    typesInclude.push(this.$type)
+
+  // Set our attributes from either a serialized store, or explicit parameters:
+  if (options) {
+    if (options['data']) {
+      var data = options['data']
+      delete options['data']
+      _.merge(options, this.dataFromHex(data))
+    }
+
+    _.forEach(options, function(val, key) {
+      this.__defineGetter__(key, function(){
+        return val
+      })
+    }, this)
   }
-
-  // TODO: Get this out.
-  this.$initialize(this)
-
-
-  if (options['data']) {
-    var data = options['data']
-    delete options['data']
-    _.merge(options, this.dataFromHex(data))
-  }
-
-  // TODO: this should be some getters and validated
-  _.extend(this, options || {})
-
-  /*
-   * TODO options.each(
-  attrs.merge(data_hash_from_hex(data)).each do |attr, value|
-
-    instance_variable_set '@%s' % attr, value
-  end
-  */
-
 }
 
 MessageBase.prototype.toTransaction = function () {
   return {receiverAddr: this.receiverAddr, data: this.dataToHex(), 
     tip: DEFAULT_TIP }
 }
+
+MessageBase.prototype.dataToHash = function () {
+    return _.reduce(this.messageAttribs, function(memo, full, abbrev) {
+      memo[abbrev] = this[full]
+      return memo
+    }, {}, this)
+  }
 
 MessageBase.prototype.dataToHex = function () {
   var payload = _.compact(_.map(this.dataToHash(), function(value, key) {
@@ -119,16 +106,16 @@ MessageBase.prototype.dataToHex = function () {
     return Buffer.concat([toVarString(key), encodedValue])
   }, this ))
 
-  return Buffer.concat( [new Buffer(this.messageType())].concat( payload ) )
+  return Buffer.concat( [new Buffer(this.messageType)].concat( payload ) )
 }
 
 MessageBase.prototype.dataFromHex = function (data) {
   var ret = {}
 
-  var messageType = data.slice(0, 6).toString()
+  var dataType = data.slice(0, 6).toString()
   var pairs = data.slice(6, data.length)
 
-  if ( (this.messageType() != messageType) || (pairs.length == 0) )
+  if ( (this.messageType != dataType) || (pairs.length == 0) )
     return {}
 
   br = BufferReader(pairs)
@@ -147,7 +134,7 @@ MessageBase.prototype.dataFromHex = function (data) {
       */
       }
 
-    var longKey = this.messageAttribs()[shortKey]
+    var longKey = this.messageAttribs[shortKey]
 
     if (longKey)
       ret[longKey] = value
