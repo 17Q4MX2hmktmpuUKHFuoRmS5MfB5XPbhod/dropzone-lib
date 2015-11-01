@@ -156,9 +156,10 @@ MessageBase.prototype.dataFromBin = function (data) {
 }
 
 MessageBase.prototype.isValid = function (cb) {
-   
+  
   if (this.$validator)
-    validator.run( this.$validator, this.toHash(), cb)
+    validator.run( this.$validator(validator.isObject(), validator), 
+      this.toHash(), cb)
   else
     cb(0, [])
 }

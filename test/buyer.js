@@ -141,9 +141,10 @@ describe('Buyer', function () {
         expect(count).to.equal(2)
         expect(errors).to.deep.equal([ 
           {parameter: 'transferPkey', value: 'bad-key', 
-            message: 'Incorrect type. Expected public address.'},
-          {parameter: 'transferPkey', value: undefined, 
-            message: 'does not match receiverAddr'} ])
+            message: 'does not match receiverAddr'},
+          {parameter: 'transferPkey', value: 'bad-key', 
+            message: 'must be a valid address'}
+        ])
         next()
       })
     })
