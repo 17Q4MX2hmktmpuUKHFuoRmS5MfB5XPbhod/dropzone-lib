@@ -8,7 +8,7 @@ var $ = bitcore.util.preconditions
 var Varint = bitcore.encoding.Varint
 var BufferReader = bitcore.encoding.BufferReader
 
-var DEFAULT_TIP = 20000
+var DEFAULT_FEE = 20000
 
 function toVarString(string) {
   var s = String(string)
@@ -76,7 +76,7 @@ function MessageBase (connection, options) {
 
 MessageBase.prototype.toTransaction = function () {
   return {receiverAddr: this.receiverAddr, data: this.dataToBin(), 
-    tip: DEFAULT_TIP }
+    tip: DEFAULT_FEE }
 }
 
 MessageBase.prototype.toHash = function () {
