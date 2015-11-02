@@ -17,16 +17,16 @@ describe('Session', function () {
   it('performs a simple non-deterministic chat', function () {
     // TODO: I believe we should pass an object to the Session that is used to
     // query the blockchain (either as a key in options, or argument)
-    tester_private_key = PrivateKey.fromWIF(globals.tester_private_key)
-    tester2_private_key = PrivateKey.fromWIF(globals.tester2_private_key)
+    testerPrivateKey = PrivateKey.fromWIF(globals.testerPrivateKey)
+    tester2PrivateKey = PrivateKey.fromWIF(globals.tester2PrivateKey)
 
-    var buyer_to_seller = new Session(tester_private_key,
-      fixtures.buyer_session_secret, { receiverAddr: globals.tester2_public_key })
+    var buyer_to_seller = new Session(testerPrivateKey,
+      fixtures.buyer_session_secret, { receiverAddr: globals.tester2PublicKey })
 
     buyer_to_seller.authenticate()
 
     var seller_to_buyer_tx_id
-    Session.all(tester2_private_key.publicKey, network, function (err, sessions) {
+    Session.all(tester2PrivateKey.publicKey, network, function (err, sessions) {
       if (sessions.length > 1) {
         seller_to_buyer = sessions[0].txid
       }
@@ -34,7 +34,7 @@ describe('Session', function () {
 
     //  seller_to_buyer.authenticate()
     var seller_to_buyer
-    Session.one(tester2_private_key, network, seller_to_buyer_tx_id,
+    Session.one(tester2PrivateKey, network, seller_to_buyer_tx_id,
       function (err, session) { seller_to_buyer = session })
 
     seller_to_buyer.authenticate()

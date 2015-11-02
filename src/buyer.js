@@ -2,7 +2,7 @@ var messageBase = require('../src/message_base')
 
 var Buyer = messageBase.MessageBase.extend({
   $attrString: {d: 'description', a: 'alias'},
-  $attrPkey: {t: 'transferPkey'},
+  $attrAddr: {t: 'transferAddr'},
   $type: 'BYUPDT',
   $validator: function(v, validator) { 
     var that = this
@@ -15,19 +15,20 @@ var Buyer = messageBase.MessageBase.extend({
     .withOptional('description', validator.isString() )
     .withOptional('alias', validator.isString() )
     .withCustom(function (buyer, onError) {
-      if (buyer.senderAddr && (!buyer.transferPkey) && (buyer.receiverAddr != buyer.senderAddr) )
+      if (buyer.senderAddr && (!buyer.transferAddr) && 
+        (buyer.receiverAddr != buyer.senderAddr) )
         onError('does not match senderAddr', 'receiverAddr', buyer.receiverAddr)
     })
     .withCustom(function (buyer, onError) {
-      if ( (buyer.transferPkey) && (buyer.transferPkey != buyer.receiverAddr) )
-        onError('does not match receiverAddr', 'transferPkey', buyer.transferPkey)
+      if ( (buyer.transferAddr) && (buyer.transferAddr != buyer.receiverAddr) )
+        onError('does not match receiverAddr', 'transferAddr', buyer.transferAddr)
     })
     .withCustom(function (buyer, onError) {
-      if (buyer.transferPkey && buyer.transferPkey != 0 && 
-        (!that.connection.isValidAddr(buyer.transferPkey) ) )
-        onError('must be a valid address', 'transferPkey', buyer.transferPkey)
+      if (buyer.transferAddr && buyer.transferAddr != 0 && 
+        (!that.connection.isValidAddr(buyer.transferAddr) ) )
+        onError('must be a valid address', 'transferAddr', buyer.transferAddr)
     })
-    .withOptional('transferPkey', validator.isString() )
+    .withOptional('transferAddr', validator.isString() )
   }
 })
 

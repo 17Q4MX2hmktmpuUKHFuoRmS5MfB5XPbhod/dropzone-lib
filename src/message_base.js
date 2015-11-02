@@ -21,7 +21,7 @@ function MessageBase (connection, options) {
 
   var messageAttribs = {}
   var messageIntegers = []
-  var messagePkeys = []
+  var messageAddrs = []
   var typesInclude = []
 
   this.__defineGetter__('connection', function(){
@@ -41,19 +41,19 @@ function MessageBase (connection, options) {
     return _.contains(messageIntegers, key)
   }
 
-  this.isAttrPkey = function(key){
+  this.isAttrAddr = function(key){
     $.checkArgument(key, 'First argument is required, please include a key.')
-    return _.contains(messagePkeys, key)
+    return _.contains(messageAddrs, key)
   }
 
   // Load up our attributes for quick reference:
-  _.extend(messageAttribs, this.$attrString, this.$attrInt, this.$attrPkey)
+  _.extend(messageAttribs, this.$attrString, this.$attrInt, this.$attrAddr)
 
   if (this.$attrInt)
     messageIntegers = messageIntegers.concat(_.keys(attrs))
 
-  if (this.$attrPkey)
-    messagePkeys = messagePkeys.concat(_.keys(this.$attrPkey))
+  if (this.$attrAddr)
+    messageAddrs = messageAddrs.concat(_.keys(this.$attrAddr))
 
   if (this.$type)
     typesInclude.push(this.$type)
@@ -107,7 +107,7 @@ MessageBase.prototype.dataToBin = function () {
     if (this.isAttrInt(key)) {
       encodedValue = new Varint(parseInt(value)).buf
     }
-    else if (this.isAttrPkey(key)) {
+    else if (this.isAttrAddr(key)) {
       // TODO: This is currently untested
       encodedValue = toVarString(
         new Buffer(this.connection.hash160ToAddr(String(value)),'hex'))
@@ -139,7 +139,7 @@ MessageBase.prototype.dataFromBin = function (data) {
       br.readVarintBN().toNumber() :
       br.read(br.readVarintBN().toNumber()).toString()
 
-      if (this.isAttrPkey(shortKey) && value) {
+      if (this.isAttrAddr(shortKey) && value) {
       /* TODO
         value = (value == 0.chr) ? 0 : 
           anynet_for_address(:hash160_to_address, value.unpack('H*')[0])

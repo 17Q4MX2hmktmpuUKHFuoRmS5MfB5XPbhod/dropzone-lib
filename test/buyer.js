@@ -17,7 +17,7 @@ var Buyer = buyer.Buyer
 chai.use(chaiJsFactories)
 chai.factory.define('buyer', function (conn, args) {
   return new Buyer(conn, _.extend({ description: "abc", 
-    alias: "Satoshi", receiverAddr: globals.tester_public_key }, args))
+    alias: "Satoshi", receiverAddr: globals.testerPublicKey }, args))
 })
 
 describe('Buyer', function () {
@@ -42,36 +42,36 @@ describe('Buyer', function () {
 
     expect(buyer.description).to.equal("abc")
     expect(buyer.alias).to.equal("Satoshi")
-    expect(buyer.transferPkey).to.not.exist
-    expect(buyer.receiverAddr).to.equal(globals.tester_public_key)
+    expect(buyer.transferAddr).to.not.exist
+    expect(buyer.receiverAddr).to.equal(globals.testerPublicKey)
     expect(buyer.senderAddr).to.not.exist
   })
 
   it('serializes toTransaction', function () {
     expect(chai.factory.create('buyer', connection).toTransaction()).to.eql(
-      { tip: 20000, receiverAddr: globals.tester_public_key, 
+      { tip: 20000, receiverAddr: globals.testerPublicKey, 
         data: new Buffer([66, 89, 85, 80, 68, 84, 1, 100, 3, 97, 98, 99, 1, 97,
           7, 83, 97, 116, 111, 115, 104, 105]) })
   })
 
   describe("#save() and #find()", function() {
     it('persists and loads', function (next) {
-      chai.factory.create('buyer', connection).save(globals.tester_private_key, 
+      chai.factory.create('buyer', connection).save(globals.testerPrivateKey, 
         function(err, create_buyer) {
 
         expect(create_buyer.txid).to.be.a('string')
         expect(create_buyer.description).to.equal("abc")
         expect(create_buyer.alias).to.equal("Satoshi")
-        expect(create_buyer.transferPkey).to.not.exist
-        expect(create_buyer.receiverAddr).to.equal(globals.tester_public_key)
-        expect(create_buyer.senderAddr).to.equal(globals.tester_public_key)
+        expect(create_buyer.transferAddr).to.not.exist
+        expect(create_buyer.receiverAddr).to.equal(globals.testerPublicKey)
+        expect(create_buyer.senderAddr).to.equal(globals.testerPublicKey)
 
         Buyer.find(connection, create_buyer.txid, function(err, find_buyer) {
           expect(find_buyer.description).to.equal("abc")
           expect(find_buyer.alias).to.equal("Satoshi")
-          expect(find_buyer.transferPkey).to.not.exist
-          expect(find_buyer.receiverAddr).to.equal(globals.tester_public_key)
-          expect(find_buyer.senderAddr).to.equal(globals.tester_public_key)
+          expect(find_buyer.transferAddr).to.not.exist
+          expect(find_buyer.receiverAddr).to.equal(globals.testerPublicKey)
+          expect(find_buyer.senderAddr).to.equal(globals.testerPublicKey)
           next()
         })
 
@@ -92,7 +92,7 @@ describe('Buyer', function () {
 
     it("validates minimal buyer", function(next) {
       var buyer = new Buyer( connection, 
-        {receiverAddr: globals.tester_public_key})
+        {receiverAddr: globals.testerPublicKey})
 
       buyer.isValid(function(count, errors) {
         expect(count).to.equal(0)
@@ -134,28 +134,28 @@ describe('Buyer', function () {
       })
     })
 
-    it("transferPkey must be pkey", function(next) {
-      var buyer = chai.factory.create('buyer', connection, {transferPkey: 'bad-key'})
+    it("transferAddr must be addr", function(next) {
+      var buyer = chai.factory.create('buyer', connection, {transferAddr: 'bad-key'})
 
       buyer.isValid(function(count, errors) {
         expect(count).to.equal(2)
         expect(errors).to.deep.equal([ 
-          {parameter: 'transferPkey', value: 'bad-key', 
+          {parameter: 'transferAddr', value: 'bad-key', 
             message: 'does not match receiverAddr'},
-          {parameter: 'transferPkey', value: 'bad-key', 
+          {parameter: 'transferAddr', value: 'bad-key', 
             message: 'must be a valid address'}
         ])
         next()
       })
     })
 
-    it("transferPkey must be receiverAddr", function(next) {
+    it("transferAddr must be receiverAddr", function(next) {
       var buyer = chai.factory.create('buyer',  connection,
-        {transferPkey: globals.tester2_public_key})
+        {transferAddr: globals.tester2PublicKey})
 
       buyer.isValid(function(count, errors) {
         expect(count).to.equal(1)
-        expect(errors).to.deep.equal([ {parameter: 'transferPkey',
+        expect(errors).to.deep.equal([ {parameter: 'transferAddr',
           value: 'mqVRfjepJTxxoDgDt892tCybhmjfKCFNyp', 
           message: 'does not match receiverAddr'} ])
         next()
@@ -164,7 +164,7 @@ describe('Buyer', function () {
 
     it("declaration must be addressed to self", function(next) {
       var buyer_txid = chai.factory.create('buyer', connection,
-        {receiverAddr: globals.tester2_public_key}).save(globals.test_privkey,
+        {receiverAddr: globals.tester2PublicKey}).save(globals.test_privkey,
         function(err, create_buyer) {
 
         Buyer.find(connection, create_buyer.txid, function(err, find_buyer) {
