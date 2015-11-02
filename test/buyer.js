@@ -7,11 +7,11 @@ var _ = require('lodash')
 var util = require('util')
 
 var fakeConnection = require('../test/src/fake_connection')
-var buyer = require('../src/buyer')
+var buyerSeller = require('../src/buyer_seller')
 var globals = require('./fixtures/globals')
 
 var expect = chai.expect
-var Buyer = buyer.Buyer
+var Buyer = buyerSeller.Buyer
 
 
 chai.use(chaiJsFactories)

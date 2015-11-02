@@ -110,7 +110,7 @@ MessageBase.prototype.dataToBin = function () {
     else if (this.isAttrAddr(key)) {
       // TODO: This is currently untested
       encodedValue = toVarString(
-        new Buffer(this.connection.hash160ToAddr(String(value)),'hex'))
+        new Buffer(this.connection.hash160FromAddr(String(value)),'hex'))
     } else {
       encodedValue = toVarString(value)
     }
