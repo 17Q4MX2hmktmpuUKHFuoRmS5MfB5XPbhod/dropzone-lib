@@ -178,11 +178,15 @@ Network.prototype.getFilteredTxs = function (filter, next) {
     var completed = tip.blockHeight / maxHeight
     var heights = '[' + tip.blockHeight + '/' + maxHeight + '] '
     var length = parseInt(completed * (60 - heights.length), 10)
-    var dots = 
     process.stderr.cursorTo(0)
     process.stderr.write('Synchronizing ' + heights +
         new Array(length + 1).join('.') + ' '
         + (completed * 100).toFixed(2) + '% ')
+  }
+
+  var clearProgress = function () {
+    process.stderr.cursorTo(0)
+    process.stderr.clearLine()
   }
 
   var storeBlock = function (block) {
@@ -283,6 +287,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
       return loaderPeer.getHeaders(tip.blockId)
     }
     pool.disconnect()
+    clearProgress()
     next(null, txs, tip)
   })
 
