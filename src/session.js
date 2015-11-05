@@ -1,5 +1,5 @@
-var util = require('util')
 var crypto = require('crypto')
+var inherits = require('inherits')
 var asn = require('asn1.js')
 var async = require('async')
 var storage = require('./storage')
@@ -13,7 +13,7 @@ var CommKeyStore = storage.models.CommKey
 var ChatStore = storage.models.Chat
 var TxCache = cache.models.Tx
 
-util.inherits(SessionError, Error)
+inherits(SessionError, Error)
 
 var DHDER = asn.define('DH', function () {
   this.seq().obj(this.key('p').int(), this.key('g').int())

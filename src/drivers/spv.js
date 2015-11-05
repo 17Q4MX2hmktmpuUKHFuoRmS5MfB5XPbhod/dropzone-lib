@@ -165,12 +165,24 @@ Network.prototype.getFilteredTxs = function (filter, next) {
   var InventoryForFilteredBlock = Inventory.forFilteredBlock
 
   var loaderPeer
+  var maxHeight
 
   var txs = []
 
   var cached = {
     tx: { col: [], hashes: [] },
     block: { col: [], hashes: [] }
+  }
+
+  var progress = function () {
+    var completed = tip.blockHeight / maxHeight
+    var heights = '[' + tip.blockHeight + '/' + maxHeight + '] '
+    var length = parseInt(completed * (60 - heights.length), 10)
+    var dots = 
+    process.stderr.cursorTo(0)
+    process.stderr.write('Synchronizing ' + heights +
+        new Array(length + 1).join('.') + ' '
+        + (completed * 100).toFixed(2) + '% ')
   }
 
   var storeBlock = function (block) {
@@ -219,25 +231,24 @@ Network.prototype.getFilteredTxs = function (filter, next) {
     }
   }
 
-  var scanning = new Throbber()
-  scanning.start('Scanning transactions...')
-
   pool.on('peerready', function (peer, addr) {
     peer.hash = addr.hash
-    if (!loaderPeer && peer.bestHeight >= tip.blockHeight) {
-      loaderPeer = peer
-      loaderPeer.sendMessage(new FilterLoad(filter))
-      loaderPeer.getHeaders = function (hash) {
-        this.sendMessage(new GetHeaders({
-          starts: [hash],
-          stops: new Array(33).join('0')
-        }))
-      }
-      loaderPeer.getHeaders(tip.blockId)
-    }
+    if ((!loaderPeer && peer.bestHeight >= tip.blockHeight) ||
+      (loaderPeer && peer.bestHeight > loaderPeer.bestHeight)) {
+        loaderPeer = peer
+        loaderPeer.sendMessage(new FilterLoad(filter))
+        loaderPeer.getHeaders = function (blockId) {
+          this.sendMessage(new GetHeaders({
+            starts: [blockId],
+            stops: new Array(33).join('0')
+          }))
+        }
+        loaderPeer.getHeaders(tip.blockId)
+        maxHeight = loaderPeer.bestHeight
+    } 
   })
 
-  pool.on('peerheaders', function (peer, message) {
+  pool.on('peerheaders', function (peer, message) { 
     if (loaderPeer.hash !== peer.hash) {
       return
     }
@@ -245,6 +256,7 @@ Network.prototype.getFilteredTxs = function (filter, next) {
     if (headers.length) {
       var inventories = []
 
+      progress()
       for (var header, h = 0, l = headers.length; h < l; h++) {
         header = headers[h]
         if (!header || !header.validProofOfWork()) {
@@ -271,7 +283,6 @@ Network.prototype.getFilteredTxs = function (filter, next) {
       return loaderPeer.getHeaders(tip.blockId)
     }
     pool.disconnect()
-    scanning.stop()
     next(null, txs, tip)
   })
 
@@ -322,7 +333,6 @@ Network.prototype.getFilteredTxs = function (filter, next) {
 
   pool.on('error', function (err) {
     pool.disconnect()
-    scanning.stop()
     next(err)
   })
 

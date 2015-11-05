@@ -1,5 +1,5 @@
 var crypto = require('crypto')
-var util = require('util')
+var inherits = require('inherits')
 var bitcore = require('bitcore')
 
 var Networks = bitcore.Networks
@@ -11,7 +11,7 @@ var OP_RETURN_PARTS = /^OP_RETURN ([a-f0-9]+)$/
 var P2PKH_PARTS = /^OP_DUP OP_HASH160 ([a-f0-9]+) OP_EQUALVERIFY OP_CHECKSIG$/
 var OP_MULTISIG_PARTS = /^OP_[12] ([a-f0-9 ]+) OP_([23]) OP_CHECKMULTISIG$/
 
-util.inherits(TxDecoderError, Error)
+inherits(TxDecoderError, Error)
 
 function TxDecoderError (message) {
   this.name = this.constructor.name
