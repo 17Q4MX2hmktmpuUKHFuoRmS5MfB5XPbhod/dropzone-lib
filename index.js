@@ -1,3 +1,4 @@
+var bitcore = require('bitcore')
 var cache = require('./src/cache')
 var actions = require('./src/actions')
 var drivers = require('./src/drivers')
@@ -8,6 +9,7 @@ var tx_decoder = require('./src/tx_decoder')
 var blockchain = require('./src/blockchain')
 
 module.exports = {
+  bitcore: bitcore,
   actions: actions,
   drivers: drivers,
   blockchain: blockchain,

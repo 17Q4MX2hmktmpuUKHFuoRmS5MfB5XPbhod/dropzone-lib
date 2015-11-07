@@ -84,6 +84,11 @@ function Network (options) {
   })
 
   this.pool = new Pool(options)
+
+  if (options.proxy) {
+    var proxy = options.proxy.split(':')
+    this.pool.setProxy(proxy[0], parseInt(proxy[1], 10))
+  }
 }
 
 Network.prototype.pushTx = function (tx, next) {
@@ -352,12 +357,20 @@ Network.prototype.getFilteredTxs = function (filter, next) {
 
 var pushTx = function (tx, network, next) {
   next = next || function () {}
-  new Network({ network: network }).pushTx(tx, next)
+  var options = { network: network }
+  if (this.proxy) {
+    options.proxy = this.proxy
+  }
+  new Network(options).pushTx(tx, next)
 }
 
 var getTxsByAddr = function (addr, tip, next) {
   var filter = BloomFilter.forAddress(addr)
-  var network = new Network({ network: addr.network })
+  var options = { network: addr.network }
+  if (this.proxy) {
+    options.proxy = this.proxy
+  }
+  var network = new Network(options)
   network.getFilteredTxs(filter, tip, function (err, txs, ntip) {
     if (err) return next(err)
     getUtxosFromTxs(txs, addr, filter, function (err, cutxos) {

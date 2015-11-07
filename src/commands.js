@@ -90,7 +90,7 @@ var chat = {}
 
 chat.list = function (strPrivKey, program) {
   try {
-    blockchain.use(program.driver)
+    blockchain.use(program.driver, { proxy: program.socks })
     var privKey = PrivateKey.fromWIF(strPrivKey)
     actions.getAllSessions(privKey, program, function (err, sessions, addr) {
       if (err) return fail(err)
@@ -105,7 +105,7 @@ chat.list = function (strPrivKey, program) {
 
 chat.show = function (strPrivKey, txId, program) {
   try {
-    blockchain.use(program.driver)
+    blockchain.use(program.driver, { proxy: program.socks })
     var privKey = PrivateKey.fromWIF(strPrivKey)
     actions.getAllChatMessages(privKey, txId, program,
       function (err, messages, session, symmKey, addr) {
@@ -120,7 +120,7 @@ chat.show = function (strPrivKey, txId, program) {
 
 chat.create = function (strPrivKey, strReceiverAddr, program) {
   try {
-    blockchain.use(program.driver)
+    blockchain.use(program.driver, { proxy: program.socks })
     var privKey = PrivateKey.fromWIF(strPrivKey)
     var receiverAddr = Address.fromString(strReceiverAddr, Networks.testnet)
     actions.createSession(privKey, receiverAddr, program,
@@ -135,7 +135,7 @@ chat.create = function (strPrivKey, strReceiverAddr, program) {
 
 chat.accept = function (strPrivKey, txId, program) {
   try {
-    blockchain.use(program.driver)
+    blockchain.use(program.driver, { proxy: program.socks })
     var privKey = PrivateKey.fromWIF(strPrivKey)
     actions.acceptSession(privKey, txId, program,
       function (err, session, addr) {
@@ -149,7 +149,7 @@ chat.accept = function (strPrivKey, txId, program) {
 
 chat.say = function (strPrivKey, txId, text, program) {
   try {
-    blockchain.use(program.driver)
+    blockchain.use(program.driver, { proxy: program.socks })
     var privKey = PrivateKey.fromWIF(strPrivKey)
     actions.sendChatMessage(privKey, txId, text, program,
       function (err, messages, session, symmKey, addr) {

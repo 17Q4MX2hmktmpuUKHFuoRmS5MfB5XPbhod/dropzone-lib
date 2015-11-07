@@ -8,7 +8,7 @@
     "dropzone": "bin/dropzone"
   },
   "scripts": {
-    "postinstall": "node scripts/postinstall.js",
+    "postinstall": "sh scripts/postinstall.sh",
     "compile": "browserify index.js -s dropzone > dropzone.js",
     "coverage": "istanbul cover _mocha -- test/*.js",
     "coveralls": "npm run-script coverage && coveralls < coverage/lcov.info",
@@ -55,6 +55,7 @@
     "migrate-orm2": "^1.2.14",
     "node-validator": "^0.1.16",
     "orm": "^2.1.27",
+    "proxysocket": "^0.2.0",
     "shallow-extend": "0.0.1",
     "sqlite3": "^3.0.10",
     "throbber": "^1.0.1",

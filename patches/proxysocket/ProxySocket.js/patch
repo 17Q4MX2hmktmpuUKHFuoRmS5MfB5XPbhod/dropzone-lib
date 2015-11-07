@@ -1,0 +1,33 @@
+diff --git a/ProxySocket.js b/ProxySocket.js
+index 073ce32..3f9be34 100644
+--- a/ProxySocket.js
++++ b/ProxySocket.js
+@@ -223,10 +223,6 @@ function ProxySocket(socksHost, socksPort, socket) {
+ 		self.remoteAddress = socket.remoteAddress;
+ 		self.bufferSize = socket.bufferSize;
+ 
+-		// Set the real encoding which could have been
+-		// changed while the socket was connecting
+-		socket.setEncoding(socketEncoding);
+-
+ 		if (unsent.length) {
+ 			for (var i=0; i < unsent.length; i++) {
+ 				socket.write(unsent[i][0], unsent[i][1], unsent[i][2]);
+@@ -336,7 +332,7 @@ function ProxySocket(socksHost, socksPort, socket) {
+ 		return socket.setNoDelay(noDelay);
+ 	};
+ 
+-	self.connect = function (connectHost, connectPort, f) {
++	self.connect = function (connectPort, connectHost, f) {
+ 		if (connected) {
+ 			throw new Error("Socket is already connected");
+ 		}
+@@ -354,8 +350,6 @@ function ProxySocket(socksHost, socksPort, socket) {
+ 			self.on('connect', f);
+ 		}
+ 
+-		socket.setEncoding('binary');
+-
+ 		socket.connect(socksPort, socksHost, function () {
+ 			connecting = false;
+ 			sendAuth();
