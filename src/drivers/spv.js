@@ -1,9 +1,12 @@
+var events = require('events')
+var pipe = require('eventemitter-pipe')
 var async = require('async')
 var bitcore = require('bitcore')
 var p2p = require('bitcore-p2p')
+var inherits = require('inherits')
 var cache = require('../cache')
 
-var Throbber = require('throbber')
+var EventEmitter = events.EventEmitter
 var PublicKey = bitcore.PublicKey
 var TxoCache = cache.models.Txo
 var TipCache = cache.models.Tip
@@ -65,6 +68,8 @@ function Network (options) {
     return new Network(options)
   }
 
+  EventEmitter.call(this)
+
   options = options || {}
 
   if (!options.relay) {
@@ -91,21 +96,22 @@ function Network (options) {
   }
 }
 
+inherits(Network, EventEmitter)
+
 Network.prototype.pushTx = function (tx, next) {
   var messages = this.messages
   var pool = this.pool
 
   var Transaction = messages.Transaction
 
-  var waiting = new Throbber()
-  waiting.start('Waiting for transaction to propagate...')
+  this.emit('idle')
 
   var done = function (err) {
     clearTimeout(timeout)
-    waiting.stop()
+    this.emit('end')
     next(err, tx)
     pool.disconnect()
-  }
+  }.bind(this)
 
   var role = 1
   var timeout = -1
@@ -179,21 +185,6 @@ Network.prototype.getFilteredTxs = function (filter, next) {
     block: { col: [], hashes: [] }
   }
 
-  var progress = function () {
-    var completed = tip.blockHeight / maxHeight
-    var heights = '[' + tip.blockHeight + '/' + maxHeight + '] '
-    var length = parseInt(completed * (60 - heights.length), 10)
-    process.stderr.cursorTo(0)
-    process.stderr.write('Synchronizing ' + heights +
-        new Array(length + 1).join('.') + ' '
-        + (completed * 100).toFixed(2) + '% ')
-  }
-
-  var clearProgress = function () {
-    process.stderr.cursorTo(0)
-    process.stderr.clearLine()
-  }
-
   var storeBlock = function (block) {
     var tx
     for (var t = 0, tl = cached.tx.col.length; t < tl; t++) {
@@ -265,7 +256,8 @@ Network.prototype.getFilteredTxs = function (filter, next) {
     if (headers.length) {
       var inventories = []
 
-      progress()
+      this.emit('progress', tip.blockHeight, maxHeight)
+
       for (var header, h = 0, l = headers.length; h < l; h++) {
         header = headers[h]
         if (!header || !header.validProofOfWork()) {
@@ -291,10 +283,13 @@ Network.prototype.getFilteredTxs = function (filter, next) {
     if (headers.length && header) {
       return loaderPeer.getHeaders(tip.blockId)
     }
+
     pool.disconnect()
-    clearProgress()
+
+    this.emit('end')
+
     next(null, txs, tip)
-  })
+  }.bind(this))
 
   pool.on('peermerkleblock', function (peer, message) {
     storeBlock(message.merkleBlock)
@@ -361,7 +356,8 @@ var pushTx = function (tx, network, next) {
   if (this.proxy) {
     options.proxy = this.proxy
   }
-  new Network(options).pushTx(tx, next)
+  var network = new Network(options).pushTx(tx, next)
+  pipe(network, this)
 }
 
 var getTxsByAddr = function (addr, tip, next) {
@@ -379,6 +375,7 @@ var getTxsByAddr = function (addr, tip, next) {
       next(null, txs, ntip, filter)
     })
   })
+  pipe(network, this)
 }
 
 var getUtxosByAddr = function (addr, next) {

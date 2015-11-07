@@ -7,6 +7,7 @@ var messages = require('./messages')
 var blockchain = require('./blockchain')
 
 var Table = require('cli-table')
+var Throbber = require('throbber')
 
 var Networks = bitcore.Networks
 var PrivateKey = bitcore.PrivateKey
@@ -26,6 +27,33 @@ var fail = function (err) {
 }
 
 var display = {}
+
+display.chain = {
+  progress: function (blockHeight, maxHeight) {
+    var completed = blockHeight / maxHeight
+    var heights = blockHeight + '/' + maxHeight
+    var maxLength = 56 - heights.length
+    var length = parseInt(completed * (maxLength), 10)
+    process.stderr.cursorTo(0)
+    process.stderr.write('Synchronizing ' +
+        '[' + new Array(length + 1).join('=') +
+        new Array((maxLength - length) + 1).join(' ') + '] ' +
+        (completed * 100).toFixed(2) + '% ' +
+        heights + ' ')
+  },
+  clearProgress: function () {
+    process.stderr.cursorTo(0)
+    process.stderr.clearLine()
+  },
+  _propagation: new Throbber(),
+  propagation: function () {
+    display.chain._propagation
+      .start('Waiting for transaction to propagate...')
+  },
+  clearPropagation: function () {
+    display.chain._propagation.stop()
+  }
+}
 
 display.session = function (session, addr) {
   var table = new Table({
@@ -91,6 +119,8 @@ var chat = {}
 chat.list = function (strPrivKey, program) {
   try {
     blockchain.use(program.driver, { proxy: program.socks })
+      .on('progress', display.chain.progress)
+      .on('end', display.chain.clearProgress)
     var privKey = PrivateKey.fromWIF(strPrivKey)
     actions.getAllSessions(privKey, program, function (err, sessions, addr) {
       if (err) return fail(err)
@@ -106,6 +136,8 @@ chat.list = function (strPrivKey, program) {
 chat.show = function (strPrivKey, txId, program) {
   try {
     blockchain.use(program.driver, { proxy: program.socks })
+      .on('progress', display.chain.progress)
+      .on('end', display.chain.clearProgress)
     var privKey = PrivateKey.fromWIF(strPrivKey)
     actions.getAllChatMessages(privKey, txId, program,
       function (err, messages, session, symmKey, addr) {
@@ -121,6 +153,8 @@ chat.show = function (strPrivKey, txId, program) {
 chat.create = function (strPrivKey, strReceiverAddr, program) {
   try {
     blockchain.use(program.driver, { proxy: program.socks })
+      .on('propagation', display.chain.propagation)
+      .on('end', display.chain.clearPropagation)
     var privKey = PrivateKey.fromWIF(strPrivKey)
     var receiverAddr = Address.fromString(strReceiverAddr, Networks.testnet)
     actions.createSession(privKey, receiverAddr, program,
@@ -136,6 +170,8 @@ chat.create = function (strPrivKey, strReceiverAddr, program) {
 chat.accept = function (strPrivKey, txId, program) {
   try {
     blockchain.use(program.driver, { proxy: program.socks })
+      .on('propagation', display.chain.propagation)
+      .on('end', display.chain.clearPropagation)
     var privKey = PrivateKey.fromWIF(strPrivKey)
     actions.acceptSession(privKey, txId, program,
       function (err, session, addr) {
@@ -150,6 +186,8 @@ chat.accept = function (strPrivKey, txId, program) {
 chat.say = function (strPrivKey, txId, text, program) {
   try {
     blockchain.use(program.driver, { proxy: program.socks })
+      .on('propagation', display.chain.propagation)
+      .on('end', display.chain.clearPropagation)
     var privKey = PrivateKey.fromWIF(strPrivKey)
     actions.sendChatMessage(privKey, txId, text, program,
       function (err, messages, session, symmKey, addr) {
