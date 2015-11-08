@@ -6,8 +6,8 @@ var chaiJsFactories = require('chai-js-factories')
 var _ = require('lodash')
 var util = require('util')
 
-var fakeConnection = require('../test/src/fake_connection')
-var buyerSeller = require('../src/buyer_seller')
+var fakeConnection = require('../test/lib/fake_connection')
+var buyerSeller = require('../lib/buyer_seller')
 var globals = require('./fixtures/globals')
 
 var expect = chai.expect

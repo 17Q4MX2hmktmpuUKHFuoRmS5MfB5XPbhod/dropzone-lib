@@ -4,7 +4,7 @@
 var assert = require('assert')
 
 var bitcore = require('bitcore')
-var session = require('../src/session')
+var session = require('../lib/session')
 var fixtures = require('./fixtures/session')
 var globals = require('./fixtures/globals')
 

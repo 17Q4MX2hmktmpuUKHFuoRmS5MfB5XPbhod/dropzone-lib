@@ -1,12 +1,12 @@
 var bitcore = require('bitcore')
-var cache = require('./src/cache')
-var actions = require('./src/actions')
-var drivers = require('./src/drivers')
-var storage = require('./src/storage')
-var messages = require('./src/messages')
-var session = require('./src/session')
-var tx_decoder = require('./src/tx_decoder')
-var blockchain = require('./src/blockchain')
+var cache = require('./lib/cache')
+var actions = require('./lib/actions')
+var drivers = require('./lib/drivers')
+var storage = require('./lib/storage')
+var messages = require('./lib/messages')
+var session = require('./lib/session')
+var tx_decoder = require('./lib/tx_decoder')
+var blockchain = require('./lib/blockchain')
 
 module.exports = {
   bitcore: bitcore,

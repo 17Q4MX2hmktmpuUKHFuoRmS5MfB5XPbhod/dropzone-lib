@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 var main = require('./dropzone')
 var program = require('commander')
-var command = require('../src/commands').chat.show
+var command = require('../lib/commands').chat.show
 
 main.configure(program, { network: 'testnet' })
   .usage('<private_key> <session_id> [options]')

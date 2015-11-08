@@ -4,7 +4,7 @@
 var assert = require('assert')
 
 var bitcore = require('bitcore')
-var tx_decoder = require('../src/tx_decoder')
+var tx_decoder = require('../lib/tx_decoder')
 var fixtures = require('./fixtures/xcp_transactions')
 
 var Transaction = bitcore.Transaction

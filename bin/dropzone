@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-var cache = require('../src/cache')
+var cache = require('../lib/cache')
 
 exports.configure = function (commander, defaults) {
   defaults = defaults || {}
