@@ -59,7 +59,6 @@
     "proxysocket": "^0.2.0",
     "shallow-extend": "0.0.1",
     "sqlite3": "^3.0.10",
-    "throbber": "^1.0.1",
     "wordwrap": "^1.0.0"
   },
   "browser": {
