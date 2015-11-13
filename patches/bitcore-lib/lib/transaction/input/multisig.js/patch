@@ -1,0 +1,25 @@
+diff --git a/lib/transaction/input/multisig.js b/lib/transaction/input/multisig.js
+index 29a56da..ff6aafb 100644
+--- a/lib/transaction/input/multisig.js
++++ b/lib/transaction/input/multisig.js
+@@ -23,8 +23,11 @@ function MultiSigInput(input, pubkeys, threshold, signatures) {
+   pubkeys = pubkeys || input.publicKeys;
+   threshold = threshold || input.threshold;
+   signatures = signatures || input.signatures;
+-  this.publicKeys = _.sortBy(pubkeys, function(publicKey) { return publicKey.toString('hex'); });
+-  $.checkState(Script.buildMultisigOut(this.publicKeys, threshold).equals(this.output.script),
++  this.publicKeys = pubkeys;
++  if (!Script.buildMultisigOut(this.publicKeys, threshold, { noSorting: true }).equals(this.output.script)) {
++    this.publicKeys = _.sortBy(pubkeys, function(publicKey) { return publicKey.toString('hex'); });
++  }
++  $.checkState(Script.buildMultisigOut(this.publicKeys, threshold, { noSorting: true }).equals(this.output.script),
+     'Provided public keys don\'t match to the provided output script');
+   this.publicKeyIndex = {};
+   _.each(this.publicKeys, function(publicKey, index) {
+@@ -208,4 +211,4 @@ MultiSigInput.prototype._estimateSize = function() {
+     this.threshold * MultiSigInput.SIGNATURE_SIZE;
+ };
+ 
+-module.exports = MultiSigInput;
+\ No newline at end of file
++module.exports = MultiSigInput;

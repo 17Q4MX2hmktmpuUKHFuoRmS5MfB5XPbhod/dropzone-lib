@@ -3,7 +3,7 @@
 
 var assert = require('assert')
 
-var bitcore = require('bitcore')
+var bitcore = require('bitcore-lib')
 var session = require('../lib/session')
 var fixtures = require('./fixtures/session')
 var globals = require('./fixtures/globals')

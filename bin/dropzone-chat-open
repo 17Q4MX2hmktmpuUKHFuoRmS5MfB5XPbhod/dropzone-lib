@@ -1,0 +1,23 @@
+#!/usr/bin/env node
+var main = require('./dropzone')
+var program = require('commander')
+var command = require('../lib/commands').chat.open
+
+main.configure(program, { network: 'testnet' })
+  .usage('<private_key> <session_id> [options]')
+  .description(
+    'Open a conversation and communicate with another user interactively')
+  .on('--help', function () {
+    console.log(
+      '  Open conversation identified by <session_id> using your\n' +
+      '  testnet <private_key> and watch for incoming messages. Also' +
+      '  allows sending messages interactively.\n')
+    console.log(
+      '  Example:\n\n' +
+      '  # Chat with another user over testnet interactively\n' +
+      '  dropzone chat open \\\n' +
+      '    92UvdTpmxA6cvD6YeJZSiHW8ff8DsZXL2PHZu9Mg7JY3zbaETJw \\\n' +
+      '    0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098\n')
+  })
+  .action(command)
+  .parse(process.argv)

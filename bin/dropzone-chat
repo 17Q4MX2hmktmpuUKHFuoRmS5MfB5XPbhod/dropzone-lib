@@ -14,4 +14,6 @@ program
     'Accept a conversation created by someone else over testnet')
   .command('say',
     'Communicate with someone in a private conversation over testnet')
+  .command('open',
+    'Open a conversation and communicate with another user interactively')
   .parse(process.argv)

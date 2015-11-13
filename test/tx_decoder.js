@@ -3,7 +3,7 @@
 
 var assert = require('assert')
 
-var bitcore = require('bitcore')
+var bitcore = require('bitcore-lib')
 var tx_decoder = require('../lib/tx_decoder')
 var fixtures = require('./fixtures/xcp_transactions')
 
