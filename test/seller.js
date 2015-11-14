@@ -69,7 +69,7 @@ describe('Seller', function () {
         expect(create_seller.receiverAddr).to.equal(globals.testerPublicKey)
         expect(create_seller.senderAddr).to.equal(globals.testerPublicKey)
 
-        seller.find(connection, create_seller.txid, function(err, find_seller) {
+        Seller.find(connection, create_seller.txid, function(err, find_seller) {
           expect(find_seller.description).to.equal("abc")
           expect(find_seller.alias).to.equal("Satoshi")
           expect(find_seller.communicationsAddr).to.equal(
@@ -182,8 +182,8 @@ describe('Seller', function () {
     })
 
     it("declaration must be addressed to self", function(next) {
-      var seller_txid = chai.factory.create('seller', connection,
-        {receiverAddr: globals.tester2PublicKey}).save(globals.test_privkey,
+      chai.factory.create('seller', connection,
+        {receiverAddr: globals.tester2PublicKey}).save(globals.testerPrivateKey,
         function(err, create_seller) {
 
         Seller.find(connection, create_seller.txid, function(err, find_seller) {
