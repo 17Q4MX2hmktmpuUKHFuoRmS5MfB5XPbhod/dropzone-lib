@@ -1,4 +1,4 @@
-var bitcore = require('bitcore')
+var bitcore = require('bitcore-lib')
 var cache = require('./lib/cache')
 var actions = require('./lib/actions')
 var drivers = require('./lib/drivers')
