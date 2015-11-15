@@ -61,7 +61,7 @@ FakeBitcoinConnection.prototype.hash160ToAddr = function (hash160) {
 
 FakeBitcoinConnection.prototype.hash160FromAddr = function (addr) {
   // TODO: We probably need to handle mainnet here too
-  return Address.fromString(addr, testnet).hashBuffer.toString('hex')
+  return Address.fromString(addr, testnet).hashBuffer
 }
 
 FakeBitcoinConnection.prototype.isValidAddr = function (addr, network) {
