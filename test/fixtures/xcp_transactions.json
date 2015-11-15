@@ -226,7 +226,6 @@
       ]
     },
     "getSampleCounterpartyTransactionProtocol3": {
-      "hash": "24c9f9dd130591959b8f2e2e6d0133de028138bf73dfe14cc3de0fbb151812bd",
       "version": 1,
       "nLockTime": 0,
       "fees": 5000,
