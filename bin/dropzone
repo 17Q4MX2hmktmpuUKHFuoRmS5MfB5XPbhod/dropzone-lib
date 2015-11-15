@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 var cache = require('../lib/cache')
+var storage = require('../lib/storage')
 
 exports.configure = function (commander, defaults) {
   defaults = defaults || {}
@@ -46,6 +47,8 @@ if (!module.parent) {
     .command('invoice <command>', 'Manage invoices')
 
   cache.ready(function () {
-    program.parse(process.argv)
+    storage.ready(function () {
+      program.parse(process.argv)
+    })
   })
 }
