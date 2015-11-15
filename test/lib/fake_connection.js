@@ -1,6 +1,6 @@
 var _ = require('lodash')
 var orm = require('orm')
-var bitcore = require('bitcore')
+var bitcore = require('bitcore-lib')
 
 var async = require('async')
 

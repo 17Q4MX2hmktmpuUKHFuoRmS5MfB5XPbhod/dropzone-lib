@@ -15,7 +15,7 @@ var Invoice = invoice.Invoice
 
 chai.use(chaiJsFactories)
 chai.factory.define('invoice', function (conn, args) {
-  return new Invoice(conn, _.extend({ { expirationIn: 6, 
+  return new Invoice(conn, _.extend({ expirationIn: 6, 
     amountDue: 100000000, receiverAddr: globals.testerPublicKey }, args))
 })
 
@@ -236,7 +236,5 @@ describe('Invoice', function () {
           })
         })
       })
-    })
-
   })
 })
