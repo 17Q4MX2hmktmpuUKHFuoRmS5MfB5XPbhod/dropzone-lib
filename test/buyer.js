@@ -49,7 +49,7 @@ describe('Buyer', function () {
 
   it('serializes toTransaction', function () {
     expect(chai.factory.create('buyer', connection).toTransaction()).to.eql(
-      { tip: 20000, receiverAddr: globals.testerPublicKey, 
+      { tip: 40000, receiverAddr: globals.testerPublicKey, 
         data: new Buffer([66, 89, 85, 80, 68, 84, 1, 100, 3, 97, 98, 99, 1, 97,
           7, 83, 97, 116, 111, 115, 104, 105]) })
   })
