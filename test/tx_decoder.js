@@ -127,7 +127,7 @@ describe('TxDecode', function () {
        d4153cb6c3756d5198af15a018f50731dcdacae86d5448c7404b7e42adf59942 */
 
     var tx = new Transaction(fixtures.encoded.cpMultisig)
-    assert.throws(function () { new TxDecoder(tx) }, tx_decoder.BadEncodingError)
+    assert.throws(function () { new TxDecoder(tx) }, tx_decoder.BadDecodingError)
   })
 
   it("Doesn't parse this weird double output send to self", function () {

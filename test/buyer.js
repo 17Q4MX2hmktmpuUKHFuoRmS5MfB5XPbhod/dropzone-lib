@@ -163,8 +163,8 @@ describe('Buyer', function () {
     })
 
     it("declaration must be addressed to self", function(next) {
-      var buyer_txid = chai.factory.create('buyer', connection,
-        {receiverAddr: globals.tester2PublicKey}).save(globals.test_privkey,
+      chai.factory.create('buyer', connection,
+        {receiverAddr: globals.tester2PublicKey}).save(globals.testerPrivateKey,
         function(err, create_buyer) {
 
         Buyer.find(connection, create_buyer.txid, function(err, find_buyer) {
