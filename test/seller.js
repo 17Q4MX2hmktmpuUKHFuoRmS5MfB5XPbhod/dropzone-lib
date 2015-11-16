@@ -48,52 +48,8 @@ describe('Seller', function () {
     expect(seller.senderAddr).to.not.exist
   })
 
-  it('serializes toTransaction', function () {
-    expect(chai.factory.create('seller', connection).toTransaction()).to.eql(
-      { tip: 40000, receiverAddr: globals.testerPublicKey, 
-        data: new Buffer([ 83, 76, 85, 80, 68, 84, 1, 100, 3, 97, 98, 99, 1, 97,
-          7, 83, 97, 116, 111, 115, 104, 105, 1, 112, 20, 238, 47, 94, 222, 129,
-          40, 49, 143, 45, 140, 51, 83, 95, 149, 235, 208, 177, 51, 176, 70]) })
-  })
 
-  describe("#save() and #find()", function() {
-    it('persists and loads', function (next) {
-      chai.factory.create('seller', connection).save(globals.testerPrivateKey, 
-        function(err, create_seller) {
-
-        expect(create_seller.description).to.equal("abc")
-        expect(create_seller.alias).to.equal("Satoshi")
-        expect(create_seller.communicationsAddr).to.equal(
-          'n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-        expect(create_seller.transferAddr).to.not.exist
-        expect(create_seller.receiverAddr).to.equal(globals.testerPublicKey)
-        expect(create_seller.senderAddr).to.equal(globals.testerPublicKey)
-
-        Seller.find(connection, create_seller.txid, function(err, find_seller) {
-          expect(find_seller.description).to.equal("abc")
-          expect(find_seller.alias).to.equal("Satoshi")
-          expect(find_seller.communicationsAddr).to.equal(
-            'n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-          expect(find_seller.transferAddr).to.not.exist
-          expect(find_seller.receiverAddr).to.equal(globals.testerPublicKey)
-          expect(find_seller.senderAddr).to.equal(globals.testerPublicKey)
-          next()
-        })
-
-      })
-    })
-  })
   describe("validations", function() {
-    it("validates default build", function(next) {
-      var seller = chai.factory.create('seller', connection)
-
-      seller.isValid(function(count, errors) {
-        expect(count).to.equal(0)
-        expect(errors).to.be.empty
-        next()
-      })
-    })
-
     it("validates minimal seller", function(next) {
       var seller = new Seller( connection, 
         {receiverAddr: globals.testerPublicKey})
@@ -142,10 +98,8 @@ describe('Seller', function () {
       var seller = chai.factory.create('seller', connection, {communicationsAddr: 'bad-key'})
 
       seller.isValid(function(count, errors) {
-        expect(count).to.equal(2)
+        expect(count).to.equal(1)
         expect(errors).to.deep.equal([ 
-          {parameter: 'communicationsAddr', value: 'bad-key', 
-            message: 'does not match receiverAddr'},
           {parameter: 'communicationsAddr', value: 'bad-key', 
             message: 'must be a valid address'}
         ])
