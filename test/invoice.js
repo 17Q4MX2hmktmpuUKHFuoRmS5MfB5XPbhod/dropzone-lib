@@ -5,6 +5,7 @@ var chai = require('chai')
 var chaiJsFactories = require('chai-js-factories')
 var _ = require('lodash')
 var util = require('util')
+var async = require('async')
 
 var fakeConnection = require('../test/lib/fake_connection')
 var invoice = require('../lib/invoice')
@@ -46,9 +47,9 @@ describe('Invoice', function () {
 
   it('serializes toTransaction', function () {
     expect(chai.factory.create('invoice', connection).toTransaction()).to.eql(
-      { tip: 20000, receiverAddr: globals.testerPublicKey, 
-        // TODO: data: "INCRTE\x01p\xFE\x00\xE1\xF5\x05\x01e\x06".force_encoding('ASCII-8BIT')
-        data: new Buffer([ ]) }) 
+      { tip: 40000, receiverAddr: globals.testerPublicKey, 
+        data: new Buffer([73, 78, 67, 82, 84, 69, 1, 112, 254, 0, 225, 245, 5, 
+          1, 101, 6 ]) }) 
   })
 
   describe("#save() and #find()", function() {
@@ -122,8 +123,6 @@ describe('Invoice', function () {
         })
       })
     })
-  })
-
   describe("validations", function() {
     it("validates default build", function(next) {
       var invoice = chai.factory.create('invoice', connection)
@@ -151,11 +150,10 @@ describe('Invoice', function () {
         {expirationIn: 'abc'})
 
       invoice.isValid(function(count, errors) {
-        expect(count).to.equal(2)
+        expect(count).to.equal(1)
         expect(errors).to.deep.equal([ 
-          {parameter: 'expirationIn', value: 'abc', message: 'is not a number'},
           {parameter: 'expirationIn', value: 'abc', 
-            message: 'must be greater than or equal to 0'}
+            message: 'Incorrect type. Expected number.'},
           ])
 
         next()
@@ -169,8 +167,8 @@ describe('Invoice', function () {
       invoice.isValid(function(count, errors) {
         expect(count).to.equal(1)
         expect(errors).to.deep.equal([ 
-          {parameter: 'expirationIn', value: 'abc', 
-            message: 'must be greater than or equal to 0'}
+          {parameter: 'expirationIn', value: -1, 
+            message: 'Value must be greater than or equal to 0.'}
           ])
 
         next()
@@ -182,11 +180,10 @@ describe('Invoice', function () {
         {amountDue: 'abc'})
 
       invoice.isValid(function(count, errors) {
-        expect(count).to.equal(2)
+        expect(count).to.equal(1)
         expect(errors).to.deep.equal([ 
-          {parameter: 'amountDue', value: 'abc', message: 'is not a number'},
           {parameter: 'amountDue', value: 'abc', 
-            message: 'must be greater than or equal to 0'}
+            message: 'Incorrect type. Expected number.'},
           ])
 
         next()
@@ -200,8 +197,8 @@ describe('Invoice', function () {
       invoice.isValid(function(count, errors) {
         expect(count).to.equal(1)
         expect(errors).to.deep.equal([ 
-          {parameter: 'amountDue', value: 'abc', 
-            message: 'must be greater than or equal to 0'}
+          {parameter: 'amountDue', value: -1, 
+            message: 'Value must be greater than or equal to 0.'}
           ])
 
         next()
@@ -215,7 +212,7 @@ describe('Invoice', function () {
       invoice.isValid(function(count, errors) {
         expect(count).to.equal(1)
         expect(errors).to.deep.equal([ 
-          {parameter: 'receiverAddr', value: null, message: 'is not present'} ])
+          {parameter: 'receiverAddr', value: undefined, message: 'Required value.'} ])
 
         next()
       })
@@ -236,5 +233,7 @@ describe('Invoice', function () {
           })
         })
       })
+    })
+
   })
 })

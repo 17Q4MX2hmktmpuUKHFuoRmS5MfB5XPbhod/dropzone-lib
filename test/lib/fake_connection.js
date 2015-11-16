@@ -55,13 +55,13 @@ FakeBitcoinConnection.prototype.privkeyToAddr = function (wif) {
   return PrivateKey.fromWIF(wif).toAddress(testnet).toString()
 }
 
-FakeBitcoinConnection.prototype.hash160ToAddr = function (hash160) {
-  return Address.fromPublicKeyHash(new Buffer(hash160, 'hex')).toString()
+FakeBitcoinConnection.prototype.hash160ToAddr = function (hash160, network) {
+  return Address.fromPublicKeyHash(new Buffer(hash160, 'hex'), 
+    network || testnet).toString()
 }
 
-FakeBitcoinConnection.prototype.hash160FromAddr = function (addr) {
-  // TODO: We probably need to handle mainnet here too
-  return Address.fromString(addr, testnet).hashBuffer
+FakeBitcoinConnection.prototype.hash160FromAddr = function (addr, network) {
+  return Address.fromString(addr, network || testnet).hashBuffer
 }
 
 FakeBitcoinConnection.prototype.isValidAddr = function (addr, network) {
