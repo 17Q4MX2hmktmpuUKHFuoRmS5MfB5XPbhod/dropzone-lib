@@ -48,6 +48,30 @@ describe('Seller', function () {
     expect(seller.senderAddr).to.not.exist
   })
 
+  describe("#save() and #find()", function() {
+    it('persists and loads', function (next) {
+      chai.factory.create('seller', connection).save(globals.testerPrivateKey, 
+        function(err, create_seller) {
+
+        expect(create_seller.txid).to.be.a('string')
+        expect(create_seller.description).to.equal("abc")
+        expect(create_seller.alias).to.equal("Satoshi")
+        expect(create_seller.transferAddr).to.not.exist
+        expect(create_seller.receiverAddr).to.equal(globals.testerPublicKey)
+        expect(create_seller.senderAddr).to.equal(globals.testerPublicKey)
+
+        Seller.find(connection, create_seller.txid, function(err, find_seller) {
+          expect(find_seller.description).to.equal("abc")
+          expect(find_seller.alias).to.equal("Satoshi")
+          expect(find_seller.transferAddr).to.not.exist
+          expect(find_seller.receiverAddr).to.equal(globals.testerPublicKey)
+          expect(find_seller.senderAddr).to.equal(globals.testerPublicKey)
+          next()
+        })
+
+      })
+    })
+  })
 
   describe("validations", function() {
     it("validates minimal seller", function(next) {
