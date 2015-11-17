@@ -6,3 +6,4 @@ find patches -iname 'patch' \
     RELTARGET=node_modules/"${TARGET#patches/}"
     patch -l "$RELTARGET" "$PATCH"
   ' \;
+echo
