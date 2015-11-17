@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-function apply_patch {
+apply_patch () {
   PATCH="$*"
   TARGET="${PATCH%/*}"
   RELTARGET=node_modules/"${TARGET#patches/}"
