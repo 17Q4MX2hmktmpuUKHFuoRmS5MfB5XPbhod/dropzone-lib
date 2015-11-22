@@ -34,65 +34,56 @@ describe('Payment', function () {
   })
 
   it('has accessors', function () {
-    var payment = chai.factory.create('payment', connection)
+    // Note that this invoiceId was merely pulled from the ruby version
+    var payment = chai.factory.create('payment', connection, {invoiceTxid: '2'})
 
-// TODO
-    expect(payment.expirationIn).to.equal(6)
-    expect(payment.amountDue).to.equal(100000000)
-    expect(payment.receiverAddr).to.equal(globals.testerPublicKey)
+    expect(payment.description).to.equal("abc")
+    expect(payment.invoiceTxid).to.equal("2")
+    expect(payment.deliveryQuality).to.equal(8)
+    expect(payment.productQuality).to.equal(8)
+    expect(payment.communicationsQuality).to.equal(8)
+    expect(payment.receiverAddr).to.equal(globals.tester2PublicKey)
+    expect(payment.senderAddr).to.not.exist
   })
 
   it('serializes toTransaction', function () {
-    expect(chai.factory.create('payment', connection).toTransaction()).to.eql(
-      { tip: 20000, receiverAddr: globals.testerPublicKey, 
-        // TODO: data: "".force_encoding('ASCII-8BIT')
-        data: new Buffer([ ]) }) 
+    expect(chai.factory.create('payment', connection, 
+      {invoiceTxid: '2'}).toTransaction()).to.eql(
+      { tip: 40000, receiverAddr: globals.tester2PublicKey, 
+        data: new Buffer([73, 78, 80, 65, 73, 68, 1, 100, 3, 97, 98, 99, 
+          1, 116, 1, 50, 1, 113, 8, 1, 112, 8, 1, 99, 8]) }) 
   })
 
   describe("#save() and #find()", function() {
+    it('persists and loads', function (next) {
+      chai.factory.create('payment', connection, 
+        {invoiceTxid: '2'}).save(globals.testerPrivateKey, 
+        function(err, create_payment) {
 
+        expect(create_payment.description).to.equal("abc")
+        expect(create_payment.invoiceTxid).to.equal("2")
+        expect(create_payment.deliveryQuality).to.equal(8)
+        expect(create_payment.productQuality).to.equal(8)
+        expect(create_payment.communicationsQuality).to.equal(8)
+        expect(create_payment.receiverAddr).to.equal(globals.tester2PublicKey)
+        expect(create_payment.senderAddr).to.equal(globals.testerPublicKey)
+
+        Payment.find(connection, create_payment.txid, function(err, find_payment) {
+
+          expect(find_payment.description).to.equal("abc")
+          expect(find_payment.invoiceTxid).to.equal("2")
+          expect(find_payment.deliveryQuality).to.equal(8)
+          expect(find_payment.productQuality).to.equal(8)
+          expect(find_payment.communicationsQuality).to.equal(8)
+          expect(find_payment.receiverAddr).to.equal(globals.tester2PublicKey)
+          expect(create_payment.senderAddr).to.equal(globals.testerPublicKey)
+          next()
+        })
+
+      })
+    })
   })
 /*
-  describe "defaults" do
-    it "has accessors" do
-      payment = Dropzone::Payment.sham!(:build)
-
-      expect(payment.description).to eq("abc")
-      expect(payment.invoice_txid).to be_kind_of(String)
-      expect(payment.delivery_quality).to eq(8)
-      expect(payment.product_quality).to eq(8)
-      expect(payment.communications_quality).to eq(8)
-      expect(payment.receiver_addr).to eq(TESTER2_PUBLIC_KEY)
-      expect(payment.sender_addr).to eq(nil)
-    end
-  end
-
-  describe "serialization" do 
-    it "serializes to_transaction" do
-      expect(Dropzone::Payment.sham!(invoice_txid: '2').to_transaction).to eq({
-        tip: 20000, receiver_addr: TESTER2_PUBLIC_KEY, 
-        data: "INPAID\u0001d\u0003abc\u0001t\u00012\u0001q\b\u0001p\b\u0001c\b".force_encoding('ASCII-8BIT') })
-    end
-  end
-
-  describe "database" do
-    after{ clear_blockchain! }
-
-    it ".save() and .find()" do
-      payment_id = Dropzone::Payment.sham!(:build).save! test_privkey
-      expect(payment_id).to be_kind_of(String)
-
-      payment = Dropzone::Payment.find payment_id
-
-      expect(payment.description).to eq("abc")
-      expect(payment.invoice_txid).to be_kind_of(String)
-      expect(payment.delivery_quality).to eq(8)
-      expect(payment.product_quality).to eq(8)
-      expect(payment.communications_quality).to eq(8)
-      expect(payment.receiver_addr).to eq(TESTER2_PUBLIC_KEY)
-      expect(payment.sender_addr).to eq(test_pubkey)
-    end
-  end
 
   describe "associations" do
     it "has_one invoice" do 
