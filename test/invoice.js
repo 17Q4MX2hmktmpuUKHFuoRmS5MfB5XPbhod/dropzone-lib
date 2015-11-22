@@ -119,6 +119,7 @@ describe('Invoice', function () {
         })
       })
     })
+
   describe("validations", function() {
     it("validates default build", function(next) {
       var invoice = chai.factory.create('invoice', connection)

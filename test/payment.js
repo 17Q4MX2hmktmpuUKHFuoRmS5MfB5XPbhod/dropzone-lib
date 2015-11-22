@@ -5,6 +5,7 @@ var chai = require('chai')
 var factories = require('../test/factories/factories')
 var _ = require('lodash')
 var util = require('util')
+var async = require('async')
 
 var fakeConnection = require('../lib/drivers/fake')
 
@@ -83,96 +84,197 @@ describe('Payment', function () {
       })
     })
   })
-/*
 
-  describe "associations" do
-    it "has_one invoice" do 
-      payment_id = Dropzone::Payment.sham!(:build).save! test_privkey
+  describe("associations", function() {
+    it("has_one invoice", function(nextSpec) {
+      async.waterfall([
+          function(next){
+            // Create an Invoice
+            chai.factory.create('invoice', connection, 
+              {receiverAddr: globals.tester2PublicKey} )
+              .save(globals.testerPrivateKey, next)
+          },
+          function(invoice, next){
+            // Create Payment one:
+            var paymentAttrs = { invoiceTxid: invoice.txid, 
+              receiverAddr: globals.testerPublicKey, description: 'xyz' }
 
-      payment = Dropzone::Payment.find payment_id
-      expect(payment.invoice.expiration_in).to eq(6)
-      expect(payment.invoice.amount_due).to eq(100_000_000)
-      expect(payment.invoice.receiver_addr).to eq(test_pubkey)
-    end
-  end
+            chai.factory.create('payment', connection, paymentAttrs)
+              .save(globals.tester2PrivateKey, next)
+          },
+          function(payment, next) {
+            // Get Invoice
+            payment.getInvoice(next)
+          }
+        ], function (err, invoice) {
+            expect(payment.invoice.expirationIn).to.equal(6)
+            expect(payment.invoice.amountDue).to.equal(100000000)
+            expect(payment.invoice.receiverAddr).to.equal(globals.testerPublicKey)
 
-  describe "validations" do 
-    after{ clear_blockchain! }
+            nextSpec()
+        })
+      })
+    })
 
-    it "validates default build" do
-      expect(Dropzone::Payment.sham!(:build).valid?).to eq(true)
-    end
+  describe("validations", function() {
+    it("validates default build", function(next) {
+      var payment = chai.factory.create('payment', connection)
 
-    it "validates minimal payment" do
-      invoice_id = Dropzone::Invoice.sham!(:build).save! TESTER2_PRIVATE_KEY
+      payment.isValid(function(count, errors) {
+        expect(count).to.equal(0)
+        expect(errors).to.be.empty
+        next()
+      })
+    })
 
-      payment = Dropzone::Payment.new receiver_addr: TESTER2_PUBLIC_KEY, 
-        invoice_txid: invoice_id
+    it("validates minimal payment", function(nextSpec) {
+      async.waterfall([
+        function(next){
+          chai.factory.create('invoice', connection, 
+            {receiverAddr: globals.tester2PublicKey} )
+            .save(globals.testerPrivateKey, next)
+        }], function (err, invoice) {
+          var payment = new Payment( connection, 
+            {receiverAddr: globals.testerPublicKey, invoiceTxid: invoice.txid})
 
-      expect(payment.valid?).to eq(true)
-    end
+          payment.isValid(function(count, errors) {
+            expect(count).to.equal(0)
+            expect(errors).to.be.empty
+            nextSpec()
+          })
+      })
+    })
 
-    it "validates output address must be present" do
-      payment = Dropzone::Payment.sham! receiver_addr: nil
+    it("validates output address must be present", function(next) {
+      var payment = chai.factory.create('payment', connection, 
+        {receiverAddr: null})
 
-      expect(payment.valid?).to eq(false)
-      expect(payment.errors.count).to eq(2)
-      expect(payment.errors.on(:receiver_addr)).to eq(['is not present'])
-      expect(payment.errors.on(:invoice_txid)).to eq(["can't be found"])
-    end
+      payment.isValid(function(count, errors) {
+        expect(count).to.equal(1)
+        expect(errors).to.deep.equal([ 
+          {parameter: 'receiverAddr', value: undefined, 
+            message: 'Required value.'} ])
 
-    it "description must be string" do
-      payment = Dropzone::Payment.sham! description: 1
+        next()
+      })
+    })
 
-      expect(payment.valid?).to eq(false)
-      expect(payment.errors.count).to eq(1)
-      expect(payment.errors.on(:description)).to eq(['is not a string'])
-    end
+    it("description must be string", function(next) {
+      var payment = chai.factory.create('payment', connection, 
+        {description: 1})
 
-    it "invoice_txid must be string" do
-      payment = Dropzone::Payment.sham! invoice_txid: 500
+      payment.isValid(function(count, errors) {
+        expect(count).to.equal(1)
+        expect(errors).to.deep.equal([ 
+          {parameter: 'description', value: 1, 
+            message: 'Incorrect type. Expected string.'},
+          ])
 
-      expect(payment.valid?).to eq(false)
-      expect(payment.errors.count).to eq(2)
-      expect(payment.errors.on(:invoice_txid)).to eq(['is not a string', 
-        "can't be found"])
-    end
-    
-    [:delivery_quality,:product_quality,:communications_quality ].each do |rating_attr|
-      it "%s must be numeric" % rating_attr.to_s do
-        payment = Dropzone::Payment.sham! rating_attr => 'abc'
+        next()
+      })
+    })
 
-        expect(payment.valid?).to eq(false)
-        expect(payment.errors.count).to eq(2)
-        expect(payment.errors.on(rating_attr)).to eq(
-          ['is not a number', "is not in set: 0..8"])
-      end
+    it("invoiceTxid must be string", function(next) {
+      var payment = chai.factory.create('payment', connection, 
+        {invoiceTxid: 1})
 
-      it "%s must be between 0 and 8" % rating_attr.to_s do
-        payment = Dropzone::Payment.sham! rating_attr => 9
+      payment.isValid(function(count, errors) {
+        expect(count).to.equal(1)
+        expect(errors).to.deep.equal([ 
+          {parameter: 'invoiceTxid', value: 1, 
+            message: 'Incorrect type. Expected string.'},
+          ])
 
-        expect(payment.valid?).to eq(false)
-        expect(payment.errors.count).to eq(1)
-        expect(payment.errors.on(rating_attr)).to eq(['is not in set: 0..8'])
-      end
-    end
+        next()
+      })
+    })
 
+    async.each(['deliveryQuality','productQuality','communicationsQuality'], 
+      function(attr, nextAttr) { 
+        it(attr+" must be numeric", function(next) {
+          attrs = {}
+          attrs[attr] = 'abc'
+
+          var payment = chai.factory.create('payment', connection, attrs)
+
+          payment.isValid(function(count, errors) {
+            expect(count).to.equal(1)
+            expect(errors).to.deep.equal([ 
+              {parameter: attr, value: 'abc', 
+                message: 'Incorrect type. Expected number.'},
+              ])
+
+            next()
+          })
+        })
+
+        it(attr+" must be lte 8", function(next) {
+          attrs = {}
+          attrs[attr] = 8.1
+
+          var payment = chai.factory.create('payment', connection, attrs)
+
+          payment.isValid(function(count, errors) {
+            expect(count).to.equal(1)
+            expect(errors).to.deep.equal([ 
+              {parameter: attr, value: 8.1, 
+                message: 'Value must be less than or equal to 8.'},
+              ])
+
+            next()
+          })
+        })
+
+        it(attr+" must be gt 8", function(next) {
+          attrs = {}
+          attrs[attr] = -1
+
+          var payment = chai.factory.create('payment', connection, attrs)
+
+          payment.isValid(function(count, errors) {
+            expect(count).to.equal(1)
+            expect(errors).to.deep.equal([ 
+              {parameter: attr, value: -1, 
+                message: 'Value must be greater than or equal to 0.'},
+              ])
+
+            next()
+          })
+        })
+
+        nextAttr()
+      })
+
+    it("declaration must not be addressed to self", function(next) {
+      chai.factory.create('payment', connection, 
+        {receiverAddr: globals.testerPublicKey}).save(globals.testerPrivateKey,
+        function(err, create_payment) {
+
+        Payment.find(connection, create_payment.txid, function(err, find_payment) {
+          find_payment.isValid(function(count, errors) {
+            expect(count).to.equal(1)
+            expect(errors).to.deep.equal([ {parameter: 'receiverAddr',
+              value: globals.testerPublicKey, message: 'matches senderAddr'} ])
+
+            next()
+          })
+        })
+      })
+    })
+
+
+
+
+
+  
+/* TODO:
+ 
     it "validates invoice existence" do
       payment = Dropzone::Payment.sham! invoice_txid: 'non-existant-id'
       
       expect(payment.valid?).to eq(false)
       expect(payment.errors.count).to eq(1)
       expect(payment.errors.on(:invoice_txid)).to eq(["can't be found"])
-    end
-
-    it "declaration must not be addressed to self" do
-      id = Dropzone::Invoice.sham!(receiver_addr: test_pubkey).save! test_privkey
-
-      invoice = Dropzone::Invoice.find id
-
-      expect(invoice.valid?).to eq(false)
-      expect(invoice.errors.count).to eq(1)
-      expect(invoice.errors.on(:receiver_addr)).to eq(['matches sender_addr'])
     end
 
     it "must be addressed to transaction_id owner" do
@@ -189,7 +291,6 @@ describe('Payment', function () {
 
   end
 */
-
-
+  })
 
 })
