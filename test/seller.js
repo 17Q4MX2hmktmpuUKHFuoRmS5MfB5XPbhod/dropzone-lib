@@ -2,23 +2,18 @@
 /* eslint no-new: 0 */
 
 var chai = require('chai')
-var chaiJsFactories = require('chai-js-factories')
+var factories = require('../test/factories/factories')
 var _ = require('lodash')
 var util = require('util')
 
-var fakeConnection = require('../test/lib/fake_connection')
+var fakeConnection = require('../lib/drivers/fake')
 var buyerSeller = require('../lib/buyer_seller')
 var globals = require('./fixtures/globals')
 
 var expect = chai.expect
 var Seller = buyerSeller.Seller
 
-chai.use(chaiJsFactories)
-chai.factory.define('seller', function (conn, args) {
-  return new Seller(conn, _.extend({ description: "abc", 
-    alias: "Satoshi", communicationsAddr: 'n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv', 
-    receiverAddr: globals.testerPublicKey }, args))
-})
+factories.dz(chai)
 
 describe('Seller', function () {
   var connection = null

@@ -2,23 +2,19 @@
 /* eslint no-new: 0 */
 
 var chai = require('chai')
-var chaiJsFactories = require('chai-js-factories')
+var factories = require('../test/factories/factories')
 var _ = require('lodash')
 var util = require('util')
 var async = require('async')
 
-var fakeConnection = require('../test/lib/fake_connection')
+var fakeConnection = require('../lib/drivers/fake')
 var invoice = require('../lib/invoice')
 var globals = require('./fixtures/globals')
 
 var expect = chai.expect
 var Invoice = invoice.Invoice
 
-chai.use(chaiJsFactories)
-chai.factory.define('invoice', function (conn, args) {
-  return new Invoice(conn, _.extend({ expirationIn: 6, 
-    amountDue: 100000000, receiverAddr: globals.testerPublicKey }, args))
-})
+factories.dz(chai)
 
 describe('Invoice', function () {
   var connection = null
@@ -76,7 +72,7 @@ describe('Invoice', function () {
   })
 
   describe("associations", function() {
-    it("has_many payments", function(next_spec) {
+    it("has_many payments", function(nextSpec) {
       async.waterfall([
           function(next){
             // Create an Invoice
@@ -119,7 +115,7 @@ describe('Invoice', function () {
 
             expect(payments.length).to.equal(2)
             expect(payments.descriptions).to.equal(['xyz','abc'])
-            next_spec()
+            nextSpec()
         })
       })
     })
