@@ -60,26 +60,29 @@ describe('Payment', function () {
       chai.factory.create('payment', connection, 
         {invoiceTxid: '2'}).save(globals.testerPrivateKey, 
         function(err, create_payment) {
+          if (err) throw err
 
-        expect(create_payment.description).to.equal("abc")
-        expect(create_payment.invoiceTxid).to.equal("2")
-        expect(create_payment.deliveryQuality).to.equal(8)
-        expect(create_payment.productQuality).to.equal(8)
-        expect(create_payment.communicationsQuality).to.equal(8)
-        expect(create_payment.receiverAddr).to.equal(globals.tester2PublicKey)
-        expect(create_payment.senderAddr).to.equal(globals.testerPublicKey)
-
-        Payment.find(connection, create_payment.txid, function(err, find_payment) {
-
-          expect(find_payment.description).to.equal("abc")
-          expect(find_payment.invoiceTxid).to.equal("2")
-          expect(find_payment.deliveryQuality).to.equal(8)
-          expect(find_payment.productQuality).to.equal(8)
-          expect(find_payment.communicationsQuality).to.equal(8)
-          expect(find_payment.receiverAddr).to.equal(globals.tester2PublicKey)
+          expect(create_payment.description).to.equal("abc")
+          expect(create_payment.invoiceTxid).to.equal("2")
+          expect(create_payment.deliveryQuality).to.equal(8)
+          expect(create_payment.productQuality).to.equal(8)
+          expect(create_payment.communicationsQuality).to.equal(8)
+          expect(create_payment.receiverAddr).to.equal(globals.tester2PublicKey)
           expect(create_payment.senderAddr).to.equal(globals.testerPublicKey)
-          next()
-        })
+
+          Payment.find(connection, create_payment.txid, 
+            function(err, find_payment) {
+            if (err) throw err
+
+            expect(find_payment.description).to.equal("abc")
+            expect(find_payment.invoiceTxid).to.equal("2")
+            expect(find_payment.deliveryQuality).to.equal(8)
+            expect(find_payment.productQuality).to.equal(8)
+            expect(find_payment.communicationsQuality).to.equal(8)
+            expect(find_payment.receiverAddr).to.equal(globals.tester2PublicKey)
+            expect(create_payment.senderAddr).to.equal(globals.testerPublicKey)
+            next()
+          })
 
       })
     })
@@ -91,7 +94,7 @@ describe('Payment', function () {
           function(next){
             // Create an Invoice
             chai.factory.create('invoice', connection, 
-              {receiverAddr: globals.tester2PublicKey} )
+              {receiverAddr: globals.testerPublicKey} )
               .save(globals.testerPrivateKey, next)
           },
           function(invoice, next){
@@ -107,11 +110,13 @@ describe('Payment', function () {
             payment.getInvoice(next)
           }
         ], function (err, invoice) {
-            expect(payment.invoice.expirationIn).to.equal(6)
-            expect(payment.invoice.amountDue).to.equal(100000000)
-            expect(payment.invoice.receiverAddr).to.equal(globals.testerPublicKey)
+          if (err) throw err
 
-            nextSpec()
+          expect(invoice.expirationIn).to.equal(6)
+          expect(invoice.amountDue).to.equal(100000000)
+          expect(invoice.receiverAddr).to.equal(globals.testerPublicKey)
+
+          nextSpec()
         })
       })
     })
@@ -134,6 +139,7 @@ describe('Payment', function () {
             {receiverAddr: globals.tester2PublicKey} )
             .save(globals.testerPrivateKey, next)
         }], function (err, invoice) {
+          if (err) throw err
           var payment = new Payment( connection, 
             {receiverAddr: globals.testerPublicKey, invoiceTxid: invoice.txid})
 
@@ -249,26 +255,45 @@ describe('Payment', function () {
       chai.factory.create('payment', connection, 
         {receiverAddr: globals.testerPublicKey}).save(globals.testerPrivateKey,
         function(err, create_payment) {
+          if (err) throw err
 
-        Payment.find(connection, create_payment.txid, function(err, find_payment) {
-          find_payment.isValid(function(count, errors) {
-            expect(count).to.equal(1)
-            expect(errors).to.deep.equal([ {parameter: 'receiverAddr',
-              value: globals.testerPublicKey, message: 'matches senderAddr'} ])
+          Payment.find(connection, create_payment.txid, 
+            function(err, find_payment) {
+            if (err) throw err
+            find_payment.isValid(function(count, errors) {
+              expect(count).to.equal(1)
+              expect(errors).to.deep.equal([ {parameter: 'receiverAddr',
+                value: globals.testerPublicKey, message: 'matches senderAddr'} ])
 
-            next()
+              next()
+            })
           })
-        })
       })
     })
 
-
-
-
+    it("must be addressed to transactionId owner", function(nextSpec) {
+      async.waterfall([
+        function(next){
+          chai.factory.create('invoice', connection, 
+            {receiverAddr: globals.tester2PublicKey} )
+            .save(globals.testerPrivateKey, next)
+        }, function (invoice,next) {
+          new Payment( connection, {receiverAddr: globals.testerPublicKey, 
+            invoiceTxid: invoice.txid}).save(globals.tester3PrivateKey, next)
+        }], function (err, payment) {
+          if (err) throw err
+          payment.isValid(function(count, errors) {
+            expect(count).to.equal(1)
+            expect(errors).to.deep.equal([ {parameter: 'invoiceTxid',
+              value: payment.invoiceTxid, message: 'cannot be found.'} ])
+            nextSpec()
+          })
+        })
+      })
 
   
+    it("validates invoice existence", function(nextSpec) {
 /* TODO:
- 
     it "validates invoice existence" do
       payment = Dropzone::Payment.sham! invoice_txid: 'non-existant-id'
       
@@ -276,21 +301,10 @@ describe('Payment', function () {
       expect(payment.errors.count).to eq(1)
       expect(payment.errors.on(:invoice_txid)).to eq(["can't be found"])
     end
-
-    it "must be addressed to transaction_id owner" do
-      # The sham'd Invoice is addressed to TESTER2_PUBLIC_KEY
-      payment_id = Dropzone::Payment.sham!(
-        receiver_addr: TESTER_PUBLIC_KEY).save! TESTER3_PRIVATE_KEY
-
-      payment = Dropzone::Payment.find payment_id
-
-      expect(payment.valid?).to eq(false)
-      expect(payment.errors.count).to eq(1)
-      expect(payment.errors.on(:invoice_txid)).to eq(["can't be found"])
-    end
-
-  end
 */
+      expect(true).to.equal(false)
+      nextSpec()
+    })
   })
 
 })
