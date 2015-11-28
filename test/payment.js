@@ -59,28 +59,28 @@ describe('Payment', function () {
     it('persists and loads', function (next) {
       chai.factory.create('payment', connection, 
         {invoiceTxid: '2'}).save(globals.testerPrivateKey, 
-        function(err, create_payment) {
+        function(err, createPayment) {
           if (err) throw err
 
-          expect(create_payment.description).to.equal("abc")
-          expect(create_payment.invoiceTxid).to.equal("2")
-          expect(create_payment.deliveryQuality).to.equal(8)
-          expect(create_payment.productQuality).to.equal(8)
-          expect(create_payment.communicationsQuality).to.equal(8)
-          expect(create_payment.receiverAddr).to.equal(globals.tester2PublicKey)
-          expect(create_payment.senderAddr).to.equal(globals.testerPublicKey)
+          expect(createPayment.description).to.equal("abc")
+          expect(createPayment.invoiceTxid).to.equal("2")
+          expect(createPayment.deliveryQuality).to.equal(8)
+          expect(createPayment.productQuality).to.equal(8)
+          expect(createPayment.communicationsQuality).to.equal(8)
+          expect(createPayment.receiverAddr).to.equal(globals.tester2PublicKey)
+          expect(createPayment.senderAddr).to.equal(globals.testerPublicKey)
 
-          Payment.find(connection, create_payment.txid, 
-            function(err, find_payment) {
+          Payment.find(connection, createPayment.txid, 
+            function(err, findPayment) {
             if (err) throw err
 
-            expect(find_payment.description).to.equal("abc")
-            expect(find_payment.invoiceTxid).to.equal("2")
-            expect(find_payment.deliveryQuality).to.equal(8)
-            expect(find_payment.productQuality).to.equal(8)
-            expect(find_payment.communicationsQuality).to.equal(8)
-            expect(find_payment.receiverAddr).to.equal(globals.tester2PublicKey)
-            expect(create_payment.senderAddr).to.equal(globals.testerPublicKey)
+            expect(findPayment.description).to.equal("abc")
+            expect(findPayment.invoiceTxid).to.equal("2")
+            expect(findPayment.deliveryQuality).to.equal(8)
+            expect(findPayment.productQuality).to.equal(8)
+            expect(findPayment.communicationsQuality).to.equal(8)
+            expect(findPayment.receiverAddr).to.equal(globals.tester2PublicKey)
+            expect(createPayment.senderAddr).to.equal(globals.testerPublicKey)
             next()
           })
 
@@ -125,9 +125,9 @@ describe('Payment', function () {
     it("validates default build", function(next) {
       var payment = chai.factory.create('payment', connection)
 
-      payment.isValid(function(count, errors) {
-        expect(count).to.equal(0)
-        expect(errors).to.be.empty
+      payment.isValid(function(err, res) {
+        if (err) throw err
+        expect(res).to.be.null
         next()
       })
     })
@@ -143,9 +143,9 @@ describe('Payment', function () {
           var payment = new Payment( connection, 
             {receiverAddr: globals.testerPublicKey, invoiceTxid: invoice.txid})
 
-          payment.isValid(function(count, errors) {
-            expect(count).to.equal(0)
-            expect(errors).to.be.empty
+          payment.isValid(function(err, res) {
+            if (err) throw err
+            expect(res).to.be.null
             nextSpec()
           })
       })
@@ -153,13 +153,14 @@ describe('Payment', function () {
 
     it("validates output address must be present", function(next) {
       var payment = chai.factory.create('payment', connection, 
-        {receiverAddr: null})
+        {receiverAddr: undefined})
 
-      payment.isValid(function(count, errors) {
-        expect(count).to.equal(1)
-        expect(errors).to.deep.equal([ 
-          {parameter: 'receiverAddr', value: undefined, 
-            message: 'Required value.'} ])
+      payment.isValid(function(err, res) {
+        if (err) throw err
+
+        expect(res.errors.length).to.equal(1)
+        expect(res.errors[0].message).to.equal(
+          "receiverAddr is required")
 
         next()
       })
@@ -169,12 +170,12 @@ describe('Payment', function () {
       var payment = chai.factory.create('payment', connection, 
         {description: 1})
 
-      payment.isValid(function(count, errors) {
-        expect(count).to.equal(1)
-        expect(errors).to.deep.equal([ 
-          {parameter: 'description', value: 1, 
-            message: 'Incorrect type. Expected string.'},
-          ])
+      payment.isValid(function(err, res) {
+        if (err) throw err
+
+        expect(res.errors.length).to.equal(1)
+        expect(res.errors[0].message).to.equal(
+          "description is not a string")
 
         next()
       })
@@ -184,12 +185,12 @@ describe('Payment', function () {
       var payment = chai.factory.create('payment', connection, 
         {invoiceTxid: 1})
 
-      payment.isValid(function(count, errors) {
-        expect(count).to.equal(1)
-        expect(errors).to.deep.equal([ 
-          {parameter: 'invoiceTxid', value: 1, 
-            message: 'Incorrect type. Expected string.'},
-          ])
+      payment.isValid(function(err, res) {
+        if (err) throw err
+
+        expect(res.errors.length).to.equal(1)
+        expect(res.errors[0].message).to.equal(
+          "invoiceTxid is not a string")
 
         next()
       })
@@ -203,12 +204,12 @@ describe('Payment', function () {
 
           var payment = chai.factory.create('payment', connection, attrs)
 
-          payment.isValid(function(count, errors) {
-            expect(count).to.equal(1)
-            expect(errors).to.deep.equal([ 
-              {parameter: attr, value: 'abc', 
-                message: 'Incorrect type. Expected number.'},
-              ])
+          payment.isValid(function(err, res) {
+            if (err) throw err
+
+            expect(res.errors.length).to.equal(1)
+            expect(res.errors[0].message).to.equal(
+              attr+" is not an integer")
 
             next()
           })
@@ -216,33 +217,34 @@ describe('Payment', function () {
 
         it(attr+" must be lte 8", function(next) {
           attrs = {}
-          attrs[attr] = 8.1
+          attrs[attr] = 9
 
           var payment = chai.factory.create('payment', connection, attrs)
 
-          payment.isValid(function(count, errors) {
-            expect(count).to.equal(1)
-            expect(errors).to.deep.equal([ 
-              {parameter: attr, value: 8.1, 
-                message: 'Value must be less than or equal to 8.'},
-              ])
+          payment.isValid(function(err, res) {
+            if (err) throw err
+
+            expect(res.errors.length).to.equal(1)
+            expect(res.errors[0].message).to.equal(
+              attr+" must be between 0 and 8")
 
             next()
           })
+
         })
 
-        it(attr+" must be gt 8", function(next) {
+        it(attr+" must be gte 0", function(next) {
           attrs = {}
           attrs[attr] = -1
 
           var payment = chai.factory.create('payment', connection, attrs)
 
-          payment.isValid(function(count, errors) {
-            expect(count).to.equal(1)
-            expect(errors).to.deep.equal([ 
-              {parameter: attr, value: -1, 
-                message: 'Value must be greater than or equal to 0.'},
-              ])
+          payment.isValid(function(err, res) {
+            if (err) throw err
+
+            expect(res.errors.length).to.equal(1)
+            expect(res.errors[0].message).to.equal(
+              attr+" must be between 0 and 8")
 
             next()
           })
@@ -254,16 +256,19 @@ describe('Payment', function () {
     it("declaration must not be addressed to self", function(next) {
       chai.factory.create('payment', connection, 
         {receiverAddr: globals.testerPublicKey}).save(globals.testerPrivateKey,
-        function(err, create_payment) {
+        function(err, createPayment) {
           if (err) throw err
 
-          Payment.find(connection, create_payment.txid, 
-            function(err, find_payment) {
+          Payment.find(connection, createPayment.txid, 
+            function(err, findPayment) {
             if (err) throw err
-            find_payment.isValid(function(count, errors) {
-              expect(count).to.equal(1)
-              expect(errors).to.deep.equal([ {parameter: 'receiverAddr',
-                value: globals.testerPublicKey, message: 'matches senderAddr'} ])
+
+            findPayment.isValid(function(err, res) {
+              if (err) throw err
+
+              expect(res.errors.length).to.equal(1)
+              expect(res.errors[0].message).to.equal(
+                "receiverAddr matches senderAddr")
 
               next()
             })
@@ -282,11 +287,15 @@ describe('Payment', function () {
             invoiceTxid: invoice.txid}).save(globals.tester3PrivateKey, next)
         }], function (err, payment) {
           if (err) throw err
-          payment.isValid(function(count, errors) {
-            expect(count).to.equal(1)
-            expect(errors).to.deep.equal([ {parameter: 'invoiceTxid',
-              value: payment.invoiceTxid, message: 'cannot be found.'} ])
-            nextSpec()
+
+          payment.isValid(function(err, res) {
+            if (err) throw err
+
+            expect(res.errors.length).to.equal(1)
+            expect(res.errors[0].message).to.equal(
+              "invoiceTxid cannot be found")
+
+            next()
           })
         })
       })
