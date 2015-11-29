@@ -1,5 +1,7 @@
 var _ = require('lodash')
+var async = require('async')
 var util = require('util')
+var extend = require('shallow-extend')
 var chaiJsFactories = require('chai-js-factories')
 
 var globals = require('../fixtures/globals')
@@ -38,6 +40,18 @@ var dz = function(chai) {
     })
 }
 
+// This creates a fully valid payment, which is a bit more involved than most
+// messages
+var createPayment = function(chai, conn, options, cb) {
+  chai.factory.create('invoice', conn).save(globals.tester2PrivateKey, 
+    function(err, invoice){
+    if (err) throw err
+    cb(null, chai.factory.create('payment', conn, 
+        extend({invoiceTxid: invoice.txid}, options)))
+  })
+}
+
 module.exports = {
-  dz: dz
+  dz: dz,
+  createPayment: createPayment
 }
