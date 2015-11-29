@@ -5,6 +5,7 @@ var chai = require('chai')
 var factories = require('../test/factories/factories')
 var _ = require('lodash')
 var util = require('util')
+var async = require('async')
 
 var fakeConnection = require('../lib/drivers/fake')
 
@@ -34,171 +35,294 @@ describe('Payment', function () {
   })
 
   it('has accessors', function () {
-    var payment = chai.factory.create('payment', connection)
+    // Note that this invoiceId was merely pulled from the ruby version
+    var payment = chai.factory.create('payment', connection, {invoiceTxid: '2'})
 
-// TODO
-    expect(payment.expirationIn).to.equal(6)
-    expect(payment.amountDue).to.equal(100000000)
-    expect(payment.receiverAddr).to.equal(globals.testerPublicKey)
+    expect(payment.description).to.equal("abc")
+    expect(payment.invoiceTxid).to.equal("2")
+    expect(payment.deliveryQuality).to.equal(8)
+    expect(payment.productQuality).to.equal(8)
+    expect(payment.communicationsQuality).to.equal(8)
+    expect(payment.receiverAddr).to.equal(globals.tester2PublicKey)
+    expect(payment.senderAddr).to.not.exist
   })
 
   it('serializes toTransaction', function () {
-    expect(chai.factory.create('payment', connection).toTransaction()).to.eql(
-      { tip: 20000, receiverAddr: globals.testerPublicKey, 
-        // TODO: data: "".force_encoding('ASCII-8BIT')
-        data: new Buffer([ ]) }) 
+    expect(chai.factory.create('payment', connection, 
+      {invoiceTxid: '2'}).toTransaction()).to.eql(
+      { tip: 40000, receiverAddr: globals.tester2PublicKey, 
+        data: new Buffer([73, 78, 80, 65, 73, 68, 1, 100, 3, 97, 98, 99, 
+          1, 116, 1, 50, 1, 113, 8, 1, 112, 8, 1, 99, 8]) }) 
   })
 
   describe("#save() and #find()", function() {
+    it('persists and loads', function (next) {
+      chai.factory.create('payment', connection, 
+        {invoiceTxid: '2'}).save(globals.testerPrivateKey, 
+        function(err, createPayment) {
+          if (err) throw err
 
+          expect(createPayment.description).to.equal("abc")
+          expect(createPayment.invoiceTxid).to.equal("2")
+          expect(createPayment.deliveryQuality).to.equal(8)
+          expect(createPayment.productQuality).to.equal(8)
+          expect(createPayment.communicationsQuality).to.equal(8)
+          expect(createPayment.receiverAddr).to.equal(globals.tester2PublicKey)
+          expect(createPayment.senderAddr).to.equal(globals.testerPublicKey)
+
+          Payment.find(connection, createPayment.txid, 
+            function(err, findPayment) {
+            if (err) throw err
+
+            expect(findPayment.description).to.equal("abc")
+            expect(findPayment.invoiceTxid).to.equal("2")
+            expect(findPayment.deliveryQuality).to.equal(8)
+            expect(findPayment.productQuality).to.equal(8)
+            expect(findPayment.communicationsQuality).to.equal(8)
+            expect(findPayment.receiverAddr).to.equal(globals.tester2PublicKey)
+            expect(createPayment.senderAddr).to.equal(globals.testerPublicKey)
+            next()
+          })
+
+      })
+    })
   })
-/*
-  describe "defaults" do
-    it "has accessors" do
-      payment = Dropzone::Payment.sham!(:build)
 
-      expect(payment.description).to eq("abc")
-      expect(payment.invoice_txid).to be_kind_of(String)
-      expect(payment.delivery_quality).to eq(8)
-      expect(payment.product_quality).to eq(8)
-      expect(payment.communications_quality).to eq(8)
-      expect(payment.receiver_addr).to eq(TESTER2_PUBLIC_KEY)
-      expect(payment.sender_addr).to eq(nil)
-    end
-  end
+  describe("associations", function() {
+    it("has_one invoice", function(nextSpec) {
+      async.waterfall([
+          function(next){
+            // Create an Invoice
+            chai.factory.create('invoice', connection, 
+              {receiverAddr: globals.testerPublicKey} )
+              .save(globals.testerPrivateKey, next)
+          },
+          function(invoice, next){
+            // Create Payment one:
+            var paymentAttrs = { invoiceTxid: invoice.txid, 
+              receiverAddr: globals.testerPublicKey, description: 'xyz' }
 
-  describe "serialization" do 
-    it "serializes to_transaction" do
-      expect(Dropzone::Payment.sham!(invoice_txid: '2').to_transaction).to eq({
-        tip: 20000, receiver_addr: TESTER2_PUBLIC_KEY, 
-        data: "INPAID\u0001d\u0003abc\u0001t\u00012\u0001q\b\u0001p\b\u0001c\b".force_encoding('ASCII-8BIT') })
-    end
-  end
+            chai.factory.create('payment', connection, paymentAttrs)
+              .save(globals.tester2PrivateKey, next)
+          },
+          function(payment, next) {
+            // Get Invoice
+            payment.getInvoice(next)
+          }
+        ], function (err, invoice) {
+          if (err) throw err
 
-  describe "database" do
-    after{ clear_blockchain! }
+          expect(invoice.expirationIn).to.equal(6)
+          expect(invoice.amountDue).to.equal(100000000)
+          expect(invoice.receiverAddr).to.equal(globals.testerPublicKey)
 
-    it ".save() and .find()" do
-      payment_id = Dropzone::Payment.sham!(:build).save! test_privkey
-      expect(payment_id).to be_kind_of(String)
+          nextSpec()
+        })
+      })
+    })
 
-      payment = Dropzone::Payment.find payment_id
+  describe("validations", function() {
+    it("validates default build", function(next) {
+      factories.createPayment(chai, connection, null, function(err, payment) {
+        payment.isValid(function(err, res) {
+          if (err) throw err
+          expect(res).to.be.null
+          next()
+        })
+      })
+    })
 
-      expect(payment.description).to eq("abc")
-      expect(payment.invoice_txid).to be_kind_of(String)
-      expect(payment.delivery_quality).to eq(8)
-      expect(payment.product_quality).to eq(8)
-      expect(payment.communications_quality).to eq(8)
-      expect(payment.receiver_addr).to eq(TESTER2_PUBLIC_KEY)
-      expect(payment.sender_addr).to eq(test_pubkey)
-    end
-  end
+    it("validates minimal payment", function(nextSpec) {
+      async.waterfall([
+        function(next){
+          chai.factory.create('invoice', connection, 
+            {receiverAddr: globals.testerPublicKey} )
+            .save(globals.tester2PrivateKey, next)
+        }], function (err, invoice) {
+          if (err) throw err
+          var payment = new Payment( connection, 
+            {receiverAddr: globals.tester2PublicKey, invoiceTxid: invoice.txid})
 
-  describe "associations" do
-    it "has_one invoice" do 
-      payment_id = Dropzone::Payment.sham!(:build).save! test_privkey
+          payment.isValid(function(err, res) {
+            if (err) throw err
+            expect(res).to.be.null
+            nextSpec()
+          })
+      })
+    })
 
-      payment = Dropzone::Payment.find payment_id
-      expect(payment.invoice.expiration_in).to eq(6)
-      expect(payment.invoice.amount_due).to eq(100_000_000)
-      expect(payment.invoice.receiver_addr).to eq(test_pubkey)
-    end
-  end
+    it("validates output address must be present", function(next) {
+      factories.createPayment(chai, connection, {receiverAddr: undefined}, 
+        function(err, payment) {
+        payment.isValid(function(err, res) {
+          if (err) throw err
 
-  describe "validations" do 
-    after{ clear_blockchain! }
+          expect(res.errors.length).to.equal(2)
+          expect(res.errors[0].message).to.equal("receiverAddr is required")
+          expect(res.errors[1].message).to.equal("invoiceTxid can't be found")
 
-    it "validates default build" do
-      expect(Dropzone::Payment.sham!(:build).valid?).to eq(true)
-    end
+          next()
+        })
+      })
+    })
 
-    it "validates minimal payment" do
-      invoice_id = Dropzone::Invoice.sham!(:build).save! TESTER2_PRIVATE_KEY
+    it("description must be string", function(next) {
+      factories.createPayment(chai, connection, {description: 1}, 
+        function(err, payment) {
 
-      payment = Dropzone::Payment.new receiver_addr: TESTER2_PUBLIC_KEY, 
-        invoice_txid: invoice_id
+        payment.isValid(function(err, res) {
+          if (err) throw err
 
-      expect(payment.valid?).to eq(true)
-    end
+          expect(res.errors.length).to.equal(1)
+          expect(res.errors[0].message).to.equal("description is not a string")
 
-    it "validates output address must be present" do
-      payment = Dropzone::Payment.sham! receiver_addr: nil
+          next()
+        })
+      })
+    })
 
-      expect(payment.valid?).to eq(false)
-      expect(payment.errors.count).to eq(2)
-      expect(payment.errors.on(:receiver_addr)).to eq(['is not present'])
-      expect(payment.errors.on(:invoice_txid)).to eq(["can't be found"])
-    end
+    it("invoiceTxid must be string", function(next) {
+      var payment = chai.factory.create('payment', connection, {invoiceTxid: 1})
 
-    it "description must be string" do
-      payment = Dropzone::Payment.sham! description: 1
+      payment.isValid(function(err, res) {
+        if (err) throw err
 
-      expect(payment.valid?).to eq(false)
-      expect(payment.errors.count).to eq(1)
-      expect(payment.errors.on(:description)).to eq(['is not a string'])
-    end
+        expect(res.errors.length).to.equal(2)
+        expect(res.errors[0].message).to.equal("invoiceTxid is not a string")
+        expect(res.errors[1].message).to.equal("invoiceTxid can't be found")
 
-    it "invoice_txid must be string" do
-      payment = Dropzone::Payment.sham! invoice_txid: 500
+        next()
+      })
+    })
 
-      expect(payment.valid?).to eq(false)
-      expect(payment.errors.count).to eq(2)
-      expect(payment.errors.on(:invoice_txid)).to eq(['is not a string', 
-        "can't be found"])
-    end
-    
-    [:delivery_quality,:product_quality,:communications_quality ].each do |rating_attr|
-      it "%s must be numeric" % rating_attr.to_s do
-        payment = Dropzone::Payment.sham! rating_attr => 'abc'
+    async.each(['deliveryQuality','productQuality','communicationsQuality'], 
+      function(attr, nextAttr) { 
+        it(attr+" must be numeric", function(next) {
+          attrs = {}
+          attrs[attr] = 'abc'
 
-        expect(payment.valid?).to eq(false)
-        expect(payment.errors.count).to eq(2)
-        expect(payment.errors.on(rating_attr)).to eq(
-          ['is not a number', "is not in set: 0..8"])
-      end
+          factories.createPayment(chai, connection, attrs, 
+            function(err, payment) {
 
-      it "%s must be between 0 and 8" % rating_attr.to_s do
-        payment = Dropzone::Payment.sham! rating_attr => 9
+            payment.isValid(function(err, res) {
+              if (err) throw err
 
-        expect(payment.valid?).to eq(false)
-        expect(payment.errors.count).to eq(1)
-        expect(payment.errors.on(rating_attr)).to eq(['is not in set: 0..8'])
-      end
-    end
+              expect(res.errors.length).to.equal(1)
+              expect(res.errors[0].message).to.equal(
+                attr+" is not an integer")
 
-    it "validates invoice existence" do
-      payment = Dropzone::Payment.sham! invoice_txid: 'non-existant-id'
-      
-      expect(payment.valid?).to eq(false)
-      expect(payment.errors.count).to eq(1)
-      expect(payment.errors.on(:invoice_txid)).to eq(["can't be found"])
-    end
+              next()
+            })
+          })
+        })
 
-    it "declaration must not be addressed to self" do
-      id = Dropzone::Invoice.sham!(receiver_addr: test_pubkey).save! test_privkey
+        it(attr+" must be lte 8", function(next) {
+          attrs = {}
+          attrs[attr] = 9
 
-      invoice = Dropzone::Invoice.find id
+          var payment = chai.factory.create('payment', connection, attrs)
 
-      expect(invoice.valid?).to eq(false)
-      expect(invoice.errors.count).to eq(1)
-      expect(invoice.errors.on(:receiver_addr)).to eq(['matches sender_addr'])
-    end
+          factories.createPayment(chai, connection, attrs, 
+            function(err, payment) {
 
-    it "must be addressed to transaction_id owner" do
-      # The sham'd Invoice is addressed to TESTER2_PUBLIC_KEY
-      payment_id = Dropzone::Payment.sham!(
-        receiver_addr: TESTER_PUBLIC_KEY).save! TESTER3_PRIVATE_KEY
+            payment.isValid(function(err, res) {
+              if (err) throw err
 
-      payment = Dropzone::Payment.find payment_id
+              expect(res.errors.length).to.equal(1)
+              expect(res.errors[0].message).to.equal(
+                attr+" must be between 0 and 8")
 
-      expect(payment.valid?).to eq(false)
-      expect(payment.errors.count).to eq(1)
-      expect(payment.errors.on(:invoice_txid)).to eq(["can't be found"])
-    end
+              next()
+            })
+          })
+        })
 
-  end
-*/
+        it(attr+" must be gte 0", function(next) {
+          attrs = {}
+          attrs[attr] = -1
 
+          factories.createPayment(chai, connection, attrs, 
+            function(err, payment) {
 
+            payment.isValid(function(err, res) {
+              if (err) throw err
+
+              expect(res.errors.length).to.equal(1)
+              expect(res.errors[0].message).to.equal(
+                attr+" must be between 0 and 8")
+
+              next()
+            })
+          })
+        })
+
+        nextAttr()
+      })
+
+    it("declaration must not be addressed to self", function(next) {
+      factories.createPayment(chai, connection, 
+        {receiverAddr: globals.testerPublicKey}, function(err, payment) {
+        payment.save(globals.testerPrivateKey, function(err, createPayment) {
+          if (err) throw err
+
+          Payment.find(connection, createPayment.txid, 
+            function(err, findPayment) {
+            if (err) throw err
+
+            findPayment.isValid(function(err, res) {
+              if (err) throw err
+
+              expect(res.errors.length).to.equal(2)
+              expect(res.errors[0].message).to.equal(
+                "receiverAddr matches senderAddr")
+              expect(res.errors[1].message).to.equal(
+                "invoiceTxid can't be found")
+
+              next()
+            })
+          })
+        })
+      })
+    })
+
+    it("must be addressed to transactionId owner", function(nextSpec) {
+      async.waterfall([
+        function(next){
+          chai.factory.create('invoice', connection, 
+            {receiverAddr: globals.testerPublicKey} )
+            .save(globals.tester2PrivateKey, next)
+        }, function (invoice,next) {
+          new Payment( connection, {receiverAddr: globals.testerPublicKey, 
+            invoiceTxid: invoice.txid}).save(globals.tester3PrivateKey, next)
+        }], function (err, payment) {
+          if (err) throw err
+
+          payment.isValid(function(err, res) {
+            if (err) throw err
+
+            expect(res.errors.length).to.equal(1)
+            expect(res.errors[0].message).to.equal(
+              "invoiceTxid can't be found")
+
+            nextSpec()
+          })
+        })
+      })
+
+  
+    it("validates invoice existence", function(nextSpec) {
+      var payment = chai.factory.create('payment', connection, 
+        {invoiceTxid: 'non-existant-id'})
+
+      payment.isValid(function(err, res) {
+        if (err) throw err
+
+        expect(res.errors.length).to.equal(1)
+        expect(res.errors[0].message).to.equal("invoiceTxid can't be found")
+
+        nextSpec()
+      })
+    })
+  })
 
 })

@@ -55,7 +55,7 @@
     "lodash": "=3.10.1",
     "migrate-orm2": "^1.2.14",
     "mkdirp": "^0.5.1",
-    "node-validator": "^0.1.16",
+    "async-validate": "^0.12.3",
     "orm": "^2.1.27",
     "proxysocket": "^0.2.0",
     "shallow-extend": "0.0.1",

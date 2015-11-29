@@ -51,18 +51,19 @@ describe('Invoice', function () {
   describe("#save() and #find()", function() {
     it('persists and loads', function (next) {
       chai.factory.create('invoice', connection).save(globals.testerPrivateKey, 
-        function(err, create_invoice) {
+        function(err, createInvoice) {
+        if (err) throw err
 
-        expect(create_invoice.expirationIn).to.equal(6)
-        expect(create_invoice.amountDue).to.equal(100000000)
-        expect(create_invoice.receiverAddr).to.equal(globals.testerPublicKey)
-        expect(create_invoice.senderAddr).to.equal(globals.testerPublicKey)
+        expect(createInvoice.expirationIn).to.equal(6)
+        expect(createInvoice.amountDue).to.equal(100000000)
+        expect(createInvoice.receiverAddr).to.equal(globals.testerPublicKey)
+        expect(createInvoice.senderAddr).to.equal(globals.testerPublicKey)
 
-        Invoice.find(connection, create_invoice.txid, function(err, find_invoice) {
-          expect(find_invoice.expirationIn).to.equal(6)
-          expect(find_invoice.amountDue).to.equal(100000000)
-          expect(find_invoice.receiverAddr).to.equal(globals.testerPublicKey)
-          expect(find_invoice.senderAddr).to.equal(globals.testerPublicKey)
+        Invoice.find(connection, createInvoice.txid, function(err, findInvoice) {
+          expect(findInvoice.expirationIn).to.equal(6)
+          expect(findInvoice.amountDue).to.equal(100000000)
+          expect(findInvoice.receiverAddr).to.equal(globals.testerPublicKey)
+          expect(findInvoice.senderAddr).to.equal(globals.testerPublicKey)
 
           next()
         })
@@ -87,6 +88,7 @@ describe('Invoice', function () {
 
             chai.factory.create('payment', connection, paymentAttrs)
               .save(globals.tester2PrivateKey, function(err, payment) {
+                if (err) throw err
                 next(null, invoice)
               })
           },
@@ -102,6 +104,7 @@ describe('Invoice', function () {
 
             chai.factory.create('payment', connection, paymentAttrs)
               .save(globals.tester2PrivateKey, function(err, payment) {
+                if (err) throw err
                 next(null, invoice)
               })
           },
@@ -110,22 +113,24 @@ describe('Invoice', function () {
             invoice.getPayments(next)
           }
         ], function (err, payments) {
-            var descriptons = _.map(payments, 
-              function(p) { return p.description } )
+          if (err) throw err
+          var descriptons = _.map(payments, 
+            function(p) { return p.description } )
 
-            expect(payments.length).to.equal(2)
-            expect(payments.descriptions).to.equal(['xyz','abc'])
-            nextSpec()
+          expect(payments.length).to.equal(2)
+          expect(payments.descriptions).to.equal(['xyz','abc'])
+          nextSpec()
         })
       })
     })
+
   describe("validations", function() {
     it("validates default build", function(next) {
       var invoice = chai.factory.create('invoice', connection)
 
-      invoice.isValid(function(count, errors) {
-        expect(count).to.equal(0)
-        expect(errors).to.be.empty
+      invoice.isValid(function(err, res) {
+        if (err) throw err
+        expect(res).to.be.null
         next()
       })
     })
@@ -134,9 +139,10 @@ describe('Invoice', function () {
       var invoice = new Invoice( connection, 
         {receiverAddr: globals.testerPublicKey})
 
-      invoice.isValid(function(count, errors) {
-        expect(count).to.equal(0)
-        expect(errors).to.be.empty
+      invoice.isValid(function(err, res) {
+        if (err) throw err
+        console.log(res)
+        expect(res).to.be.null
         next()
       })
     })
@@ -145,12 +151,12 @@ describe('Invoice', function () {
       var invoice = chai.factory.create('invoice', connection, 
         {expirationIn: 'abc'})
 
-      invoice.isValid(function(count, errors) {
-        expect(count).to.equal(1)
-        expect(errors).to.deep.equal([ 
-          {parameter: 'expirationIn', value: 'abc', 
-            message: 'Incorrect type. Expected number.'},
-          ])
+      invoice.isValid(function(err, res) {
+        if (err) throw err
+
+        expect(res.errors.length).to.equal(1)
+        expect(res.errors[0].message).to.equal(
+          "expirationIn is not an integer")
 
         next()
       })
@@ -160,12 +166,12 @@ describe('Invoice', function () {
       var invoice = chai.factory.create('invoice', connection, 
         {expirationIn: -1})
 
-      invoice.isValid(function(count, errors) {
-        expect(count).to.equal(1)
-        expect(errors).to.deep.equal([ 
-          {parameter: 'expirationIn', value: -1, 
-            message: 'Value must be greater than or equal to 0.'}
-          ])
+      invoice.isValid(function(err, res) {
+        if (err) throw err
+
+        expect(res.errors.length).to.equal(1)
+        expect(res.errors[0].message).to.equal(
+          "expirationIn cannot be less than 0")
 
         next()
       })
@@ -175,12 +181,12 @@ describe('Invoice', function () {
       var invoice = chai.factory.create('invoice', connection, 
         {amountDue: 'abc'})
 
-      invoice.isValid(function(count, errors) {
-        expect(count).to.equal(1)
-        expect(errors).to.deep.equal([ 
-          {parameter: 'amountDue', value: 'abc', 
-            message: 'Incorrect type. Expected number.'},
-          ])
+      invoice.isValid(function(err, res) {
+        if (err) throw err
+
+        expect(res.errors.length).to.equal(1)
+        expect(res.errors[0].message).to.equal(
+          "amountDue is not an integer")
 
         next()
       })
@@ -190,40 +196,49 @@ describe('Invoice', function () {
       var invoice = chai.factory.create('invoice', connection, 
         {amountDue: -1})
 
-      invoice.isValid(function(count, errors) {
-        expect(count).to.equal(1)
-        expect(errors).to.deep.equal([ 
-          {parameter: 'amountDue', value: -1, 
-            message: 'Value must be greater than or equal to 0.'}
-          ])
+      invoice.isValid(function(err, res) {
+        if (err) throw err
+
+        expect(res.errors.length).to.equal(1)
+        expect(res.errors[0].message).to.equal(
+          "amountDue cannot be less than 0")
 
         next()
       })
+
     })
 
     it("validates output address must be present", function(next) {
       var invoice = chai.factory.create('invoice', connection, 
-        {receiverAddr: null})
+        {receiverAddr: undefined})
 
-      invoice.isValid(function(count, errors) {
-        expect(count).to.equal(1)
-        expect(errors).to.deep.equal([ 
-          {parameter: 'receiverAddr', value: undefined, message: 'Required value.'} ])
+      invoice.isValid(function(err, res) {
+        if (err) throw err
+
+        expect(res.errors.length).to.equal(1)
+        expect(res.errors[0].message).to.equal(
+          "receiverAddr is required")
 
         next()
       })
+
     })
 
     it("declaration must not be addressed to self", function(next) {
       chai.factory.create('invoice', connection, 
         {receiverAddr: globals.testerPublicKey}).save(globals.testerPrivateKey,
-        function(err, create_invoice) {
+        function(err, createInvoice) {
+        if (err) throw err
 
-        Invoice.find(connection, create_invoice.txid, function(err, find_invoice) {
-          find_invoice.isValid(function(count, errors) {
-            expect(count).to.equal(1)
-            expect(errors).to.deep.equal([ {parameter: 'receiverAddr',
-              value: globals.testerPublicKey, message: 'matches senderAddr'} ])
+        Invoice.find(connection, createInvoice.txid, function(err, findInvoice) {
+          if (err) throw err
+
+          findInvoice.isValid(function(err, res) {
+            if (err) throw err
+
+            expect(res.errors.length).to.equal(1)
+            expect(res.errors[0].message).to.equal(
+              "receiverAddr matches senderAddr")
 
             next()
           })
