@@ -8,11 +8,11 @@ var util = require('util')
 var async = require('async')
 
 var fakeConnection = require('../lib/drivers/fake')
-var invoice = require('../lib/invoice')
+var messages = require('../lib/messages')
 var globals = require('./fixtures/globals')
 
 var expect = chai.expect
-var Invoice = invoice.Invoice
+var Invoice = messages.Invoice
 
 factories.dz(chai)
 
@@ -141,7 +141,6 @@ describe('Invoice', function () {
 
       invoice.isValid(function(err, res) {
         if (err) throw err
-        console.log(res)
         expect(res).to.be.null
         next()
       })
