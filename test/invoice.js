@@ -8,11 +8,11 @@ var util = require('util')
 var async = require('async')
 
 var fakeConnection = require('../lib/drivers/fake')
-var invoice = require('../lib/invoice')
+var messages = require('../lib/messages')
 var globals = require('./fixtures/globals')
 
 var expect = chai.expect
-var Invoice = invoice.Invoice
+var Invoice = messages.Invoice
 
 factories.dz(chai)
 
@@ -84,7 +84,7 @@ describe('Invoice', function () {
           function(invoice, next){
             // Create Payment one:
             var paymentAttrs = { invoiceTxid: invoice.txid, 
-              receiverAddr: globals.testerPublicKey, description: 'xyz' }
+              receiverAddr: globals.testerPublicKey, description: 'abc' }
 
             chai.factory.create('payment', connection, paymentAttrs)
               .save(globals.tester2PrivateKey, function(err, payment) {
@@ -100,7 +100,7 @@ describe('Invoice', function () {
           function(invoice, next){
             // Create Payment two:
             var paymentAttrs = { invoiceTxid: invoice.txid, 
-              receiverAddr: globals.testerPublicKey, description: 'abc' }
+              receiverAddr: globals.testerPublicKey, description: 'xyz' }
 
             chai.factory.create('payment', connection, paymentAttrs)
               .save(globals.tester2PrivateKey, function(err, payment) {
@@ -114,11 +114,12 @@ describe('Invoice', function () {
           }
         ], function (err, payments) {
           if (err) throw err
-          var descriptons = _.map(payments, 
+
+          var descriptions = _.map(payments, 
             function(p) { return p.description } )
 
           expect(payments.length).to.equal(2)
-          expect(payments.descriptions).to.equal(['xyz','abc'])
+          expect(descriptions).to.deep.equal(['xyz','abc'])
           nextSpec()
         })
       })
@@ -141,7 +142,6 @@ describe('Invoice', function () {
 
       invoice.isValid(function(err, res) {
         if (err) throw err
-        console.log(res)
         expect(res).to.be.null
         next()
       })

@@ -7,11 +7,11 @@ var _ = require('lodash')
 var util = require('util')
 
 var fakeConnection = require('../lib/drivers/fake')
-var buyerSeller = require('../lib/buyer_seller')
+var messages = require('../lib/messages')
 var globals = require('./fixtures/globals')
 
 var expect = chai.expect
-var Buyer = buyerSeller.Buyer
+var Buyer = messages.Buyer
 
 factories.dz(chai)
 

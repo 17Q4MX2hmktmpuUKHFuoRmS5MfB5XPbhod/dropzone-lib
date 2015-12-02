@@ -9,11 +9,11 @@ var async = require('async')
 
 var fakeConnection = require('../lib/drivers/fake')
 
-var payment = require('../lib/payment')
+var messages = require('../lib/messages')
 var globals = require('./fixtures/globals')
 
 var expect = chai.expect
-var Payment = payment.Payment
+var Payment = messages.Payment
 
 factories.dz(chai)
 
