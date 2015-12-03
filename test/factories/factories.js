@@ -1,6 +1,3 @@
-var _ = require('lodash')
-var async = require('async')
-var util = require('util')
 var extend = require('shallow-extend')
 var chaiJsFactories = require('chai-js-factories')
 
@@ -12,47 +9,50 @@ var Seller = messages.Seller
 var Invoice = messages.Invoice
 var Payment = messages.Payment
 
-var dz = function(chai) {
-  if (!chai.factory)
-    chai.use(chaiJsFactories)
+var dz = function (chai) {
+  if (!chai.factory) { chai.use(chaiJsFactories) }
 
-  if (!chai.factory.factories.buyer)
+  if (!chai.factory.factories.buyer) {
     chai.factory.define('buyer', function (conn, args) {
-      return new Buyer(conn, _.extend({ description: "abc", 
-        alias: "Satoshi", receiverAddr: globals.testerPublicKey }, args))
+      return new Buyer(conn, extend({ description: 'abc',
+        alias: 'Satoshi', receiverAddr: globals.testerPublicKey }, args))
     })
+  }
 
-  if (!chai.factory.factories.seller)
+  if (!chai.factory.factories.seller) {
     chai.factory.define('seller', function (conn, args) {
-      return new Seller(conn, _.extend({ description: "abc", 
-        alias: "Satoshi", 
-        communicationsAddr: 'n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv', 
+      return new Seller(conn, extend({ description: 'abc',
+        alias: 'Satoshi',
+        communicationsAddr: 'n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv',
         receiverAddr: globals.testerPublicKey }, args))
     })
+  }
 
-  if (!chai.factory.factories.invoice)
+  if (!chai.factory.factories.invoice) {
     chai.factory.define('invoice', function (conn, args) {
-      return new Invoice(conn, _.extend({ expirationIn: 6, 
+      return new Invoice(conn, extend({ expirationIn: 6,
         amountDue: 100000000, receiverAddr: globals.testerPublicKey }, args))
     })
+  }
 
-  if (!chai.factory.factories.payment)
+  if (!chai.factory.factories.payment) {
     chai.factory.define('payment', function (conn, args) {
-      return new Payment(conn, _.extend({ description: 'abc', 
-        deliveryQuality: 8, productQuality: 8, communicationsQuality: 8, 
+      return new Payment(conn, extend({ description: 'abc',
+        deliveryQuality: 8, productQuality: 8, communicationsQuality: 8,
         receiverAddr: globals.tester2PublicKey}, args))
     })
+  }
 }
 
 // This creates a fully valid payment, which is a bit more involved than most
 // messages
-var createPayment = function(chai, conn, options, cb) {
-  chai.factory.create('invoice', conn).save(globals.tester2PrivateKey, 
-    function(err, invoice){
-    if (err) throw err
-    cb(null, chai.factory.create('payment', conn, 
-        extend({invoiceTxid: invoice.txid}, options)))
-  })
+var createPayment = function (chai, conn, options, cb) {
+  chai.factory.create('invoice', conn).save(globals.tester2PrivateKey,
+    function (err, invoice) {
+      if (err) throw err
+      cb(null, chai.factory.create('payment', conn,
+         extend({invoiceTxid: invoice.txid}, options)))
+    })
 }
 
 module.exports = {
