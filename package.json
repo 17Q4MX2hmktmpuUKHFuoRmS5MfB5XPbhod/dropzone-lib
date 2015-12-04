@@ -53,6 +53,7 @@
     "inherits": "^2.0.1",
     "json-gate": "^0.8.22",
     "lodash": "=3.10.1",
+    "merge": "=1.2",
     "migrate-orm2": "^1.2.14",
     "mkdirp": "^0.5.1",
     "async-validate": "^0.12.3",
