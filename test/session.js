@@ -1,4 +1,4 @@
-/* global describe it */
+/* global describe it before after */
 /* eslint no-new: 0 */
 
 var assert = require('assert')
@@ -6,95 +6,89 @@ var crypto = require('crypto')
 var async = require('async')
 var bitcore = require('bitcore-lib')
 
+var fakeConnection = require('../lib/drivers/fake')
 var session = require('../lib/session')
-var blockchain = require('../lib/blockchain')
+var messages = require('../lib/messages')
 
-var fixtures = require('./fixtures/session')
 var globals = require('./fixtures/globals')
 
-var Transaction = bitcore.Transaction
 var PrivateKey = bitcore.PrivateKey
-var Session = session.Session
-var testnet = bitcore.Networks.testnet
+var testnet = bitcore.Networks.testnet // TODO: nix?
 
-blockchain.use('fake')                    
+var Session = session.Session
+var Chat = messages.Chat
 
 describe('Session', function () {
+  var connection = null
+
+  before(function (next) {
+    connection = new fakeConnection.FakeBitcoinConnection(function (err) {
+      if (err) throw err
+      next()
+    })
+  })
+
+  after(function (next) {
+    connection.clearTransactions(function (err) {
+      if (err) throw err
+      next()
+    })
+  })
 
   it('performs a simple non-deterministic chat', function (nextSpec) {
+    // The entropy generation takes a bit:
+    this.timeout(10000)
 
     // New Buyer to Seller Connection:
     var testerPrivKey = PrivateKey.fromWIF(globals.testerPrivateKey)
     var tester2PrivKey = PrivateKey.fromWIF(globals.tester2PrivateKey)
-    var receiverAddr = globals.tester2PublicKey
+    var tester2PubKey = globals.tester2PublicKey
 
-    async.waterfall([
-      function(next) {
-        // Buyer initiates Authentication:
-        var secret = crypto.randomBytes(128).toString('hex')
+    var buyerSecret = crypto.randomBytes(128).toString('hex')
+    var sellerSecret = crypto.randomBytes(128).toString('hex')
 
-        var session = new Session(testerPrivKey, secret, 
-          {receiverAddr: receiverAddr})
+    async.series([
+      function (next) {
+        // Buyer initiates Authentication To Seller:
+        var buyerToSeller = new Session(connection, testerPrivKey, buyerSecret,
+          {receiverAddr: tester2PubKey})
 
-        session.authenticate(next)
-      },function (next){
-        // Get the session id
-        Session.all(tester2PrivKey, testnet, function (err, sessions) {
+        buyerToSeller.authenticate(function(err, chatInit) { 
+          next(null, buyerToSeller) // TODO: can we pass this instead? 
+        })
+      }, function (next) {
+        // Seller initiates Authentication To Buyer
+        var sellerToBuyer
+
+        Session.all(connection, tester2PubKey, function (err, sessions) {
           if (err) return next(err)
+          if (sessions.length == 0) return next("Couldn't retrieve session")
 
-          next(null, sessions[0].txId)
-        })
-      },function (next,sessionTxId){
-        // Seller Authenticates the Buyer
-        Session.one(tester2PrivKey, testnet, sessionTxId, function (err, session) {
-          session.authenticate(function (err) {
-            if (err) return next(err)
-            next(null, sessionTxId)
-          })
-        })
-      },
-      function (next, sessionTxId) {
-        // Seller talks to Buyer:
-        Session.one(testerPrivKey, tesnet, txId, function (err, session) {
-          if (err) return next(err)
+          var sellerToBuyer = new Session(connection, tester2PrivKey, sellerSecret,
+            {withChat: sessions[0]})
 
-          // TODO: a lot of this should just move into the sendMessage 
-          // (along with the error tests from the actions.js)
-          var message = new Chat({ contents: 'Hello Buyer' })
-          var symmKey = session.genSymmKey()
-          message.encrypt(symmKey)
-          session.sendMessage(message, function (err, message) {
-            if (err) return next(err)
-            next(null, sessionTxId)
+          sellerToBuyer.authenticate(function(err, chatAuth) {
+            next(null, sellerToBuyer) // TODO: Can we pass this instead?
           })
         })
-      },
-      function (next, sessionTxId) {
-        // Buyer talks to Seller:
-        Session.one(tester2PrivKey, tesnet, txId, function (err, session) {
-          if (err) return next(err)
+      }], function(err, sessions){
+        buyerToSeller = sessions[0]
+        sellerToBuyer = sessions[1]
 
-          var message = new Chat({ contents: 'Hello Seller' })
-          var symmKey = session.genSymmKey()
-          message.encrypt(symmKey)
-          session.sendMessage(message, function (err, message) {
-            if (err) return next(err)
-            next(null, sessionTxId)
-          })
+        async.series([
+          function (next) { sellerToBuyer.send("Hello Buyer", next) },
+          function (next) { buyerToSeller.send("Hello Seller", next) },
+          function (next) { sellerToBuyer.communications(next) },
+          function (next) { buyerToSeller.communications(next) }
+        ],function(err, communications) {
+          sellerToBuyerContents = communications[2].map(function (comm) { 
+            return comm.contentsPlain()})
+          buyerToSellerContents = communications[3].map(function (comm) { 
+            return comm.contentsPlain()})
+
+          expect(sellerToBuyerContents).to.deep.equal(["Hello Seller", "Hello Buyer"])
+          expect(buyerToSellerContents).to.deep.equal(["Hello Seller", "Hello Buyer"])
         })
-      },
-      function(next, sessionTxId) {
-        async.map([testerPrivKey,tester2PrivKey], function(err,privKey,mapNext) {
-          Session.one(privKey, tesnet, sessionTxId, function (err, session) {
-            if (err) return next(err)
-            mapNext(null, session.messages)
-          })
-        }, next)
-      }
-    ], function (err, userMessages) {
-        assert.deepEqual(userMessages[0], ['Hello Seller', 'Hello Buyer'])
-        assert.deepEqual(userMessages[1], ['Hello Seller', 'Hello Buyer'])
-        nextSpec()
     })
   })
 })
