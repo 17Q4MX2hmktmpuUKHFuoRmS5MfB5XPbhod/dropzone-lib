@@ -1,10 +1,9 @@
-/* global describe it before after */
+/* global describe it before afterEach */
 /* eslint no-new: 0 */
 
 var chai = require('chai')
 var crypto = require('crypto')
 var async = require('async')
-var bitcore = require('bitcore-lib')
 
 var expect = chai.expect
 
@@ -14,7 +13,6 @@ var session = require('../lib/session')
 var globals = require('./fixtures/globals')
 var globalsSession = require('./fixtures/session')
 
-var PrivateKey = bitcore.PrivateKey
 var Session = session.Session
 
 describe('Session', function () {
@@ -41,7 +39,7 @@ describe('Session', function () {
     async.series([
       function (next) {
         // Buyer initiates Authentication To Seller:
-        var buyerToSeller = new Session(connection, globals.testerPrivateKey, 
+        var buyerToSeller = new Session(connection, globals.testerPrivateKey,
           crypto.randomBytes(128), {receiverAddr: globals.tester2PublicKey})
 
         buyerToSeller.authenticate(function (err, chatInit) {
@@ -97,27 +95,29 @@ describe('Session', function () {
   it('extended deterministic chat test', function (nextSpec) {
     var buyerToSeller
     var sellerToBuyer
+    var chatInit
+    var chatAuth
+    var sellerHelloComm
+    var buyerHelloComm
 
     async.series([
+      /*
+       * Step One: Buyer initializes channel.
+       */
       function (next) {
-        /* 
-         * Step One: Buyer initializes channel.
-         *
-         * Der is not actually required, but since we're keeping the tests
-         * deterministic, I'm passing it here. Additionally, this speeds up 
-         * testing:
-         */
-        buyerToSeller = new Session(connection, globals.tester2PrivateKey, 
-          new Buffer(globalsSession.buyerSecret, 'hex'), 
+        buyerToSeller = new Session(connection, globals.tester2PrivateKey,
+          new Buffer(globalsSession.buyerSecret, 'hex'),
           {receiverAddr: globals.testerPublicKey})
 
         expect(buyerToSeller.senderAddr).to.equal(globals.tester2PublicKey)
         expect(buyerToSeller.privKey).to.equal(globals.tester2PrivateKey)
 
-        buyerToSeller.authenticate(function (err, chatInit) {
+        next(null, null)
+      }, function (next) {
+        buyerToSeller.authenticate(function (err, chat) {
           if (err) throw err
+          chatInit = chat
 
-          // Test the initialization:
           expect(chatInit.receiverAddr).to.equal(globals.testerPublicKey)
           expect(chatInit.senderAddr).to.equal(globals.tester2PublicKey)
           expect(chatInit.der.toString('hex')).to.equal(globalsSession.der)
@@ -127,111 +127,117 @@ describe('Session', function () {
           expect(chatInit.iv).to.be.undefined
           expect(chatInit.contents).to.be.undefined
 
-          chatInit.isValid(function (err, res) {
-            if (err) throw err
-            expect(res).to.be.null
-          })
-
-          buyerToSeller.isAuthenticated(function (err, isAuthenticated) {
-            if (err) throw err
-            expect(isAuthenticated).to.be.false
-          })
-
-          next(null, buyerToSeller)
+          next(null, null)
         }, new Buffer(globalsSession.der, 'hex'))
       }, function (next) {
-        /* 
-         * Step Two: Seller authenticates request.
-         */
+        chatInit.isValid(function (err, res) {
+          if (err) throw err
+
+          expect(res).to.be.null
+
+          next(null, null)
+        })
+      }, function (next) {
+        buyerToSeller.isAuthenticated(function (err, isAuthenticated) {
+          if (err) throw err
+
+          expect(isAuthenticated).to.be.false
+
+          next(null, null)
+        })
+      },
+      /*
+       * Step Two: Seller authenticates request.
+       */
+      function (next) {
         Session.all(connection, globals.testerPublicKey, function (err, sessions) {
           if (err) return next(err)
 
           expect(sessions.length).to.equal(1)
 
-          sellerToBuyer = new Session(connection, globals.testerPrivateKey, 
-            new Buffer(globalsSession.sellerSecret, 'hex'), 
+          sellerToBuyer = new Session(connection, globals.testerPrivateKey,
+            new Buffer(globalsSession.sellerSecret, 'hex'),
             {withChat: sessions[0]})
 
-          sellerToBuyer.isAuthenticated(function (err, isAuthenticated) {
-            if (err) throw err
-            expect(isAuthenticated).to.be.false
-          })
-
-          buyerToSeller.isAuthenticated(function (err, isAuthenticated) {
-            if (err) throw err
-            expect(isAuthenticated).to.be.false
-          })
-
-          sellerToBuyer.authenticate(function (err, chatAuth) {
-            if (err) return next(err)
-
-            // Test the authentication:
-            expect(chatAuth.receiverAddr).to.equal(globals.tester2PublicKey)
-            expect(chatAuth.senderAddr).to.equal(globals.testerPublicKey)
-            expect(chatAuth.der).to.be.undefined
-            expect(chatAuth.sessionPrivKey.toString('hex')).to.equal(
-              globalsSession.sellerPubkey)
-            expect(chatAuth.iv).to.be.undefined
-            expect(chatAuth.contents).to.be.undefined
-
-            chatAuth.isValid(function (err, res) {
-              if (err) throw err
-              expect(res).to.be.null
-            })
-
-            buyerToSeller.communications(function (err, chats) {
-              if (err) throw err
-              expect(chats.length).to.equal(0)
-            })
-            sellerToBuyer.communications(function (err, chats) {
-              if (err) throw err
-              expect(chats.length).to.equal(0)
-            })
-
-            buyerToSeller.symmKey(function (err, symmKey) {
-              if (err) throw err
-              expect(symmKey.toString('hex')).to.equal(globalsSession.symmKey)
-            })
-            buyerToSeller.isAuthenticated(function (err, isAuthenticated) {
-              if (err) throw err
-              expect(isAuthenticated).to.be.true
-            })
-
-            sellerToBuyer.symmKey(function (err, symmKey) {
-              if (err) throw err
-              expect(symmKey.toString('hex')).to.equal(globalsSession.symmKey)
-            })
-            sellerToBuyer.isAuthenticated(function (err, isAuthenticated) {
-              if (err) throw err
-              expect(isAuthenticated).to.be.true
-            })
-
-            next(null, sellerToBuyer)
-          })
+          next(null, null)
         })
-      }],
-      function (err, sessions) {
-        if (err) throw err
-        var buyerToSeller = sessions[0]
-        var sellerToBuyer = sessions[1]
-
-        async.series([
-          function (next) { 
-            sellerToBuyer.send('Hello Buyer', next, 
-              new Buffer('4941fbbf24517885502b85a0f3285659','hex'))
-          },
-          function (next) { 
-            buyerToSeller.send('Hello Seller', next, 
-              new Buffer('02ff94080d10f3361d69e9770dca9982','hex'))
-          },
-          function (next) { sellerToBuyer.communications(next) },
-          function (next) { buyerToSeller.communications(next) }
-        ],
-        function (err, communications) {
+      }, function (next) {
+        sellerToBuyer.isAuthenticated(function (err, isAuthenticated) {
           if (err) throw err
+          expect(isAuthenticated).to.be.false
+          next(null, null)
+        })
+      }, function (next) {
+        buyerToSeller.isAuthenticated(function (err, isAuthenticated) {
+          if (err) throw err
+          expect(isAuthenticated).to.be.false
+          next(null, null)
+        })
+      }, function (next) {
+        sellerToBuyer.authenticate(function (err, chat) {
+          if (err) return next(err)
+          chatAuth = chat
 
-          var sellerHelloComm = communications[0]
-          var buyerHelloComm = communications[1]
+          expect(chatAuth.receiverAddr).to.equal(globals.tester2PublicKey)
+          expect(chatAuth.senderAddr).to.equal(globals.testerPublicKey)
+          expect(chatAuth.der).to.be.undefined
+          expect(chatAuth.sessionPrivKey.toString('hex')).to.equal(
+            globalsSession.sellerPubkey)
+          expect(chatAuth.iv).to.be.undefined
+          expect(chatAuth.contents).to.be.undefined
+
+          next(null, null)
+        })
+      }, function (next) {
+        chatAuth.isValid(function (err, res) {
+          if (err) throw err
+          expect(res).to.be.null
+          next(null, null)
+        })
+      }, function (next) {
+        buyerToSeller.communications(function (err, chats) {
+          if (err) throw err
+          expect(chats.length).to.equal(0)
+          next(null, null)
+        })
+      }, function (next) {
+        sellerToBuyer.communications(function (err, chats) {
+          if (err) throw err
+          expect(chats.length).to.equal(0)
+          next(null, null)
+        })
+      }, function (next) {
+        buyerToSeller.symmKey(function (err, symmKey) {
+          if (err) throw err
+          expect(symmKey.toString('hex')).to.equal(globalsSession.symmKey)
+          next(null, null)
+        })
+      }, function (next) {
+        buyerToSeller.isAuthenticated(function (err, isAuthenticated) {
+          if (err) throw err
+          expect(isAuthenticated).to.be.true
+          next(null, null)
+        })
+      }, function (next) {
+        sellerToBuyer.symmKey(function (err, symmKey) {
+          if (err) throw err
+          expect(symmKey.toString('hex')).to.equal(globalsSession.symmKey)
+          next(null, null)
+        })
+      }, function (next) {
+        sellerToBuyer.isAuthenticated(function (err, isAuthenticated) {
+          if (err) throw err
+          expect(isAuthenticated).to.be.true
+          next(null, null)
+        })
+      },
+      /*
+       * Step Three: Chatting commences
+       */
+      function (next) {
+        sellerToBuyer.send('Hello Buyer', function (err, chat) {
+          if (err) throw err
+          sellerHelloComm = chat
 
           expect(sellerHelloComm.receiverAddr).to.equal(globals.tester2PublicKey)
           expect(sellerHelloComm.senderAddr).to.equal(globals.testerPublicKey)
@@ -242,10 +248,18 @@ describe('Session', function () {
           expect(sellerHelloComm.contents.toString('hex')).to.equal(
             '2924a61b305a8070c0c41496482d1a3a')
 
-          sellerHelloComm.isValid(function (err, res) {
-            if (err) throw err
-            expect(res).to.be.null
-          })
+          next(null, null)
+        }, new Buffer('4941fbbf24517885502b85a0f3285659', 'hex'))
+      }, function (next) {
+        sellerHelloComm.isValid(function (err, res) {
+          if (err) throw err
+          expect(res).to.be.null
+          next(null, null)
+        })
+      }, function (next) {
+        buyerToSeller.send('Hello Seller', function (err, chat) {
+          if (err) throw err
+          buyerHelloComm = chat
 
           expect(buyerHelloComm.receiverAddr).to.equal(globals.testerPublicKey)
           expect(buyerHelloComm.senderAddr).to.equal(globals.tester2PublicKey)
@@ -256,23 +270,37 @@ describe('Session', function () {
           expect(buyerHelloComm.contents.toString('hex')).to.equal(
             'fa753c555ae1d87b22ee40d0879d0ee0')
 
-          buyerHelloComm.isValid(function (err, res) {
-            if (err) throw err
-            expect(res).to.be.null
-          })
-
-          var sellerToBuyerContents = communications[2].map(
-            function (comm) { return comm.contentsPlain() })
-          var buyerToSellerContents = communications[3].map(
-            function (comm) { return comm.contentsPlain() })
-
-          expect(sellerToBuyerContents).to.deep.equal(['Hello Seller',
-            'Hello Buyer'])
-          expect(buyerToSellerContents).to.deep.equal(['Hello Seller',
-            'Hello Buyer'])
-
-          nextSpec()
+          next(null, null)
+        }, new Buffer('02ff94080d10f3361d69e9770dca9982', 'hex'))
+      }, function (next) {
+        buyerHelloComm.isValid(function (err, res) {
+          if (err) throw err
+          expect(res).to.be.null
+          next(null, null)
         })
-      })
+      }, function (next) {
+        sellerToBuyer.communications(function (err, chats) {
+          if (err) throw err
+
+          expect(chats.map(function (c) { return c.contentsPlain() })).to.deep.equal(
+            ['Hello Seller', 'Hello Buyer'])
+
+          next(null, null)
+        })
+      }, function (next) {
+        buyerToSeller.communications(function (err, chats) {
+          if (err) throw err
+
+          expect(chats.map(function (c) { return c.contentsPlain() })).to.deep.equal(
+            ['Hello Seller', 'Hello Buyer'])
+
+          next(null, null)
+        })
+      }
+    ], function (err, sessions) {
+      if (err) throw err
+
+      nextSpec()
+    })
   })
 })
