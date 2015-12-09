@@ -303,4 +303,52 @@ describe('Session', function () {
       nextSpec()
     })
   })
+
+  it('Requires that session must authenticate before chatting', function (nextSpec) {
+    var buyerToSeller
+    var sellerToBuyer
+
+    async.series([
+      function (next) {
+        // Create a session, authenticate it, and then try opening it with a bad pass
+        buyerToSeller = new Session(connection, globals.testerPrivateKey,
+          new Buffer(globalsSession.buyerSecret, 'hex'), 
+          {receiverAddr: globals.tester2PublicKey})
+
+        next()
+      }, function (next) {
+        buyerToSeller.send('Hello Buyer', function(err, chat) {
+          // TODO : Should raise an error
+        })
+      }, function (next) {
+        buyerToSeller.authenticate(function (err, chatInit) {
+          if (err) throw err
+          next(null, buyerToSeller)
+        })
+      }, function (next) {
+        buyperToSeller.send('Hello Buyer', function(err, chat) {
+          // TODO : Should also raise an error
+        })
+      }, function (next) {
+        // Seller creates connection To Buyer
+        Session.all(connection, globals.tester2PublicKey, function (err, sessions) {
+          if (err) return next(err)
+
+          expect(sessions.length).to.equal(1)
+
+          sellerToBuyer = new Session(connection, globals.tester2PrivateKey, 
+            new Buffer(globalsSession.sellerSecret, 'hex'),
+            {withChat: sessions[0]})
+          next()
+        })
+      }, function (next) {
+        sellerToBuyer.send('Hello Buyer', function(err, chat) {
+          // TODO : Should also raise an error
+        })
+      }],
+      function (err, sessions) {
+        if (err) throw err
+        nextSpec()
+      })
+  })
 })
