@@ -33,7 +33,7 @@ describe('Session', function () {
   })
 
   it('performs a simple non-deterministic chat', function (nextSpec) {
-    // The entropy generation takes a bit:
+    // The RNG takes a bit of time on this one. Furnishing a DER would help:
     this.timeout(15000)
 
     async.series([
@@ -71,8 +71,8 @@ describe('Session', function () {
         async.series([
           function (next) { sellerToBuyer.send('Hello Buyer', next) },
           function (next) { buyerToSeller.send('Hello Seller', next) },
-          function (next) { sellerToBuyer.communications(next) },
-          function (next) { buyerToSeller.communications(next) }
+          function (next) { sellerToBuyer.getCommunications(next) },
+          function (next) { buyerToSeller.getCommunications(next) }
         ],
         function (err, communications) {
           if (err) throw err
@@ -195,19 +195,19 @@ describe('Session', function () {
           next(null, null)
         })
       }, function (next) {
-        buyerToSeller.communications(function (err, chats) {
+        buyerToSeller.getCommunications(function (err, chats) {
           if (err) throw err
           expect(chats.length).to.equal(0)
           next(null, null)
         })
       }, function (next) {
-        sellerToBuyer.communications(function (err, chats) {
+        sellerToBuyer.getCommunications(function (err, chats) {
           if (err) throw err
           expect(chats.length).to.equal(0)
           next(null, null)
         })
       }, function (next) {
-        buyerToSeller.symmKey(function (err, symmKey) {
+        buyerToSeller.getSymmKey(function (err, symmKey) {
           if (err) throw err
           expect(symmKey.toString('hex')).to.equal(globalsSession.symmKey)
           next(null, null)
@@ -219,7 +219,7 @@ describe('Session', function () {
           next(null, null)
         })
       }, function (next) {
-        sellerToBuyer.symmKey(function (err, symmKey) {
+        sellerToBuyer.getSymmKey(function (err, symmKey) {
           if (err) throw err
           expect(symmKey.toString('hex')).to.equal(globalsSession.symmKey)
           next(null, null)
@@ -279,7 +279,7 @@ describe('Session', function () {
           next(null, null)
         })
       }, function (next) {
-        sellerToBuyer.communications(function (err, chats) {
+        sellerToBuyer.getCommunications(function (err, chats) {
           if (err) throw err
 
           expect(chats.map(function (c) { return c.contentsPlain() })).to.deep.equal(
@@ -288,7 +288,7 @@ describe('Session', function () {
           next(null, null)
         })
       }, function (next) {
-        buyerToSeller.communications(function (err, chats) {
+        buyerToSeller.getCommunications(function (err, chats) {
           if (err) throw err
 
           expect(chats.map(function (c) { return c.contentsPlain() })).to.deep.equal(
@@ -302,5 +302,56 @@ describe('Session', function () {
 
       nextSpec()
     })
+  })
+
+  it('Requires that session must authenticate before chatting', function (nextSpec) {
+    // The RNG takes a bit of time on this one. Furnishing a DER would help:
+    this.timeout(15000)
+
+    var buyerToSeller
+    var sellerToBuyer
+
+    async.series([
+      function (next) {
+        // Create a session, authenticate it, and then try opening it with a bad pass
+        buyerToSeller = new Session(connection, globals.testerPrivateKey,
+          new Buffer(globalsSession.buyerSecret, 'hex'),
+          {receiverAddr: globals.tester2PublicKey})
+
+        next()
+      }, function (next) {
+        buyerToSeller.send('Hello Buyer', function (err, chat) {
+          expect(err).to.deep.equal(new session.NotAuthenticatedError())
+          next()
+        })
+      }, function (next) {
+        buyerToSeller.authenticate(next)
+      }, function (next) {
+        buyerToSeller.send('Hello Buyer', function (err, chat) {
+          expect(err).to.deep.equal(new session.NotAuthenticatedError())
+          next()
+        })
+      }, function (next) {
+        // Seller creates connection To Buyer
+        Session.all(connection, globals.tester2PublicKey, function (err, sessions) {
+          if (err) return next(err)
+
+          expect(sessions.length).to.equal(1)
+
+          sellerToBuyer = new Session(connection, globals.tester2PrivateKey,
+            new Buffer(globalsSession.sellerSecret, 'hex'),
+            {withChat: sessions[0]})
+          next()
+        })
+      }, function (next) {
+        sellerToBuyer.send('Hello Buyer', function (err, chat) {
+          expect(err).to.deep.equal(new session.NotAuthenticatedError())
+          next()
+        })
+      }],
+      function (err, sessions) {
+        if (err) throw err
+        nextSpec()
+      })
   })
 })
