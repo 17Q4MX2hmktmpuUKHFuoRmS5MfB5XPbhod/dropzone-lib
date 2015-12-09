@@ -305,6 +305,9 @@ describe('Session', function () {
   })
 
   it('Requires that session must authenticate before chatting', function (nextSpec) {
+    // The RNG takes a bit of time on this one. Furnishing a DER would help:
+    this.timeout(15000)
+
     var buyerToSeller
     var sellerToBuyer
 
@@ -312,22 +315,21 @@ describe('Session', function () {
       function (next) {
         // Create a session, authenticate it, and then try opening it with a bad pass
         buyerToSeller = new Session(connection, globals.testerPrivateKey,
-          new Buffer(globalsSession.buyerSecret, 'hex'), 
+          new Buffer(globalsSession.buyerSecret, 'hex'),
           {receiverAddr: globals.tester2PublicKey})
 
         next()
       }, function (next) {
-        buyerToSeller.send('Hello Buyer', function(err, chat) {
-          // TODO : Should raise an error
+        buyerToSeller.send('Hello Buyer', function (err, chat) {
+          expect(err).to.deep.equal(new session.NotAuthenticatedError())
+          next()
         })
       }, function (next) {
-        buyerToSeller.authenticate(function (err, chatInit) {
-          if (err) throw err
-          next(null, buyerToSeller)
-        })
+        buyerToSeller.authenticate(next)
       }, function (next) {
-        buyperToSeller.send('Hello Buyer', function(err, chat) {
-          // TODO : Should also raise an error
+        buyerToSeller.send('Hello Buyer', function (err, chat) {
+          expect(err).to.deep.equal(new session.NotAuthenticatedError())
+          next()
         })
       }, function (next) {
         // Seller creates connection To Buyer
@@ -336,14 +338,15 @@ describe('Session', function () {
 
           expect(sessions.length).to.equal(1)
 
-          sellerToBuyer = new Session(connection, globals.tester2PrivateKey, 
+          sellerToBuyer = new Session(connection, globals.tester2PrivateKey,
             new Buffer(globalsSession.sellerSecret, 'hex'),
             {withChat: sessions[0]})
           next()
         })
       }, function (next) {
-        sellerToBuyer.send('Hello Buyer', function(err, chat) {
-          // TODO : Should also raise an error
+        sellerToBuyer.send('Hello Buyer', function (err, chat) {
+          expect(err).to.deep.equal(new session.NotAuthenticatedError())
+          next()
         })
       }],
       function (err, sessions) {
