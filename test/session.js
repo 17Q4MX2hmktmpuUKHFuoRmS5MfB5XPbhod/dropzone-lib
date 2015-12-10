@@ -354,4 +354,100 @@ describe('Session', function () {
         nextSpec()
       })
   })
+
+  it('supports multiple chats sessions by a seller', function (nextSpec) {
+    // The RNG takes a bit of time on this one. Furnishing a DER would help:
+    this.timeout(25000)
+
+    var buyerToSeller1
+    var buyerToSeller2
+    var sellerToBuyer1
+    var sellerToBuyer2
+
+    var buyerToSellerChats1
+    var buyerToSellerChats2
+    var sellerToBuyerChats1
+    var sellerToBuyerChats2
+
+    buyerToSeller1 = new Session(connection, globals.tester2PrivateKey,
+      crypto.randomBytes(128),
+      {receiverAddr: globals.testerPublicKey})
+
+    buyerToSeller2 = new Session(connection, globals.tester3PrivateKey,
+      crypto.randomBytes(128),
+      {receiverAddr: globals.testerPublicKey})
+
+    var getDecrypted = function (c) { return c.contentsPlain() }
+
+    async.series([
+      // Authentications:
+      function (next) { buyerToSeller1.authenticate(next) },
+      function (next) { buyerToSeller2.authenticate(next) },
+      function (next) {
+        Session.all(connection, globals.testerPublicKey,
+          function (err, sessions) {
+            if (err) return next(err)
+
+            expect(sessions.length).to.equal(2)
+
+            sellerToBuyer2 = new Session(connection, globals.testerPrivateKey,
+              crypto.randomBytes(128), {withChat: sessions[0]})
+
+            sellerToBuyer1 = new Session(connection, globals.testerPrivateKey,
+              crypto.randomBytes(128), {withChat: sessions[1]})
+
+            next()
+          })
+      },
+      function (next) { sellerToBuyer1.authenticate(next) },
+      function (next) { sellerToBuyer2.authenticate(next) },
+      // Chats commence:
+      function (next) { sellerToBuyer1.send('Hello Buyer1', next) },
+      function (next) { buyerToSeller1.send('Hello from Buyer1', next) },
+      function (next) { sellerToBuyer2.send('Hello Buyer2', next) },
+      function (next) { buyerToSeller2.send('Hello from Buyer2', next) },
+      function (next) {
+        sellerToBuyer1.getCommunications(function (err, chats) {
+          if (err) throw err
+          sellerToBuyerChats1 = chats.map(getDecrypted)
+          next()
+        })
+      },
+      function (next) {
+        sellerToBuyer2.getCommunications(function (err, chats) {
+          if (err) throw err
+          sellerToBuyerChats2 = chats.map(getDecrypted)
+          next()
+        })
+      },
+      function (next) {
+        buyerToSeller1.getCommunications(function (err, chats) {
+          if (err) throw err
+          buyerToSellerChats1 = chats.map(getDecrypted)
+          next()
+        })
+      },
+      function (next) {
+        buyerToSeller2.getCommunications(function (err, chats) {
+          if (err) throw err
+          buyerToSellerChats2 = chats.map(getDecrypted)
+          next()
+        })
+      }
+    ],
+    function (err, sessions) {
+      if (err) throw err
+
+      expect(sellerToBuyerChats1).to.deep.equal([ 'Hello from Buyer1',
+        'Hello Buyer1' ])
+      expect(buyerToSellerChats1).to.deep.equal([ 'Hello from Buyer1',
+        'Hello Buyer1' ])
+      expect(sellerToBuyerChats2).to.deep.equal([ 'Hello from Buyer2',
+        'Hello Buyer2' ])
+      expect(buyerToSellerChats2).to.deep.equal([ 'Hello from Buyer2',
+        'Hello Buyer2' ])
+
+      nextSpec()
+    })
+  })
 })
