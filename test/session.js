@@ -36,7 +36,7 @@ describe('Session', function () {
 
   it('performs a simple non-deterministic chat', function (nextSpec) {
     // The RNG takes a bit of time on this one. Furnishing a DER would help:
-    this.timeout(15000)
+    this.timeout(35000)
 
     async.series([
       function (next) {
@@ -308,7 +308,7 @@ describe('Session', function () {
 
   it('Requires that session must authenticate before chatting', function (nextSpec) {
     // The RNG takes a bit of time on this one. Furnishing a DER would help:
-    this.timeout(15000)
+    this.timeout(35000)
 
     var buyerToSeller
     var sellerToBuyer
