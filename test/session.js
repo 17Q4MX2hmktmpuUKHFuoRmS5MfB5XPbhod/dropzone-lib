@@ -17,8 +17,6 @@ var Session = session.Session
 
 var getDecrypted = function (c) { return c.contentsPlain() }
 
-// TODO: We should probably furnish Der's
-
 describe('Session', function () {
   var connection = null
 
@@ -407,14 +405,16 @@ describe('Session', function () {
     function (err, sessions) {
       if (err) throw err
 
-      async.map([sellerToBuyer1, buyerToSeller1, sellerToBuyer2, buyerToSeller2], 
-        function (session, next) { session.getCommunications(
-          function (err, chats) {
+      async.mapSeries([sellerToBuyer1, buyerToSeller1, sellerToBuyer2, buyerToSeller2],
+        function (session, next) {
+          session.getCommunications(function (err, chats) {
             if (err) throw err
             next(null, chats.map(getDecrypted))
-          }) 
+          })
         },
-        function(err, results){
+        function (err, results) {
+          if (err) throw err
+
           expect(results[0]).to.deep.equal([ 'Hello from Buyer1',
             'Hello Buyer1' ])
           expect(results[1]).to.deep.equal([ 'Hello from Buyer1',
@@ -484,14 +484,16 @@ describe('Session', function () {
     ], function (err, sessions) {
       if (err) throw err
 
-      async.map([sellerToBuyer1, buyerToSeller1, sellerToBuyer2, buyerToSeller2], 
-        function (session, next) { session.getCommunications(
-          function (err, chats) {
+      async.mapSeries([sellerToBuyer1, buyerToSeller1, sellerToBuyer2, buyerToSeller2],
+        function (session, next) {
+          session.getCommunications(function (err, chats) {
             if (err) throw err
             next(null, chats.map(getDecrypted))
-          }) 
+          })
         },
-        function(err, results){
+        function (err, results) {
+          if (err) throw err
+
           expect(results[0]).to.deep.equal([ 'Hello from Seller1',
             'Hello Seller1' ])
           expect(results[1]).to.deep.equal([ 'Hello from Seller1',
@@ -503,7 +505,7 @@ describe('Session', function () {
 
           nextSpec()
         })
-      })
+    })
   })
 
   it('supports multiple chat sessions between two users', function (nextSpec) {
@@ -537,12 +539,12 @@ describe('Session', function () {
       function (next) { sellerToBuyer1.authenticate(next) },
       function (next) { sellerToBuyer1.send('Hello Buyer S1', next) },
       function (next) { buyerToSeller1.send('Hello Seller S1', next) },
-      function (next) { 
+      // Now Create a Session 2:
+      function (next) {
         connection.incrementBlockHeight()
 
         buyerToSeller2 = new Session(connection, globals.testerPrivateKey,
-          crypto.randomBytes(128),
-          {receiverAddr: globals.tester2PublicKey})
+          crypto.randomBytes(128), {receiverAddr: globals.tester2PublicKey})
 
         next()
       },
@@ -560,15 +562,17 @@ describe('Session', function () {
             next()
           })
       },
-      function (next) { 
-        sellerToBuyer2.isAuthenticated(function(err, isAuthenticated) {
+      function (next) {
+        sellerToBuyer2.isAuthenticated(function (err, isAuthenticated) {
+          if (err) throw err
+
           expect(isAuthenticated).to.be.false
           next()
         })
       },
       function (next) { sellerToBuyer2.authenticate(next) },
-      function (next) { 
-        connection.incrementBlockHeight() 
+      function (next) {
+        connection.incrementBlockHeight()
 
         Session.all(connection, globals.tester2PublicKey,
           function (err, sessions) {
@@ -580,7 +584,7 @@ describe('Session', function () {
           })
       },
       // Authentication checks:
-      function (next) { 
+      function (next) {
         buyerToSeller2.getSymmKey(function (err, buyerToSeller2SymmKey) {
           if (err) throw err
           sellerToBuyer2.getSymmKey(function (err, sellerToBuyer2SymmKey) {
@@ -590,7 +594,7 @@ describe('Session', function () {
           })
         })
       },
-      function (next) { 
+      function (next) {
         buyerToSeller1.getSymmKey(function (err, buyerToSeller1SymmKey) {
           if (err) throw err
           sellerToBuyer2.getSymmKey(function (err, sellerToBuyer2SymmKey) {
@@ -600,8 +604,9 @@ describe('Session', function () {
           })
         })
       },
-      function (next) { 
-        sellerToBuyer2.isAuthenticated(function(err, isAuthenticated) {
+      function (next) {
+        sellerToBuyer2.isAuthenticated(function (err, isAuthenticated) {
+          if (err) throw err
           expect(isAuthenticated).to.be.true
           next()
         })
@@ -610,15 +615,17 @@ describe('Session', function () {
       function (next) { buyerToSeller2.send('Hello Seller S2', next) }
     ], function (err, results) {
       if (err) throw err
-// TODO : I think this is where we're failing:
-      async.map([sellerToBuyer2, buyerToSeller2], 
-        function (session, next) { session.getCommunications(
+
+      async.mapSeries([sellerToBuyer2, buyerToSeller2],
+        function (session, next) {
+          session.getCommunications(
           function (err, chats) {
             if (err) throw err
             next(null, chats.map(getDecrypted))
-          }) 
-        },
-        function(err, results){
+          })
+        }, function (err, results) {
+          if (err) throw err
+
           expect(results[0]).to.deep.equal([ 'Hello Seller S2',
             'Hello Buyer S2' ])
           expect(results[1]).to.deep.equal([ 'Hello Seller S2',
