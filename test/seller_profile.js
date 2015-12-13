@@ -62,62 +62,133 @@ describe('SellerProfile', function () {
             next()
           })
         }
-      ], function (err, communications) {
-        if (err) throw err
+      ], nextSpec)
+    })
 
-        nextSpec()
-      })
+    it('combines attributes from mulitple messages', function (nextSpec) {
+      var profile = new SellerProfile(connection, globals.testerPublicKey)
+
+      async.series([
+        function (next) {
+          chai.factory.create('seller',
+            connection).save(globals.testerPrivateKey, next)
+        },
+        function (next) {
+          chai.factory.create('seller', connection,
+            {description: 'xyz'}).save(globals.testerPrivateKey, next)
+        },
+        function (next) {
+          profile.isValid(function (err, res) {
+            if (err) throw err
+            expect(res).to.be.null
+            next()
+          })
+        },
+        function (next) {
+          profile.getAttributes(null, function(err, attrs) {
+            expect(attrs.description).to.equal('xyz')
+            expect(attrs.alias).to.equal('Satoshi')
+            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+            expect(attrs.isActive).to.be.true
+            next()
+          })
+        }
+      ], nextSpec)
+    })
+
+    it('supports profile transfers', function (nextSpec) {
+      var profile
+
+      async.series([
+        // Standard Seller:
+        function (next) {
+          chai.factory.create('seller',
+            connection).save(globals.testerPrivateKey, next)
+        },
+        // Seller Transfer to Tester2:
+        function (next) {
+          chai.factory.create('seller', connection, {
+            transferAddr: globals.tester2PublicKey, 
+            receiverAddr: globals.tester2PublicKey
+          }).save(globals.testerPrivateKey, next)
+        },
+        // Update Tester2 for some added complexity:
+        function (next) {
+          chai.factory.create('seller', connection, {
+            alias: 'New Alias', 
+            receiverAddr: globals.tester2PublicKey
+          }).save(globals.tester2PrivateKey, next)
+        },
+        function (next) {
+          profile = new SellerProfile(connection, globals.tester2PublicKey)
+
+          profile.isValid(function (err, res) {
+            if (err) throw err
+            expect(res).to.be.null
+            next()
+          })
+        },
+        function (next) {
+          profile.getAttributes(null, function(err, attrs) {
+            expect(attrs.description).to.equal('abc')
+            expect(attrs.alias).to.equal('New Alias')
+            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+            expect(attrs.addr).to.equal(globals.tester2PublicKey)
+            expect(attrs.isActive).to.be.true
+            next()
+          })
+        }
+      ], nextSpec)
+    })
+
+    it('supports a transfer in and transfer out', function (nextSpec) {
+      var profile
+
+      async.series([
+        // Standard Seller:
+        function (next) {
+          chai.factory.create('seller',
+            connection).save(globals.testerPrivateKey, next)
+        },
+        // Seller Transfer to Tester2:
+        function (next) {
+          chai.factory.create('seller', connection, {
+            transferAddr: globals.tester2PublicKey, 
+            receiverAddr: globals.tester2PublicKey
+          }).save(globals.testerPrivateKey, next)
+        },
+        // Tester2 Transfer to Tester 3:
+        function (next) {
+          chai.factory.create('seller', connection, {
+            transferAddr: globals.tester3PublicKey, 
+            receiverAddr: globals.tester3PublicKey
+          }).save(globals.tester2PrivateKey, next)
+        },
+        function (next) {
+          profile = new SellerProfile(connection, globals.tester3PublicKey)
+
+          profile.isValid(function (err, res) {
+            if (err) throw err
+            expect(res).to.be.null
+            next()
+          })
+        },
+        function (next) {
+          profile.getAttributes(null, function(err, attrs) {
+            expect(attrs.description).to.equal('abc')
+            expect(attrs.alias).to.equal('Satoshi')
+            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+            expect(attrs.addr).to.equal(globals.tester3PublicKey)
+            expect(attrs.isActive).to.be.true
+            next()
+          })
+        }
+      ], nextSpec)
     })
   })
 /*
   describe "accessors" do
-    it "combines attributes from mulitple messages" do
-      Dropzone::Seller.sham!(:build).save! test_privkey
-      Dropzone::Seller.sham!(:build, :description => 'xyz').save! test_privkey
-
-      profile = Dropzone::SellerProfile.new test_pubkey
-
-      expect(profile.valid?).to be_truthy
-      expect(profile.description).to eq("xyz")
-      expect(profile.alias).to eq("Satoshi")
-      expect(profile.communications_pkey).to eq('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-      expect(profile.addr).to eq(test_pubkey)
-      expect(profile.active?).to be_truthy
-    end
-
-    it "supports profile transfers" do
-      # Standard Seller:
-      Dropzone::Seller.sham!(:build).save! test_privkey
-
-      # Seller Transfer to Tester2:
-      Dropzone::Seller.new( receiver_addr: TESTER2_PUBLIC_KEY,
-        transfer_pkey: TESTER2_PUBLIC_KEY).save! test_privkey
-
-      # Update Tester2 for some added complexity:
-      Dropzone::Seller.new( receiver_addr: TESTER2_PUBLIC_KEY,
-        :alias => 'New Alias' ).save! TESTER2_PRIVATE_KEY
-
-      profile = Dropzone::SellerProfile.new TESTER2_PUBLIC_KEY
-
-      expect(profile.valid?).to be_truthy
-      expect(profile.description).to eq("abc")
-      expect(profile.alias).to eq("New Alias")
-      expect(profile.communications_pkey).to eq('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-      expect(profile.addr).to eq(TESTER2_PUBLIC_KEY)
-      expect(profile.active?).to be_truthy
-    end
-
     it "supports a transfer in and transfer out" do
-      # Standard Seller:
-      Dropzone::Seller.sham!(:build).save! test_privkey
-
-      # Address 1 transfers to Address 2:
-      Dropzone::Seller.new( receiver_addr: TESTER2_PUBLIC_KEY,
-        transfer_pkey: TESTER2_PUBLIC_KEY).save! test_privkey
-
-      # Address 2 transfers to Address 3:
-      Dropzone::Seller.new( receiver_addr: TESTER3_PUBLIC_KEY,
-        transfer_pkey: TESTER3_PUBLIC_KEY).save! TESTER2_PRIVATE_KEY
 
       profile = Dropzone::SellerProfile.new TESTER3_PUBLIC_KEY
 
