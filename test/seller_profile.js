@@ -2,16 +2,21 @@
 /* eslint no-new: 0 */
 
 var chai = require('chai')
+var factories = require('../test/factories/factories')
+
+var fakeConnection = require('../lib/drivers/fake')
+var messages = require('../lib/messages')
+var profile = require('../lib/profile')
+var globals = require('./fixtures/globals')
+
 var async = require('async')
 
 var expect = chai.expect
+var Seller = messages.Seller
 
-var fakeConnection = require('../lib/drivers/fake')
-var sellerProfile = require('../lib/seller_profile')
+var SellerProfile = profile.SellerProfile
 
-var globals = require('./fixtures/globals')
-
-var SellerProfile = sellerProfile.SellerProfile
+factories.dz(chai)
 
 describe('SellerProfile', function () {
   var connection = null
@@ -32,26 +37,40 @@ describe('SellerProfile', function () {
 
   describe('accessors', function () {
     it('compiles a simple profile', function (nextSpec) {
-      nextSpec()
+      var profile = new SellerProfile(connection, globals.testerPublicKey)
+
+      expect(profile.addr).to.equal(globals.testerPublicKey)
+
+      async.series([
+        function (next) {
+          chai.factory.create('seller',
+            connection).save(globals.testerPrivateKey,next)
+        },
+        function (next) {
+          profile.isValid(function (err, res) {
+            if (err) throw err
+            expect(res).to.be.null
+            next()
+          })
+        },
+        function (next) {
+          profile.getAttributes(null, function(err, attrs) {
+            expect(attrs.description).to.equal('abc')
+            expect(attrs.alias).to.equal('Satoshi')
+            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+            expect(attrs.isActive).to.be.true
+            next()
+          })
+        }
+      ], function (err, communications) {
+        if (err) throw err
+
+        nextSpec()
+      })
     })
   })
 /*
   describe "accessors" do
-    after{ clear_blockchain! }
-
-    it "compiles a simple profile" do
-      Dropzone::Seller.sham!(:build).save! test_privkey
-
-      profile = Dropzone::SellerProfile.new test_pubkey
-
-      expect(profile.valid?).to be_truthy
-      expect(profile.description).to eq("abc")
-      expect(profile.alias).to eq("Satoshi")
-      expect(profile.communications_pkey).to eq('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-      expect(profile.addr).to eq(test_pubkey)
-      expect(profile.active?).to be_truthy
-    end
-
     it "combines attributes from mulitple messages" do
       Dropzone::Seller.sham!(:build).save! test_privkey
       Dropzone::Seller.sham!(:build, :description => 'xyz').save! test_privkey
