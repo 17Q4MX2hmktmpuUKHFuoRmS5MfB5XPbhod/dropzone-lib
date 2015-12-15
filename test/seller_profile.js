@@ -185,47 +185,60 @@ describe('SellerProfile', function () {
         }
       ], nextSpec)
     })
+
+    it('only supports a single transfer in', function (nextSpec) {
+      var profile
+
+      async.series([
+        // Address 1 Declaration:
+        function (next) {
+          chai.factory.create('seller',
+            connection).save(globals.testerPrivateKey, next)
+        },
+        // Address 2 Declaration:
+        function (next) {
+          new Seller(connection, {description: 'xyz', alias: 'New Alias',
+           receiverAddr: globals.tester2PublicKey
+          }).save(globals.tester2PrivateKey, next)
+        },
+        // Address 1 transfers to Address 3:
+        function (next) {
+          new Seller(connection, {transferAddr: globals.tester3PublicKey,
+           receiverAddr: globals.tester3PublicKey
+          }).save(globals.testerPrivateKey, next)
+        },
+        // Address 2 transfers to Address 3:
+        function (next) {
+          new Seller(connection, {transferAddr: globals.tester3PublicKey,
+           receiverAddr: globals.tester3PublicKey
+          }).save(globals.tester2PrivateKey, next)
+        },
+        function (next) {
+          profile = new SellerProfile(connection, globals.tester3PublicKey)
+
+          profile.isValid(function (err, res) {
+            if (err) throw err
+            expect(res).to.be.null
+            next()
+          })
+        },
+        function(next) {
+          profile.getAttributes(null, function(err, attrs) {
+            expect(attrs.description).to.equal('abc')
+            expect(attrs.alias).to.equal('Satoshi')
+            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+            expect(attrs.addr).to.equal(globals.tester3PublicKey)
+            expect(attrs.transferPkey).to.be.nil
+            expect(attrs.isActive).to.be.true
+            next()
+          })
+        }
+      ], nextSpec)
+    })
+
   })
 /*
   describe "accessors" do
-    it "supports a transfer in and transfer out" do
-
-      profile = Dropzone::SellerProfile.new TESTER3_PUBLIC_KEY
-
-      expect(profile.valid?).to be_truthy
-      expect(profile.description).to eq("abc")
-      expect(profile.alias).to eq("Satoshi")
-      expect(profile.communications_pkey).to eq('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-      expect(profile.addr).to eq(TESTER3_PUBLIC_KEY)
-      expect(profile.active?).to be_truthy
-    end
-
-    it "only supports a single transfer in" do
-      # Address 1 Declaration:
-      Dropzone::Seller.sham!(:build).save! test_privkey
-
-      # Address 2 Declaration:
-      Dropzone::Seller.new( description: 'xyz', alias: 'New Alias',
-       receiver_addr: TESTER2_PUBLIC_KEY ).save! TESTER2_PRIVATE_KEY
-
-      # Address 1 transfers to Address 3:
-      Dropzone::Seller.new( receiver_addr: TESTER3_PUBLIC_KEY,
-        transfer_pkey: TESTER3_PUBLIC_KEY).save! test_privkey
-
-      # Address 2 transfers to Address 3:
-      Dropzone::Seller.new( receiver_addr: TESTER3_PUBLIC_KEY,
-        transfer_pkey: TESTER3_PUBLIC_KEY).save! TESTER2_PRIVATE_KEY
-
-      profile = Dropzone::SellerProfile.new TESTER3_PUBLIC_KEY
-
-      expect(profile.valid?).to be_truthy
-      expect(profile.description).to eq("abc")
-      expect(profile.alias).to eq("Satoshi")
-      expect(profile.communications_pkey).to eq('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-      expect(profile.addr).to eq(TESTER3_PUBLIC_KEY)
-      expect(profile.transfer_pkey).to be_nil
-      expect(profile.active?).to be_truthy
-    end
 
     it "supports deactivation" do
       # Standard Seller:
