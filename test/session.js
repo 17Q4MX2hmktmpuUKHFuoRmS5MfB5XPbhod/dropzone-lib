@@ -17,6 +17,11 @@ var Session = session.Session
 
 var getDecrypted = function (c) { return c.contentsPlain() }
 
+/* NOTE: This version differs from the ruby tests in that secret's and der's
+ * are provided to new and authenticate on the init messages. This drastically
+ * speeds up tests, though should be omitted in production
+ */
+
 describe('Session', function () {
   var connection = null
 
@@ -34,20 +39,20 @@ describe('Session', function () {
     })
   })
 
+  // NOTE: The ruby version is non-deterministic, but due to the RNG time, I
+  // decided to furnish a der and secret rather than crypto.randomBytes(128)
   it('performs a simple non-deterministic chat', function (nextSpec) {
-    // The RNG takes a bit of time on this one. Furnishing a DER would help:
-    this.timeout(35000)
-
     async.series([
       function (next) {
         // Buyer initiates Authentication To Seller:
         var buyerToSeller = new Session(connection, globals.testerPrivateKey,
-          crypto.randomBytes(128), {receiverAddr: globals.tester2PublicKey})
+          new Buffer(globalsSession.sessionSecret1, 'hex'),
+          {receiverAddr: globals.tester2PublicKey})
 
         buyerToSeller.authenticate(function (err, chatInit) {
           if (err) throw err
           next(null, buyerToSeller)
-        })
+        }, new Buffer(globalsSession.der1, 'hex'))
       }, function (next) {
         // Seller initiates Authentication To Buyer
         Session.all(connection, globals.tester2PublicKey, function (err, sessions) {
@@ -307,9 +312,6 @@ describe('Session', function () {
   })
 
   it('Requires that session must authenticate before chatting', function (nextSpec) {
-    // The RNG takes a bit of time on this one. Furnishing a DER would help:
-    this.timeout(35000)
-
     var buyerToSeller
     var sellerToBuyer
 
@@ -327,7 +329,7 @@ describe('Session', function () {
           next()
         })
       }, function (next) {
-        buyerToSeller.authenticate(next)
+        buyerToSeller.authenticate(next, new Buffer(globalsSession.der, 'hex'))
       }, function (next) {
         buyerToSeller.send('Hello Buyer', function (err, chat) {
           expect(err).to.deep.equal(new session.NotAuthenticatedError())
@@ -358,26 +360,29 @@ describe('Session', function () {
   })
 
   it('supports multiple chats sessions by a seller', function (nextSpec) {
-    // The RNG takes a bit of time on this one. Furnishing a DER would help:
-    this.timeout(35000)
-
     var buyerToSeller1
     var buyerToSeller2
     var sellerToBuyer1
     var sellerToBuyer2
 
     buyerToSeller1 = new Session(connection, globals.tester2PrivateKey,
-      crypto.randomBytes(128),
+      new Buffer(globalsSession.sessionSecret1, 'hex'),
       {receiverAddr: globals.testerPublicKey})
 
     buyerToSeller2 = new Session(connection, globals.tester3PrivateKey,
-      crypto.randomBytes(128),
+      new Buffer(globalsSession.sessionSecret2, 'hex'),
       {receiverAddr: globals.testerPublicKey})
 
     async.series([
       // Authentications:
-      function (next) { buyerToSeller1.authenticate(next) },
-      function (next) { buyerToSeller2.authenticate(next) },
+      function (next) {
+        buyerToSeller1.authenticate(next,
+          new Buffer(globalsSession.der1, 'hex'))
+      },
+      function (next) {
+        buyerToSeller2.authenticate(next,
+          new Buffer(globalsSession.der2, 'hex'))
+      },
       function (next) {
         Session.all(connection, globals.testerPublicKey,
           function (err, sessions) {
@@ -430,25 +435,28 @@ describe('Session', function () {
   })
 
   it('supports multiple chats sessions by a buyer', function (nextSpec) {
-    // The RNG takes a bit of time on this one. Furnishing a DER would help:
-    this.timeout(35000)
-
     var buyerToSeller1
     var buyerToSeller2
     var sellerToBuyer1
     var sellerToBuyer2
 
     buyerToSeller1 = new Session(connection, globals.testerPrivateKey,
-      crypto.randomBytes(128),
+      new Buffer(globalsSession.sessionSecret1, 'hex'),
       {receiverAddr: globals.tester2PublicKey})
 
     buyerToSeller2 = new Session(connection, globals.testerPrivateKey,
-      crypto.randomBytes(128),
+      new Buffer(globalsSession.sessionSecret2, 'hex'),
       {receiverAddr: globals.tester3PublicKey})
 
     async.series([
-      function (next) { buyerToSeller1.authenticate(next) },
-      function (next) { buyerToSeller2.authenticate(next) },
+      function (next) {
+        buyerToSeller1.authenticate(next,
+          new Buffer(globalsSession.der1, 'hex'))
+      },
+      function (next) {
+        buyerToSeller2.authenticate(next,
+          new Buffer(globalsSession.der2, 'hex'))
+      },
       function (next) {
         Session.all(connection, globals.tester2PublicKey,
           function (err, sessions) {
@@ -509,20 +517,20 @@ describe('Session', function () {
   })
 
   it('supports multiple chat sessions between two users', function (nextSpec) {
-    // The RNG takes a bit of time on this one. Furnishing a DER would help:
-    this.timeout(35000)
-
     var buyerToSeller1
     var buyerToSeller2
     var sellerToBuyer1
     var sellerToBuyer2
 
     buyerToSeller1 = new Session(connection, globals.testerPrivateKey,
-      crypto.randomBytes(128),
+      new Buffer(globalsSession.sessionSecret1, 'hex'),
       {receiverAddr: globals.tester2PublicKey})
 
     async.series([
-      function (next) { buyerToSeller1.authenticate(next) },
+      function (next) {
+        buyerToSeller1.authenticate(next,
+          new Buffer(globalsSession.der1, 'hex'))
+      },
       function (next) {
         Session.all(connection, globals.tester2PublicKey,
           function (err, sessions) {
@@ -544,11 +552,15 @@ describe('Session', function () {
         connection.incrementBlockHeight()
 
         buyerToSeller2 = new Session(connection, globals.testerPrivateKey,
-          crypto.randomBytes(128), {receiverAddr: globals.tester2PublicKey})
+          new Buffer(globalsSession.sessionSecret2, 'hex'),
+          {receiverAddr: globals.tester2PublicKey})
 
         next()
       },
-      function (next) { buyerToSeller2.authenticate(next) },
+      function (next) {
+        buyerToSeller2.authenticate(next,
+          new Buffer(globalsSession.der2, 'hex'))
+      },
       function (next) {
         Session.all(connection, globals.tester2PublicKey,
           function (err, sessions) {
@@ -589,7 +601,8 @@ describe('Session', function () {
           if (err) throw err
           sellerToBuyer2.getSymmKey(function (err, sellerToBuyer2SymmKey) {
             if (err) throw err
-            expect(buyerToSeller2SymmKey.equals(sellerToBuyer2SymmKey)).to.be.true
+            expect(buyerToSeller2SymmKey.toString('hex')).to.equal(
+              sellerToBuyer2SymmKey.toString('hex'))
             next()
           })
         })
@@ -599,7 +612,8 @@ describe('Session', function () {
           if (err) throw err
           sellerToBuyer2.getSymmKey(function (err, sellerToBuyer2SymmKey) {
             if (err) throw err
-            expect(buyerToSeller1SymmKey.equals(sellerToBuyer2SymmKey)).to.be.false
+            expect(buyerToSeller1SymmKey.toString('hex')).to.not.equal(
+              sellerToBuyer2SymmKey.toString('hex'))
             next()
           })
         })
