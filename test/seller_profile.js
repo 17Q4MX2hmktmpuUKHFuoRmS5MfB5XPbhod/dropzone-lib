@@ -44,17 +44,12 @@ describe('SellerProfile', function () {
       async.series([
         function (next) {
           chai.factory.create('seller',
-            connection).save(globals.testerPrivateKey,next)
+            connection).save(globals.testerPrivateKey, next)
         },
         function (next) {
-          profile.isValid(function (err, res) {
+          profile.getAttributes(null, function (err, attrs) {
             if (err) throw err
-            expect(res).to.be.null
-            next()
-          })
-        },
-        function (next) {
-          profile.getAttributes(null, function(err, attrs) {
+            expect(attrs.validation).to.be.null
             expect(attrs.description).to.equal('abc')
             expect(attrs.alias).to.equal('Satoshi')
             expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
@@ -66,8 +61,6 @@ describe('SellerProfile', function () {
     })
 
     it('combines attributes from mulitple messages', function (nextSpec) {
-      var profile = new SellerProfile(connection, globals.testerPublicKey)
-
       async.series([
         function (next) {
           chai.factory.create('seller',
@@ -78,27 +71,22 @@ describe('SellerProfile', function () {
             {description: 'xyz'}).save(globals.testerPrivateKey, next)
         },
         function (next) {
-          profile.isValid(function (err, res) {
-            if (err) throw err
-            expect(res).to.be.null
-            next()
-          })
-        },
-        function (next) {
-          profile.getAttributes(null, function(err, attrs) {
-            expect(attrs.description).to.equal('xyz')
-            expect(attrs.alias).to.equal('Satoshi')
-            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-            expect(attrs.isActive).to.be.true
-            next()
-          })
+          new SellerProfile(connection, globals.testerPublicKey).getAttributes(
+            null, function (err, attrs) {
+              if (err) throw err
+
+              expect(attrs.validation).to.be.null
+              expect(attrs.description).to.equal('xyz')
+              expect(attrs.alias).to.equal('Satoshi')
+              expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+              expect(attrs.isActive).to.be.true
+              next()
+            })
         }
       ], nextSpec)
     })
 
     it('supports profile transfers', function (nextSpec) {
-      var profile
-
       async.series([
         // Standard Seller:
         function (next) {
@@ -108,42 +96,35 @@ describe('SellerProfile', function () {
         // Seller Transfer to Tester2:
         function (next) {
           chai.factory.create('seller', connection, {
-            transferAddr: globals.tester2PublicKey, 
+            transferAddr: globals.tester2PublicKey,
             receiverAddr: globals.tester2PublicKey
           }).save(globals.testerPrivateKey, next)
         },
         // Update Tester2 for some added complexity:
         function (next) {
           chai.factory.create('seller', connection, {
-            alias: 'New Alias', 
+            alias: 'New Alias',
             receiverAddr: globals.tester2PublicKey
           }).save(globals.tester2PrivateKey, next)
         },
         function (next) {
-          profile = new SellerProfile(connection, globals.tester2PublicKey)
+          new SellerProfile(connection, globals.tester2PublicKey).getAttributes(
+            null, function (err, attrs) {
+              if (err) throw err
 
-          profile.isValid(function (err, res) {
-            if (err) throw err
-            expect(res).to.be.null
-            next()
-          })
-        },
-        function (next) {
-          profile.getAttributes(null, function(err, attrs) {
-            expect(attrs.description).to.equal('abc')
-            expect(attrs.alias).to.equal('New Alias')
-            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-            expect(attrs.addr).to.equal(globals.tester2PublicKey)
-            expect(attrs.isActive).to.be.true
-            next()
-          })
+              expect(attrs.validation).to.be.null
+              expect(attrs.description).to.equal('abc')
+              expect(attrs.alias).to.equal('New Alias')
+              expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+              expect(attrs.addr).to.equal(globals.tester2PublicKey)
+              expect(attrs.isActive).to.be.true
+              next()
+            })
         }
       ], nextSpec)
     })
 
     it('supports a transfer in and transfer out', function (nextSpec) {
-      var profile
-
       async.series([
         // Standard Seller:
         function (next) {
@@ -153,42 +134,35 @@ describe('SellerProfile', function () {
         // Seller Transfer to Tester2:
         function (next) {
           chai.factory.create('seller', connection, {
-            transferAddr: globals.tester2PublicKey, 
+            transferAddr: globals.tester2PublicKey,
             receiverAddr: globals.tester2PublicKey
           }).save(globals.testerPrivateKey, next)
         },
         // Tester2 Transfer to Tester 3:
         function (next) {
           chai.factory.create('seller', connection, {
-            transferAddr: globals.tester3PublicKey, 
+            transferAddr: globals.tester3PublicKey,
             receiverAddr: globals.tester3PublicKey
           }).save(globals.tester2PrivateKey, next)
         },
         function (next) {
-          profile = new SellerProfile(connection, globals.tester3PublicKey)
+          new SellerProfile(connection, globals.tester3PublicKey).getAttributes(
+            null, function (err, attrs) {
+              if (err) throw err
 
-          profile.isValid(function (err, res) {
-            if (err) throw err
-            expect(res).to.be.null
-            next()
-          })
-        },
-        function (next) {
-          profile.getAttributes(null, function(err, attrs) {
-            expect(attrs.description).to.equal('abc')
-            expect(attrs.alias).to.equal('Satoshi')
-            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-            expect(attrs.addr).to.equal(globals.tester3PublicKey)
-            expect(attrs.isActive).to.be.true
-            next()
-          })
+              expect(attrs.validation).to.be.null
+              expect(attrs.description).to.equal('abc')
+              expect(attrs.alias).to.equal('Satoshi')
+              expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+              expect(attrs.addr).to.equal(globals.tester3PublicKey)
+              expect(attrs.isActive).to.be.true
+              next()
+            })
         }
       ], nextSpec)
     })
 
     it('only supports a single transfer in', function (nextSpec) {
-      var profile
-
       async.series([
         // Address 1 Declaration:
         function (next) {
@@ -214,24 +188,19 @@ describe('SellerProfile', function () {
           }).save(globals.tester2PrivateKey, next)
         },
         function (next) {
-          profile = new SellerProfile(connection, globals.tester3PublicKey)
+          new SellerProfile(connection, globals.tester3PublicKey).getAttributes(
+            null, function (err, attrs) {
+              if (err) throw err
 
-          profile.isValid(function (err, res) {
-            if (err) throw err
-            expect(res).to.be.null
-            next()
-          })
-        },
-        function(next) {
-          profile.getAttributes(null, function(err, attrs) {
-            expect(attrs.description).to.equal('abc')
-            expect(attrs.alias).to.equal('Satoshi')
-            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-            expect(attrs.addr).to.equal(globals.tester3PublicKey)
-            expect(attrs.transferAddr).to.be.nil
-            expect(attrs.isActive).to.be.true
-            next()
-          })
+              expect(attrs.validation).to.be.null
+              expect(attrs.description).to.equal('abc')
+              expect(attrs.alias).to.equal('Satoshi')
+              expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+              expect(attrs.addr).to.equal(globals.tester3PublicKey)
+              expect(attrs.transferAddr).to.be.nil
+              expect(attrs.isActive).to.be.true
+              next()
+            })
         }
       ], nextSpec)
     })
@@ -248,15 +217,16 @@ describe('SellerProfile', function () {
           new Seller(connection, {receiverAddr: globals.testerPublicKey,
             transferAddr: 0 }).save(globals.testerPrivateKey, next)
         },
-        function(next) {
-          var profile = new SellerProfile(connection, globals.testerPublicKey)
+        function (next) {
+          new SellerProfile(connection, globals.testerPublicKey).getAttributes(
+            null, function (err, attrs) {
+              if (err) throw err
 
-          profile.getAttributes(null, function(err, attrs) {
-            expect(attrs.transferAddr).to.equal(0)
-            expect(attrs.isActive).to.be.false
-            expect(attrs.isClosed).to.be.true
-            next()
-          })
+              expect(attrs.transferAddr).to.equal(0)
+              expect(attrs.isActive).to.be.false
+              expect(attrs.isClosed).to.be.true
+              next()
+            })
         }
       ], nextSpec)
     })
@@ -280,40 +250,40 @@ describe('SellerProfile', function () {
             description: 'xyz'
           }).save(globals.testerPrivateKey, next)
         },
-        function(next) {
-          var profile1 = new SellerProfile(connection, globals.testerPublicKey)
+        function (next) {
+          new SellerProfile(connection, globals.testerPublicKey).getAttributes(
+            null, function (err, attrs) {
+              if (err) throw err
 
-          profile1.getAttributes(null, function(err, attrs) {
-            expect(attrs.description).to.equal('abc')
-            expect(attrs.alias).to.equal('Satoshi')
-            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-            expect(attrs.addr).to.equal(globals.testerPublicKey)
-            expect(attrs.transferAddr).to.equal(globals.tester2PublicKey)
-            expect(attrs.isActive).to.be.false
-            expect(attrs.isClosed).to.be.false
-            next()
-          })
+              expect(attrs.description).to.equal('abc')
+              expect(attrs.alias).to.equal('Satoshi')
+              expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+              expect(attrs.addr).to.equal(globals.testerPublicKey)
+              expect(attrs.transferAddr).to.equal(globals.tester2PublicKey)
+              expect(attrs.isActive).to.be.false
+              expect(attrs.isClosed).to.be.false
+              next()
+            })
         },
-        function(next) {
-          var profile2 = new SellerProfile(connection, globals.tester2PublicKey)
+        function (next) {
+          new SellerProfile(connection, globals.tester2PublicKey).getAttributes(
+            null, function (err, attrs) {
+              if (err) throw err
 
-          profile2.getAttributes(null, function(err, attrs) {
-            expect(attrs.description).to.equal('abc')
-            expect(attrs.alias).to.equal('Satoshi')
-            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-            expect(attrs.addr).to.equal(globals.tester2PublicKey)
-            expect(attrs.transferAddr).to.be.undefined
-            expect(attrs.isActive).to.be.true
-            expect(attrs.isClosed).to.be.false
-            next()
-          })
+              expect(attrs.description).to.equal('abc')
+              expect(attrs.alias).to.equal('Satoshi')
+              expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+              expect(attrs.addr).to.equal(globals.tester2PublicKey)
+              expect(attrs.transferAddr).to.be.undefined
+              expect(attrs.isActive).to.be.true
+              expect(attrs.isClosed).to.be.false
+              next()
+            })
         }
       ], nextSpec)
     })
 
     it('will stop merging attributes after a cancellation', function (nextSpec) {
-      var profile
-
       async.series([
         // Standard Seller:
         function (next) {
@@ -328,36 +298,28 @@ describe('SellerProfile', function () {
         },
         // Address changes description:
         function (next) {
-          new Seller(connection, {
-           description: 'xyz'
-          }).save(globals.testerPrivateKey, next)
+          new Seller(connection, {description: 'xyz'}).save(
+            globals.testerPrivateKey, next)
         },
         function (next) {
-          profile = new SellerProfile(connection, globals.testerPublicKey)
+          new SellerProfile(connection, globals.testerPublicKey).getAttributes(
+            null, function (err, attrs) {
+              if (err) throw err
 
-          profile.isValid(function (err, res) {
-            if (err) throw err
-            expect(res).to.be.null
-            next()
-          })
-        },
-        function(next) {
-          profile.getAttributes(null, function(err, attrs) {
-            expect(attrs.description).to.equal('abc')
-            expect(attrs.alias).to.equal('Satoshi')
-            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-            expect(attrs.addr).to.equal(globals.testerPublicKey)
-            expect(attrs.transferAddr).to.equal(0)
-            expect(attrs.isActive).to.be.false
-            next()
-          })
+              expect(attrs.validation).to.be.null
+              expect(attrs.description).to.equal('abc')
+              expect(attrs.alias).to.equal('Satoshi')
+              expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+              expect(attrs.addr).to.equal(globals.testerPublicKey)
+              expect(attrs.transferAddr).to.equal(0)
+              expect(attrs.isActive).to.be.false
+              next()
+            })
         }
-      ],nextSpec)
+      ], nextSpec)
     })
 
     it('will merge attributes in a cancellation message', function (nextSpec) {
-      var profile
-
       async.series([
         // Standard Seller:
         function (next) {
@@ -371,31 +333,24 @@ describe('SellerProfile', function () {
           }).save(globals.testerPrivateKey, next)
         },
         function (next) {
-          profile = new SellerProfile(connection, globals.testerPublicKey)
+          new SellerProfile(connection, globals.testerPublicKey).getAttributes(
+            null, function (err, attrs) {
+              if (err) throw err
 
-          profile.isValid(function (err, res) {
-            if (err) throw err
-            expect(res).to.be.null
-            next()
-          })
-        },
-        function(next) {
-          profile.getAttributes(null, function(err, attrs) {
-            expect(attrs.description).to.equal('xyz')
-            expect(attrs.alias).to.equal('Satoshi')
-            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-            expect(attrs.addr).to.equal(globals.testerPublicKey)
-            expect(attrs.transferAddr).to.equal(0)
-            expect(attrs.isActive).to.be.false
-            next()
-          })
+              expect(attrs.validation).to.be.null
+              expect(attrs.description).to.equal('xyz')
+              expect(attrs.alias).to.equal('Satoshi')
+              expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+              expect(attrs.addr).to.equal(globals.testerPublicKey)
+              expect(attrs.transferAddr).to.equal(0)
+              expect(attrs.isActive).to.be.false
+              next()
+            })
         }
-      ],nextSpec)
+      ], nextSpec)
     })
 
     it('will merge attributes in a transfer message', function (nextSpec) {
-      var profile
-
       async.series([
         // Standard Seller:
         function (next) {
@@ -409,32 +364,25 @@ describe('SellerProfile', function () {
           }).save(globals.testerPrivateKey, next)
         },
         function (next) {
-          profile = new SellerProfile(connection, globals.testerPublicKey)
+          new SellerProfile(connection, globals.testerPublicKey).getAttributes(
+            null, function (err, attrs) {
+              if (err) throw err
 
-          profile.isValid(function (err, res) {
-            if (err) throw err
-            expect(res).to.be.null
-            next()
-          })
-        },
-        function(next) {
-          profile.getAttributes(null, function(err, attrs) {
-            expect(attrs.description).to.equal('xyz')
-            expect(attrs.alias).to.equal('Satoshi')
-            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-            expect(attrs.addr).to.equal(globals.testerPublicKey)
-            expect(attrs.transferAddr).to.equal(globals.tester2PublicKey)
-            expect(attrs.isActive).to.be.false
-            next()
-          })
+              expect(attrs.validation).to.be.null
+              expect(attrs.description).to.equal('xyz')
+              expect(attrs.alias).to.equal('Satoshi')
+              expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+              expect(attrs.addr).to.equal(globals.testerPublicKey)
+              expect(attrs.transferAddr).to.equal(globals.tester2PublicKey)
+              expect(attrs.isActive).to.be.false
+              next()
+            })
         }
-      ],nextSpec)
+      ], nextSpec)
     })
 
     describe('validations', function () {
       it('won\'t compile a deactivated transfer', function (nextSpec) {
-        var profile
-
         async.series([
           // Standard Seller:
           function (next) {
@@ -454,15 +402,15 @@ describe('SellerProfile', function () {
             }).save(globals.testerPrivateKey, next)
           },
           function (next) {
-            profile = new SellerProfile(connection, globals.tester2PublicKey)
+            new SellerProfile(connection, globals.tester2PublicKey).getAttributes(
+              null, function (err, attrs) {
+                if (err) throw err
 
-            profile.isValid(function (err, res) {
-              if (err) throw err
-              expect(res).to.not.be.null
-              next()
-            })
+                expect(attrs.validation).to.be.null
+                next()
+              })
           }
-        ],nextSpec)
+        ], nextSpec)
       })
     })
 /*
