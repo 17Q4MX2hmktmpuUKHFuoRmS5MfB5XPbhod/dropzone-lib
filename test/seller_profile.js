@@ -228,12 +228,38 @@ describe('SellerProfile', function () {
             expect(attrs.alias).to.equal('Satoshi')
             expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
             expect(attrs.addr).to.equal(globals.tester3PublicKey)
-            expect(attrs.transferPkey).to.be.nil
+            expect(attrs.transferAddr).to.be.nil
             expect(attrs.isActive).to.be.true
             next()
           })
         }
       ], nextSpec)
+    })
+
+    it('supports deactivation', function (nextSpec) {
+      async.series([
+        // Standard Seller:
+        function (next) {
+          chai.factory.create('seller',
+            connection).save(globals.testerPrivateKey, next)
+        },
+        // Seller Deactivates his account:
+        function (next) {
+          new Seller(connection, {receiverAddr: globals.testerPublicKey,
+            transferAddr: 0 }).save(globals.testerPrivateKey, next)
+        },
+        function(next) {
+          var profile = new SellerProfile(connection, globals.testerPublicKey)
+
+          profile.getAttributes(null, function(err, attrs) {
+            expect(attrs.transferAddr).to.equal(0)
+            expect(attrs.isActive).to.be.false
+            expect(attrs.isClosed).to.be.true
+            next()
+          })
+        }
+      ], nextSpec)
+
     })
 
   })
