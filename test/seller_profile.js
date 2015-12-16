@@ -259,118 +259,213 @@ describe('SellerProfile', function () {
           })
         }
       ], nextSpec)
-
     })
 
-  })
+    it('will stop merging attributes after a transfer out', function (nextSpec) {
+      async.series([
+        // Standard Seller:
+        function (next) {
+          chai.factory.create('seller',
+            connection).save(globals.testerPrivateKey, next)
+        },
+        // Address 1 transfers to Address 2:
+        function (next) {
+          new Seller(connection, {transferAddr: globals.tester2PublicKey,
+           receiverAddr: globals.tester2PublicKey
+          }).save(globals.testerPrivateKey, next)
+        },
+        // Address 1 changes description:
+        function (next) {
+          new Seller(connection, {
+            description: 'xyz'
+          }).save(globals.testerPrivateKey, next)
+        },
+        function(next) {
+          var profile1 = new SellerProfile(connection, globals.testerPublicKey)
+
+          profile1.getAttributes(null, function(err, attrs) {
+            expect(attrs.description).to.equal('abc')
+            expect(attrs.alias).to.equal('Satoshi')
+            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+            expect(attrs.addr).to.equal(globals.testerPublicKey)
+            expect(attrs.transferAddr).to.equal(globals.tester2PublicKey)
+            expect(attrs.isActive).to.be.false
+            expect(attrs.isClosed).to.be.false
+            next()
+          })
+        },
+        function(next) {
+          var profile2 = new SellerProfile(connection, globals.tester2PublicKey)
+
+          profile2.getAttributes(null, function(err, attrs) {
+            expect(attrs.description).to.equal('abc')
+            expect(attrs.alias).to.equal('Satoshi')
+            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+            expect(attrs.addr).to.equal(globals.tester2PublicKey)
+            expect(attrs.transferAddr).to.be.undefined
+            expect(attrs.isActive).to.be.true
+            expect(attrs.isClosed).to.be.false
+            next()
+          })
+        }
+      ], nextSpec)
+    })
+
+    it('will stop merging attributes after a cancellation', function (nextSpec) {
+      var profile
+
+      async.series([
+        // Standard Seller:
+        function (next) {
+          chai.factory.create('seller',
+            connection).save(globals.testerPrivateKey, next)
+        },
+        // Address 1 closes its account:
+        function (next) {
+          new Seller(connection, {transferAddr: 0,
+           receiverAddr: globals.testerPublicKey
+          }).save(globals.testerPrivateKey, next)
+        },
+        // Address changes description:
+        function (next) {
+          new Seller(connection, {
+           description: 'xyz'
+          }).save(globals.testerPrivateKey, next)
+        },
+        function (next) {
+          profile = new SellerProfile(connection, globals.testerPublicKey)
+
+          profile.isValid(function (err, res) {
+            if (err) throw err
+            expect(res).to.be.null
+            next()
+          })
+        },
+        function(next) {
+          profile.getAttributes(null, function(err, attrs) {
+            expect(attrs.description).to.equal('abc')
+            expect(attrs.alias).to.equal('Satoshi')
+            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+            expect(attrs.addr).to.equal(globals.testerPublicKey)
+            expect(attrs.transferAddr).to.equal(0)
+            expect(attrs.isActive).to.be.false
+            next()
+          })
+        }
+      ],nextSpec)
+    })
+
+    it('will merge attributes in a cancellation message', function (nextSpec) {
+      var profile
+
+      async.series([
+        // Standard Seller:
+        function (next) {
+          chai.factory.create('seller',
+            connection).save(globals.testerPrivateKey, next)
+        },
+        // Address 1 closes its account:
+        function (next) {
+          new Seller(connection, {transferAddr: 0, description: 'xyz',
+           receiverAddr: globals.testerPublicKey
+          }).save(globals.testerPrivateKey, next)
+        },
+        function (next) {
+          profile = new SellerProfile(connection, globals.testerPublicKey)
+
+          profile.isValid(function (err, res) {
+            if (err) throw err
+            expect(res).to.be.null
+            next()
+          })
+        },
+        function(next) {
+          profile.getAttributes(null, function(err, attrs) {
+            expect(attrs.description).to.equal('xyz')
+            expect(attrs.alias).to.equal('Satoshi')
+            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+            expect(attrs.addr).to.equal(globals.testerPublicKey)
+            expect(attrs.transferAddr).to.equal(0)
+            expect(attrs.isActive).to.be.false
+            next()
+          })
+        }
+      ],nextSpec)
+    })
+
+    it('will merge attributes in a transfer message', function (nextSpec) {
+      var profile
+
+      async.series([
+        // Standard Seller:
+        function (next) {
+          chai.factory.create('seller',
+            connection).save(globals.testerPrivateKey, next)
+        },
+        // Address 1 closes its account:
+        function (next) {
+          new Seller(connection, {transferAddr: globals.tester2PublicKey,
+            description: 'xyz', receiverAddr: globals.tester2PublicKey
+          }).save(globals.testerPrivateKey, next)
+        },
+        function (next) {
+          profile = new SellerProfile(connection, globals.testerPublicKey)
+
+          profile.isValid(function (err, res) {
+            if (err) throw err
+            expect(res).to.be.null
+            next()
+          })
+        },
+        function(next) {
+          profile.getAttributes(null, function(err, attrs) {
+            expect(attrs.description).to.equal('xyz')
+            expect(attrs.alias).to.equal('Satoshi')
+            expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+            expect(attrs.addr).to.equal(globals.testerPublicKey)
+            expect(attrs.transferAddr).to.equal(globals.tester2PublicKey)
+            expect(attrs.isActive).to.be.false
+            next()
+          })
+        }
+      ],nextSpec)
+    })
+
+    describe('validations', function () {
+      it('won\'t compile a deactivated transfer', function (nextSpec) {
+        var profile
+
+        async.series([
+          // Standard Seller:
+          function (next) {
+            chai.factory.create('seller',
+              connection).save(globals.testerPrivateKey, next)
+          },
+          // Address 1 closes its account:
+          function (next) {
+            new Seller(connection, {transferAddr: 0,
+              receiverAddr: globals.testerPublicKey
+            }).save(globals.testerPrivateKey, next)
+          },
+          // Address 1 transfers its account:
+          function (next) {
+            new Seller(connection, {transferAddr: globals.tester2PublicKey,
+              receiverAddr: globals.tester2PublicKey
+            }).save(globals.testerPrivateKey, next)
+          },
+          function (next) {
+            profile = new SellerProfile(connection, globals.tester2PublicKey)
+
+            profile.isValid(function (err, res) {
+              if (err) throw err
+              expect(res).to.not.be.null
+              next()
+            })
+          }
+        ],nextSpec)
+      })
+    })
 /*
-  describe "accessors" do
-
-    it "supports deactivation" do
-      # Standard Seller:
-      Dropzone::Seller.sham!(:build).save! test_privkey
-
-      # Seller Deactivates his account:
-      Dropzone::Seller.new( receiver_addr: test_pubkey,
-        transfer_pkey: 0).save! test_privkey
-
-      profile = Dropzone::SellerProfile.new test_pubkey
-
-      expect(profile.transfer_pkey).to eq(0)
-      expect(profile.active?).to be_falsey
-      expect(profile.closed?).to be_truthy
-    end
-
-    it "will stop merging attributes after a transfer out" do
-      # Standard Seller:
-      Dropzone::Seller.sham!(:build).save! test_privkey
-
-      # Address 1 transfers to Address 2:
-      Dropzone::Seller.new( receiver_addr: TESTER2_PUBLIC_KEY,
-        transfer_pkey: TESTER2_PUBLIC_KEY).save! test_privkey
-
-      # Address 1 changes description:
-      Dropzone::Seller.new( description: 'xyz' ).save! test_privkey
-
-      profile1 = Dropzone::SellerProfile.new test_pubkey
-      profile2 = Dropzone::SellerProfile.new TESTER2_PUBLIC_KEY
-
-      expect(profile1.description).to eq("abc")
-      expect(profile1.alias).to eq("Satoshi")
-      expect(profile1.communications_pkey).to eq('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-      expect(profile1.addr).to eq(test_pubkey)
-      expect(profile1.transfer_pkey).to eq(TESTER2_PUBLIC_KEY)
-      expect(profile1.active?).to be_falsey
-      expect(profile1.closed?).to be_falsey
-
-      expect(profile2.description).to eq("abc")
-      expect(profile2.alias).to eq("Satoshi")
-      expect(profile2.communications_pkey).to eq('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-      expect(profile2.addr).to eq(TESTER2_PUBLIC_KEY)
-      expect(profile2.active?).to be_truthy
-      expect(profile2.closed?).to be_falsey
-    end
-
-    it "will stop merging attributes after a cancellation" do
-      # Standard Seller:
-      Dropzone::Seller.sham!(:build).save! test_privkey
-
-      # Address 1 closes its account:
-      Dropzone::Seller.new( receiver_addr: test_pubkey,
-        transfer_pkey: 0 ).save! test_privkey
-
-      # Address 1 changes description:
-      Dropzone::Seller.new( description: 'xyz' ).save! test_privkey
-
-      profile = Dropzone::SellerProfile.new test_pubkey
-
-      expect(profile.valid?).to be_truthy
-      expect(profile.description).to eq("abc")
-      expect(profile.alias).to eq("Satoshi")
-      expect(profile.communications_pkey).to eq('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-      expect(profile.addr).to eq(test_pubkey)
-      expect(profile.transfer_pkey).to eq(0)
-      expect(profile.active?).to be_falsey
-    end
-
-    it "will merge attributes in a cancellation message" do
-      # Standard Seller:
-      Dropzone::Seller.sham!(:build).save! test_privkey
-
-      # Address 1 closes its account:
-      Dropzone::Seller.new( receiver_addr: test_pubkey, description: 'xyz',
-        transfer_pkey: 0 ).save! test_privkey
-
-      profile = Dropzone::SellerProfile.new test_pubkey
-
-      expect(profile.valid?).to be_truthy
-      expect(profile.description).to eq("xyz")
-      expect(profile.alias).to eq("Satoshi")
-      expect(profile.communications_pkey).to eq('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-      expect(profile.addr).to eq(test_pubkey)
-      expect(profile.transfer_pkey).to eq(0)
-      expect(profile.active?).to be_falsey
-    end
-
-    it "will merge attributes in a transfer message" do
-      # Standard Seller:
-      Dropzone::Seller.sham!(:build).save! test_privkey
-
-      # Address 1 closes its account:
-      Dropzone::Seller.new( receiver_addr: TESTER2_PUBLIC_KEY, description: 'xyz',
-        transfer_pkey: TESTER2_PUBLIC_KEY ).save! test_privkey
-
-      profile = Dropzone::SellerProfile.new test_pubkey
-
-      expect(profile.valid?).to be_truthy
-      expect(profile.description).to eq("xyz")
-      expect(profile.alias).to eq("Satoshi")
-      expect(profile.communications_pkey).to eq('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-      expect(profile.addr).to eq(test_pubkey)
-      expect(profile.transfer_pkey).to eq(TESTER2_PUBLIC_KEY)
-      expect(profile.active?).to be_falsey
-    end
-
     it "won't compile a deactivated transfer" do
       # Standard Seller:
       Dropzone::Seller.sham!(:build).save! test_privkey
@@ -387,10 +482,6 @@ describe('SellerProfile', function () {
 
       expect(profile.valid?).to be_falsey
     end
-  end
-
-  describe "validations" do
-    after{ clear_blockchain! }
 
     it "requires a valid seller message" do
       # No messages have been created here yet:
@@ -448,4 +539,5 @@ describe('SellerProfile', function () {
 
   end
 */
+  })
 })
