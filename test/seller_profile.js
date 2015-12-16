@@ -380,112 +380,101 @@ describe('SellerProfile', function () {
         }
       ], nextSpec)
     })
+  })
 
-    describe('validations', function () {
-      it('won\'t compile a deactivated transfer', function (nextSpec) {
-        async.series([
-          // Standard Seller:
-          function (next) {
-            chai.factory.create('seller',
-              connection).save(globals.testerPrivateKey, next)
-          },
-          // Address 1 closes its account:
-          function (next) {
-            new Seller(connection, {transferAddr: 0,
-              receiverAddr: globals.testerPublicKey
-            }).save(globals.testerPrivateKey, next)
-          },
-          // Address 1 transfers its account:
-          function (next) {
-            new Seller(connection, {transferAddr: globals.tester2PublicKey,
-              receiverAddr: globals.tester2PublicKey
-            }).save(globals.testerPrivateKey, next)
-          },
-          function (next) {
-            new SellerProfile(connection, globals.tester2PublicKey).getAttributes(
-              null, function (err, attrs) {
-                if (err) throw err
+  describe('validations', function () {
+    it('won\'t compile a deactivated transfer', function (nextSpec) {
+      async.series([
+        // Standard Seller:
+        function (next) {
+          chai.factory.create('seller',
+            connection).save(globals.testerPrivateKey, next)
+        },
+        // Address 1 closes its account:
+        function (next) {
+          new Seller(connection, {transferAddr: 0,
+            receiverAddr: globals.testerPublicKey
+          }).save(globals.testerPrivateKey, next)
+        },
+        // Address 1 transfers its account:
+        function (next) {
+          new Seller(connection, {transferAddr: globals.tester2PublicKey,
+            receiverAddr: globals.tester2PublicKey
+          }).save(globals.testerPrivateKey, next)
+        },
+        function (next) {
+          new SellerProfile(connection, globals.tester2PublicKey).getAttributes(
+            null, function (err, attrs) {
+              if (err) throw err
 
-                expect(attrs.validation).to.be.null
-                next()
-              })
-          }
-        ], nextSpec)
-      })
+              expect(attrs.validation.errors.length).to.equal(1)
+              expect(attrs.validation.errors[0].message).to.equal(
+                'priorAttributes invalid transfer or closed')
+              next()
+            })
+        }
+      ], nextSpec)
     })
-/*
-    it "won't compile a deactivated transfer" do
-      # Standard Seller:
-      Dropzone::Seller.sham!(:build).save! test_privkey
 
-      # Address 1 closes its account:
-      Dropzone::Seller.new( receiver_addr: test_pubkey,
-        transfer_pkey: 0 ).save! test_privkey
+    it('requires a valid seller message', function (nextSpec) {
+      new SellerProfile(connection, globals.tester2PublicKey).getAttributes(
+        null, function (err, attrs) {
+          if (err) throw err
 
-      # Address 1 transfers its account:
-      Dropzone::Seller.new( receiver_addr: TESTER2_PUBLIC_KEY,
-        transfer_pkey: TESTER2_PUBLIC_KEY ).save! test_privkey
+          expect(attrs.validation.errors.length).to.equal(1)
+          expect(attrs.validation.errors[0].message).to.equal(
+            'profile not found')
+          nextSpec()
+        })
+    })
 
-      profile = Dropzone::SellerProfile.new TESTER2_PUBLIC_KEY
+    it('won\'t accept a second transfer out', function (nextSpec) {
+      async.series([
+        // Standard Seller:
+        function (next) {
+          chai.factory.create('seller',
+            connection).save(globals.testerPrivateKey, next)
+        },
+        // Address 1 transfers to address 2:
+        function (next) {
+          new Seller(connection, {transferAddr: globals.tester2PublicKey,
+            receiverAddr: globals.tester2PublicKey
+          }).save(globals.testerPrivateKey, next)
+        },
+        // Address 1 transfers to address 3:
+        function (next) {
+          new Seller(connection, {transferAddr: globals.tester3PublicKey,
+            receiverAddr: globals.tester3PublicKey
+          }).save(globals.testerPrivateKey, next)
+        },
+        function (next) {
+          new SellerProfile(connection, globals.tester2PublicKey).getAttributes(
+            null, function (err, attrs) {
+              if (err) throw err
 
-      expect(profile.valid?).to be_falsey
-    end
+              expect(attrs.validation).to.be.null
+              expect(attrs.description).to.equal('abc')
+              expect(attrs.alias).to.equal('Satoshi')
+              expect(attrs.communicationsAddr).to.equal('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
+              expect(attrs.addr).to.equal(globals.tester2PublicKey)
+              expect(attrs.isActive).to.be.true
 
-    it "requires a valid seller message" do
-      # No messages have been created here yet:
-      profile = Dropzone::SellerProfile.new test_pubkey
+              next()
+            })
+        },
+        function (next) {
+          new SellerProfile(connection, globals.tester3PublicKey).getAttributes(
+            null, function (err, attrs) {
+              if (err) throw err
 
-      expect(profile.valid?).to be_falsey
-      expect(profile.errors.count).to eq(1)
-      expect(profile.errors.on(:addr)).to eq(['profile not found'])
-    end
+              expect(attrs.validation.errors.length).to.equal(1)
+              expect(attrs.validation.errors[0].message).to.equal(
+                'priorAttributes invalid transfer or closed')
 
-    it "won't accept a closed account transfer" do
-      # Standard Seller:
-      Dropzone::Seller.sham!(:build).save! test_privkey
-
-      # Address 1 closes its account:
-      Dropzone::Seller.new( receiver_addr: test_pubkey,
-        transfer_pkey: 0 ).save! test_privkey
-
-      # Address 1 transfers its account:
-      Dropzone::Seller.new( receiver_addr: TESTER2_PUBLIC_KEY,
-        transfer_pkey: TESTER2_PUBLIC_KEY ).save! test_privkey
-
-      profile = Dropzone::SellerProfile.new TESTER2_PUBLIC_KEY
-      expect(profile.valid?).to be_falsey
-      expect(profile.errors.count).to eq(1)
-      expect(profile.errors.on(:prior_profile)).to eq(['invalid transfer or closed'])
-    end
-
-    it "won't accept a second transfer out" do
-      # Standard Seller:
-      Dropzone::Seller.sham!(:build).save! test_privkey
-
-      # Address 1 transfers to address 2:
-      Dropzone::Seller.new( receiver_addr: TESTER2_PUBLIC_KEY,
-        transfer_pkey: TESTER2_PUBLIC_KEY ).save! test_privkey
-
-      # Address 1 transfers to address 3:
-      Dropzone::Seller.new( receiver_addr: TESTER3_PUBLIC_KEY,
-        transfer_pkey: TESTER3_PUBLIC_KEY ).save! test_privkey
-
-      profile2 = Dropzone::SellerProfile.new TESTER2_PUBLIC_KEY
-      profile3 = Dropzone::SellerProfile.new TESTER3_PUBLIC_KEY
-
-      expect(profile2.valid?).to be_truthy
-      expect(profile2.description).to eq("abc")
-      expect(profile2.alias).to eq("Satoshi")
-      expect(profile2.communications_pkey).to eq('n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv')
-      expect(profile2.addr).to eq(TESTER2_PUBLIC_KEY)
-      expect(profile2.active?).to be_truthy
-
-      expect(profile3.valid?).to be_falsey
-      expect(profile3.errors.count).to eq(1)
-      expect(profile3.errors.on(:prior_profile)).to eq(['invalid transfer or closed'])
-    end
-
-  end
-*/
+              next()
+            })
+        }
+      ], nextSpec)
+    })
   })
 })
