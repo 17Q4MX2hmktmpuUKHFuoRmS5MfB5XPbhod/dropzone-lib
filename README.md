@@ -1,4 +1,4 @@
-#![Drop Zone](dropzone-logo.png) node-dropzone
+#![Drop Zone](dropzone-logo-32x32.png) node-dropzone
  An Anonymous Peer-To-Peer Local Contraband Marketplace
 
 [White Paper](Drop Zone - Whitepaper.pdf)
