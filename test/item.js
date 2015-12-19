@@ -3,14 +3,18 @@
 
 var chai = require('chai')
 var async = require('async')
+var bitcore = require('bitcore-lib')
 
 var factories = require('../test/factories/factories')
 var messages = require('../lib/messages')
 var fakeConnection = require('../lib/drivers/fake')
 var globals = require('./fixtures/globals')
+var tx_decoder = require('../lib/tx_decoder')
 
 var expect = chai.expect
 var Item = messages.Item
+var Transaction = bitcore.Transaction
+var TxDecoder = tx_decoder.TxDecoder
 
 factories.dz(chai)
 
@@ -18,17 +22,11 @@ describe('Item', function () {
   var connection = null
 
   before(function (next) {
-    connection = new fakeConnection.FakeBitcoinConnection(function (err) {
-      if (err) throw err
-      next()
-    })
+    connection = new fakeConnection.FakeBitcoinConnection(next)
   })
 
-  after(function (next) {
-    connection.clearTransactions(function (err) {
-      if (err) throw err
-      next()
-    })
+  afterEach(function (next) {
+    connection.clearTransactions(next)
   })
 
   it('has accessors', function () {
@@ -150,206 +148,336 @@ describe('Item', function () {
     })
   })
 
-  /*
-  describe "validations" do
-    it "validates default build" do
-      expect(Dropzone::Item.sham!(:build).valid?).to eq(true)
-    end
+  describe('validations', function () {
+    it('validates default build', function (nextSpec) {
+      chai.factory.create('item', connection).isValid(
+        function (err, res) {
+          if (err) throw err
+          expect(res).to.be.null
+          nextSpec()
+      })
+    })
 
-    it "validates minimal item" do
-      minimal_item = Dropzone::Item.new radius: 1, latitude: 51.500782,
-        longitude: -0.124669
+    it('validates minimal item', function (nextSpec) {
+      new Item(connection, {radius: 1, latitude: 51.500782,
+        longitude: -0.124669}).isValid(
+        function (err, res) {
+          if (err) throw err
+          expect(res).to.be.null
+          nextSpec()
+      })
+    })
 
-      expect(minimal_item.valid?).to eq(true)
-    end
+    it('requires output address', function (nextSpec) {
+      new Item(connection, {description: 'Item Description',
+        priceCurrency: 'BTC', priceInUnits: 100000000, expirationIn: 6}).isValid(
+        function (err, res) {
 
-    it "requires output address" do
-      no_address = Dropzone::Item.sham! latitude: nil, longitude: nil, radius: nil
+          if (err) throw err
+          expect(res.errors.length).to.equal(4)
+          expect(res.errors[0].message).to.equal('receiverAddr is required')
 
-      expect(no_address.valid?).to eq(false)
-      expect(no_address.errors.count).to eq(4)
-      expect(no_address.errors.on(:receiver_addr)).to eq(['is not present'])
-    end
+          nextSpec()
+      })
+    })
 
-    it "requires latitude" do
-      item = Dropzone::Item.sham! latitude: nil
+    it('requires latitude', function (nextSpec) {
+      chai.factory.create('item', connection, {latitude: null}).isValid(
+        function (err, res) {
+          if (err) throw err
 
-      expect(item.valid?).to eq(false)
-      expect(item.errors.count).to eq(2)
-      expect(item.errors.on(:latitude)).to eq(['is not a number'])
-    end
+          expect(res.errors.length).to.equal(2)
+          expect(res.errors[0].message).to.equal('receiverAddr is required')
+          expect(res.errors[1].message).to.equal(
+            'latitude is required in a newly created item')
 
-    it "requires latitude is gte -90" do
-      item = Dropzone::Item.sham! latitude: -90.000001
+          nextSpec()
+      })
+    })
 
-      expect(item.valid?).to eq(false)
-      expect(item.errors.count).to eq(1)
-      expect(item.errors.on(:latitude)).to eq(['must be greater than or equal to -90'])
-    end
+    it('requires latitude is gte -90', function (nextSpec) {
+      chai.factory.create('item', connection, {latitude: -90.000001}).isValid(
+        function (err, res) {
+          if (err) throw err
 
-    it "requires latitude is lte 90" do
-      item = Dropzone::Item.sham! latitude: 90.000001
+          expect(res.errors.length).to.equal(1)
+          expect(res.errors[0].message).to.equal(
+            'latitude must be between -90 and 90')
 
-      expect(item.valid?).to eq(false)
-      expect(item.errors.count).to eq(1)
-      expect(item.errors.on(:latitude)).to eq(['must be less than or equal to 90'])
-    end
+          nextSpec()
+      })
+    })
 
-    it "requires longitude" do
-      item = Dropzone::Item.sham! longitude: nil
+    it('requires latitude is lte 90', function (nextSpec) {
+      chai.factory.create('item', connection, {latitude: 90.000001}).isValid(
+        function (err, res) {
+          if (err) throw err
 
-      expect(item.valid?).to eq(false)
-      expect(item.errors.count).to eq(2)
-      expect(item.errors.on(:longitude)).to eq(['is not a number'])
-    end
+          expect(res.errors.length).to.equal(1)
+          expect(res.errors[0].message).to.equal(
+            'latitude must be between -90 and 90')
 
-    it "requires longitude is gte -180" do
-      item = Dropzone::Item.sham! longitude: -180.000001
+          nextSpec()
+      })
+    })
 
-      expect(item.valid?).to eq(false)
-      expect(item.errors.count).to eq(1)
-      expect(item.errors.on(:longitude)).to eq(['must be greater than or equal to -180'])
-    end
+    it('requires longitude', function (nextSpec) {
+      chai.factory.create('item', connection, {longitude: null}).isValid(
+        function (err, res) {
+          if (err) throw err
 
-    it "requires longitude is lte 180" do
-      item = Dropzone::Item.sham! longitude: 180.000001
+          expect(res.errors.length).to.equal(2)
+          expect(res.errors[0].message).to.equal('receiverAddr is required')
+          expect(res.errors[1].message).to.equal(
+            'longitude is required in a newly created item')
 
-      expect(item.valid?).to eq(false)
-      expect(item.errors.count).to eq(1)
-      expect(item.errors.on(:longitude)).to eq(['must be less than or equal to 180'])
-    end
+          nextSpec()
+      })
+    })
 
-    it "requires radius" do
-      item = Dropzone::Item.sham! radius: nil
+    it('requires longitude is gte -180', function (nextSpec) {
+      chai.factory.create('item', connection, {longitude: -180.000001}).isValid(
+        function (err, res) {
+          if (err) throw err
 
-      expect(item.valid?).to eq(false)
-      expect(item.errors.count).to eq(2)
-      expect(item.errors.on(:radius)).to eq(['is not a number'])
-    end
+          expect(res.errors.length).to.equal(1)
+          expect(res.errors[0].message).to.equal(
+            'longitude must be between -180 and 180')
 
-    it "requires radius is gte 0" do
-      item = Dropzone::Item.sham! radius: -1
+          nextSpec()
+      })
+    })
 
-      expect(item.valid?).to eq(false)
-      expect(item.errors.count).to eq(1)
-      expect(item.errors.on(:radius)).to eq(['must be greater than or equal to 0'])
-    end
+    it('requires longitude is lte 180', function (nextSpec) {
+      chai.factory.create('item', connection, {longitude: 180.000001}).isValid(
+        function (err, res) {
+          if (err) throw err
 
-    it "requires radius is lt 1000000" do
-      item = Dropzone::Item.sham! radius: 1000000
+          expect(res.errors.length).to.equal(1)
+          expect(res.errors[0].message).to.equal(
+            'longitude must be between -180 and 180')
 
-      expect(item.valid?).to eq(false)
-      expect(item.errors.count).to eq(1)
-      expect(item.errors.on(:radius)).to eq(['must be less than 1000000'])
-    end
+          nextSpec()
+      })
+    })
 
-    it "requires message_type" do
-      item = Dropzone::Item.sham! message_type: 'INVALD'
+    it('requires radius', function (nextSpec) {
+      chai.factory.create('item', connection, {radius: null}).isValid(
+        function (err, res) {
+          if (err) throw err
 
-      expect(item.valid?).to eq(false)
-      expect(item.errors.count).to eq(1)
-      expect(item.errors.on(:message_type)).to eq(['is not valid'])
-    end
+          expect(res.errors.length).to.equal(2)
+          expect(res.errors[0].message).to.equal('receiverAddr is required')
+          expect(res.errors[1].message).to.equal(
+            'radius is required in a newly created item')
 
-    it "descriptions must be text" do
-      item = Dropzone::Item.sham! description: 5
+          nextSpec()
+      })
+    })
 
-      expect(item.valid?).to eq(false)
-      expect(item.errors.count).to eq(1)
-      expect(item.errors.on(:description)).to eq(['is not a string'])
-    end
+    it('requires radius is gte 0', function (nextSpec) {
+      chai.factory.create('item', connection, {radius: -1}).isValid(
+        function (err, res) {
+          if (err) throw err
 
-    it "price_in_units must be numeric" do
-      item = Dropzone::Item.sham! price_in_units: 'abc',
-        price_currency: 'USD'
+          expect(res.errors.length).to.equal(1)
+          expect(res.errors[0].message).to.equal(
+            'radius must be between 0 and 999999')
 
-      expect(item.valid?).to eq(false)
-      expect(item.errors.count).to eq(2)
-      expect(item.errors.on(:price_in_units)).to eq(['is not a number',
-        "must be greater than or equal to 0"])
-    end
+          nextSpec()
+      })
+    })
 
-    it "expiration_in must be numeric" do
-      item = Dropzone::Item.sham! expiration_in: 'abc'
+    it('requires radius is lt 1000000', function (nextSpec) {
+      chai.factory.create('item', connection, {radius: 1000000}).isValid(
+        function (err, res) {
+          if (err) throw err
 
-      expect(item.valid?).to eq(false)
-      expect(item.errors.count).to eq(2)
-      expect(item.errors.on(:expiration_in)).to eq(['is not a number',
-        "must be greater than or equal to 0"])
-    end
+          expect(res.errors.length).to.equal(1)
+          expect(res.errors[0].message).to.equal(
+            'radius must be between 0 and 999999')
 
-    it "price_currency must be present if price is present" do
-      item = Dropzone::Item.sham! price_in_units: 100, price_currency: nil
+          nextSpec()
+      })
+    })
 
-      expect(item.valid?).to eq(false)
-      expect(item.errors.count).to eq(1)
-      expect(item.errors.on(:price_currency)).to eq(['is required if price is specified'])
-    end
+    it('descriptions must be text', function (nextSpec) {
+      chai.factory.create('item', connection, {description: 5}).isValid(
+        function (err, res) {
+          if (err) throw err
 
-  end
+          expect(res.errors.length).to.equal(1)
+          expect(res.errors[0].message).to.equal(
+            'description is not a string')
 
-  describe "distance calculations" do
-    it "calculates distance in meters between two points" do
-       # New York to London:
-       nyc_to_london = Dropzone::Item.distance_between 40.712784, -74.005941,
-         51.507351, -0.127758
-       texas = Dropzone::Item.distance_between 31.428663, -99.096680,
-         36.279707, -102.568359
-       hong_kong = Dropzone::Item.distance_between 22.396428, 114.109497,
-        22.408489, 113.906937
+          nextSpec()
+      })
+    })
 
-       expect(nyc_to_london.round).to eq(5570224)
-       expect(texas.round).to eq(627363)
-       expect(hong_kong.round).to eq(20867)
-    end
-  end
+    it('priceInUnits must be numeric', function (nextSpec) {
+      chai.factory.create('item', connection, {priceInUnits: 'abc',
+        priceCurrency: 'USD'}).isValid(
+        function (err, res) {
+          if (err) throw err
 
-  describe 'finders' do
-    after{ clear_blockchain! }
+          expect(res.errors.length).to.equal(1)
+          expect(res.errors[0].message).to.equal(
+            'priceInUnits is not an integer')
 
-    before do
-      # < 20 km from shinjuku
-      fuchu_id = Dropzone::Item.sham!(:build, :description => 'Fuchu',
-        :radius => 20_000, :latitude => 35.688533,
-        :longitude => 139.471436).save! test_privkey
+          nextSpec()
+      })
+    })
 
-      increment_block_height!
+    it('expirationIn must be numeric', function (nextSpec) {
+      chai.factory.create('item', connection, {expirationIn: 'abc'}).isValid(
+        function (err, res) {
+          if (err) throw err
 
-      # 36 km from shinjuku
-      Dropzone::Item.sham!(:build, :description => 'Abiko', :radius => 20_000,
-        :latitude => 35.865683, :longitude => 140.031738).save! TESTER2_PRIVATE_KEY
+          expect(res.errors.length).to.equal(1)
+          expect(res.errors[0].message).to.equal(
+            'expirationIn is not an integer')
 
-      # 3 km from shinjuku
-      Dropzone::Item.sham!(:build, :description => 'Nakano', :radius => 20_000,
-        :latitude => 35.708050, :longitude => 139.664383).save! TESTER3_PRIVATE_KEY
+          nextSpec()
+      })
+    })
 
-      increment_block_height!
+    it('price_currency must be present if price is present', function (nextSpec) {
+      chai.factory.create('item', connection, {priceInUnits: 100, 
+        priceCurrency: undefined}).isValid(
+        function (err, res) {
+          if (err) throw err
+          expect(res.errors.length).to.equal(1)
+          expect(res.errors[0].message).to.equal(
+            'priceCurrency is required if priceInUnits is provided')
 
-      # 38.5 km from shinjuku
-      Dropzone::Item.sham!(:build, :description => 'Chiba', :radius => 20_000,
-        :latitude => 35.604835, :longitude => 140.105209).save! test_privkey
+          nextSpec()
+      })
+    })
+  })
 
-      # This shouldn't actually be returned, since it's an update, and
-      # find_creates_since_block only looks for creates:
-      Dropzone::Item.new(create_txid: fuchu_id,
-        description: 'xyz').save! test_privkey
-    end
+  describe('distance calculations', function () {
+    it('calculates distance in meters between two points', function () {
+       nycToLondon = Item.distanceBetween(40.712784, -74.005941, 51.507351, -0.127758)
+       texas = Item.distanceBetween(31.428663, -99.096680, 36.279707, -102.568359)
+       hongKong = Item.distanceBetween(22.396428, 114.109497, 22.408489, 113.906937)
 
-    it ".find_creates_since_block()" do
-      items = Dropzone::Item.find_creates_since_block block_height, block_height
+       expect(Math.round(nycToLondon)).to.equal(5570224)
+       expect(Math.round(texas)).to.equal(627363)
+       expect(Math.round(hongKong)).to.equal(20867)
+    })
+  })
 
-      expect(items.length).to eq(4)
-      expect(items.collect(&:description)).to eq(['Chiba', 'Nakano', 'Abiko',
-        'Fuchu'])
-    end
+  describe('distance calculations', function () {
+    before(function (nextSpec) {
+      var idFuchu
+        
+      async.series([
+        function (next) {
+          // < 20 km from shinjuku
+          chai.factory.create('item', connection, { description: 'Fuchu', 
+            radius: 20000, latitude: 35.688533, longitude: 139.471436
+          }).save(globals.testerPrivateKey, function(err, fuchu) { 
+            idFuchu = fuchu.txid
+            next()
+          })
+        }, 
+        function (next) {
+          // 36 km from shinjuku
+          connection.incrementBlockHeight()
 
-    it ".find_in_radius()" do
-      # Twenty km around Shinjuku:
-      items = Dropzone::Item.find_in_radius block_height, block_height,
-        35.689487, 139.691706, 20_000
-      expect(items.length).to eq(2)
-      expect(items.collect(&:description)).to eq(['Nakano', 'Fuchu'])
-    end
-  end
-   */
+          chai.factory.create('item', connection, {description: 'Abiko', 
+            radius: 20000, latitude: 35.865683, longitude: 140.031738
+          }).save(globals.tester2PrivateKey, next)
+        }, 
+        function (next) {
+          // 3 km from shinjuku
+          chai.factory.create('item', connection, {description: 'Nakano', 
+            radius: 20000, latitude: 35.708050, longitude: 139.664383
+          }).save(globals.tester2PrivateKey, next)
+        }, 
+        function (next) {
+          connection.incrementBlockHeight()
+
+          // 38.5 km from shinjuku
+          chai.factory.create('item', connection, {description: 'Chiba', 
+            radius: 20000, latitude: 35.604835, longitude: 140.105209
+          }).save(globals.testerPrivateKey, next)
+        }, 
+        function (next) {
+          // This shouldn't actually be returned, since it's an update, and
+          // find_creates_since_block only looks for creates:
+          chai.factory.create('item', connection, {description: 'xyz', 
+            createTxid: idFuchu
+          }).save(globals.testerPrivateKey, next)
+        }], nextSpec)
+    })
+
+    it('.find_creates_since_block()', function (nextSpec) {
+      Item.findCreatesSinceBlock(connection, blockHeight, blockHeight,
+        function (err, items) {
+          if (err) throw err
+
+          expect(items.length).to.equal(4)
+          expect(items.map(function (i) { return i.description })).to.deep.equal(
+            ['Chiba', 'Nakano', 'Abiko', 'Fuchu'])
+          nextSpec()
+        })
+    })
+
+    it('.find_in_radius()', function () {
+      Item.findInRadius(connection, blockHeight, blockHeight, 35.689487, 
+        139.691706, 20000, function (err, items) {
+          if (err) throw err
+
+          expect(items.length).to.equal(2)
+          expect(items.map(function (i) { return i.description })).to.deep.equal(
+            ['Nakano', 'Fuchu'])
+          nextSpec()
+        })
+    })
+  })
+
+  describe('problematic decodes', function () {
+    // @Junseth Issue #18:
+    // txid: 73cfb35e1e6bb31b3ddffb41322c46f155970bfae3c40385b171ba02f88985a0
+    it('Fails to decode invalid radius transaction', function (nextSpec) {
+      var txId = '73cfb35e1e6bb31b3ddffb41322c46f155970bfae3c40385b171ba02f88985a0'
+      var txHex = '01000000017ecf3bcdd734881a466b2fcb8ff9c602ff96190ecbda86fadd2'+
+        'f907bfeb7f22a020000006b4830450221008b343292dbc140379bdcdad613fd8bd2b'+
+        'e739147a10f57b5dd3f6c23afe818e402201edbe946b27a0183a3d98ce61f0f88872'+
+        '1330c8694f8b700448d8c902317db4c0121031bf0b235cb0cefcf8c9c299f3009257'+
+        '04d6da7e6b448bd185c80d28f1216ef44ffffffff0536150000000000001976a9141'+
+        'f319c85b0cb2667e09fc4388dc209b0c4a240d388ac3615000000000000695121039'+
+        'fb679314a062d887537ad75b6e056bd4020807e56d742cd0aa77bf890aea5e121027'+
+        'fdb01ce03a72c67551b80e18a612a4789a6b3d168e4ca883dd7236d2c19b60f21031'+
+        'bf0b235cb0cefcf8c9c299f300925704d6da7e6b448bd185c80d28f1216ef4453ae3'+
+        '615000000000000695121039fb679166a6b5f8f5951a77ef1a258a50368c22f5dd15'+
+        '9dc07a824a29dacaa0a21026bdb01e004a62f2f7b1cceecde622814d2fdb4d63ca5c'+
+        '8d1668e2d78263defb421031bf0b235cb0cefcf8c9c299f300925704d6da7e6b448b'+
+        'd185c80d28f1216ef4453ae361500000000000069512103aeb679311f267c896372c'+
+        '86b8b823adc234ba05d34b631a868c61794bdcdc48221030ffb228a71c85c4a0f74e'+
+        'e84aa16582efdd2d6bf488ba4a849bf464d4a6bd93021031bf0b235cb0cefcf8c9c2'+
+        '99f300925704d6da7e6b448bd185c80d28f1216ef4453ae2cf41100000000001976a'+
+        '9142bb8d14d65d316483e24da5512bfd2a977da85ea88ac00000000'
+
+      var record = new TxDecoder(new Transaction(txHex), {prefix: 'DZ'})
+
+      var item = new Item(connection, {data: record.data, txid: txId,
+        receiverAddr: record.receiverAddr, senderAddr: record.senderAddr})
+
+      item.isValid(function (err, res) {
+        if (err) throw err
+
+        expect(res.errors.length).to.equal(3)
+        expect(res.errors[0].message).to.equal(
+          'latitude is required in a newly created item')
+        expect(res.errors[1].message).to.equal(
+          'longitude is required in a newly created item')
+        expect(res.errors[2].message).to.equal(
+          'radius is required in a newly created item')
+
+        nextSpec()
+      })
+    })
+  })
 })

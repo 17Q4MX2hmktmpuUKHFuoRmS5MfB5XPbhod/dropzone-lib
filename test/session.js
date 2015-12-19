@@ -26,18 +26,10 @@ describe('Session', function () {
   var connection = null
 
   before(function (next) {
-    connection = new fakeConnection.FakeBitcoinConnection(function (err) {
-      if (err) throw err
-      next()
-    })
+    connection = new fakeConnection.FakeBitcoinConnection(next)
   })
 
-  afterEach(function (next) {
-    connection.clearTransactions(function (err) {
-      if (err) throw err
-      next()
-    })
-  })
+  afterEach(function (next) { connection.clearTransactions(next) })
 
   // NOTE: The ruby version is non-deterministic, but due to the RNG time, I
   // decided to furnish a der and secret rather than crypto.randomBytes(128)
