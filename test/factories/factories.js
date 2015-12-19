@@ -8,6 +8,7 @@ var Buyer = messages.Buyer
 var Seller = messages.Seller
 var Invoice = messages.Invoice
 var Payment = messages.Payment
+var Item = messages.Item
 
 var dz = function (chai) {
   if (!chai.factory) { chai.use(chaiJsFactories) }
@@ -40,6 +41,14 @@ var dz = function (chai) {
       return new Payment(conn, extend({ description: 'abc',
         deliveryQuality: 8, productQuality: 8, communicationsQuality: 8,
         receiverAddr: globals.tester2PublicKey}, args))
+    })
+  }
+
+  if (!chai.factory.factories.item) {
+    chai.factory.define('item', function (conn, args) {
+      return new Item(conn, extend({description: 'Item Description',
+        priceCurrency: 'BTC', priceInUnits: 100000000, expirationIn: 6,
+        latitude: 51.500782, longitude: -0.124669, radius: 1000}, args))
     })
   }
 }

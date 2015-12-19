@@ -22,18 +22,10 @@ describe('BuyerProfile', function () {
   var connection = null
 
   before(function (next) {
-    connection = new fakeConnection.FakeBitcoinConnection(function (err) {
-      if (err) throw err
-      next()
-    })
+    connection = new fakeConnection.FakeBitcoinConnection(next)
   })
 
-  afterEach(function (next) {
-    connection.clearTransactions(function (err) {
-      if (err) throw err
-      next()
-    })
-  })
+  afterEach(function (next) { connection.clearTransactions(next) })
 
   describe('accessors', function () {
     it('compiles a simple profile', function (nextSpec) {

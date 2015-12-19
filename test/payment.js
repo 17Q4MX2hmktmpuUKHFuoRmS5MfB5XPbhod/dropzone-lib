@@ -19,18 +19,10 @@ describe('Payment', function () {
   var connection = null
 
   before(function (next) {
-    connection = new fakeConnection.FakeBitcoinConnection(function (err) {
-      if (err) throw err
-      next()
-    })
+    connection = new fakeConnection.FakeBitcoinConnection(next)
   })
 
-  after(function (next) {
-    connection.clearTransactions(function (err) {
-      if (err) throw err
-      next()
-    })
-  })
+  after(function (next) { connection.clearTransactions(next) })
 
   it('has accessors', function () {
     // Note that this invoiceId was merely pulled from the ruby version

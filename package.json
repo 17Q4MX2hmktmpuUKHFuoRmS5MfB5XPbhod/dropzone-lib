@@ -61,7 +61,8 @@
     "proxysocket": "^0.2.0",
     "shallow-extend": "0.0.1",
     "sqlite3": "^3.0.10",
-    "wordwrap": "^1.0.0"
+    "wordwrap": "^1.0.0",
+    "bigdecimal": "^0.6.1"
   },
   "devDependencies": {
     "browserify": "^10.0.0",
