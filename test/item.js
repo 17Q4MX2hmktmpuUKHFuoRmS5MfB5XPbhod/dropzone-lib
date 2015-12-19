@@ -1,4 +1,4 @@
-/* global describe it before after */
+/* global describe it before beforeEach afterEach */
 /* eslint no-new: 0 */
 
 var chai = require('chai')
@@ -155,7 +155,7 @@ describe('Item', function () {
           if (err) throw err
           expect(res).to.be.null
           nextSpec()
-      })
+        })
     })
 
     it('validates minimal item', function (nextSpec) {
@@ -165,20 +165,20 @@ describe('Item', function () {
           if (err) throw err
           expect(res).to.be.null
           nextSpec()
-      })
+        })
     })
 
     it('requires output address', function (nextSpec) {
       new Item(connection, {description: 'Item Description',
         priceCurrency: 'BTC', priceInUnits: 100000000, expirationIn: 6}).isValid(
         function (err, res) {
-
           if (err) throw err
+
           expect(res.errors.length).to.equal(4)
           expect(res.errors[0].message).to.equal('receiverAddr is required')
 
           nextSpec()
-      })
+        })
     })
 
     it('requires latitude', function (nextSpec) {
@@ -192,7 +192,7 @@ describe('Item', function () {
             'latitude is required in a newly created item')
 
           nextSpec()
-      })
+        })
     })
 
     it('requires latitude is gte -90', function (nextSpec) {
@@ -205,7 +205,7 @@ describe('Item', function () {
             'latitude must be between -90 and 90')
 
           nextSpec()
-      })
+        })
     })
 
     it('requires latitude is lte 90', function (nextSpec) {
@@ -218,7 +218,7 @@ describe('Item', function () {
             'latitude must be between -90 and 90')
 
           nextSpec()
-      })
+        })
     })
 
     it('requires longitude', function (nextSpec) {
@@ -232,7 +232,7 @@ describe('Item', function () {
             'longitude is required in a newly created item')
 
           nextSpec()
-      })
+        })
     })
 
     it('requires longitude is gte -180', function (nextSpec) {
@@ -245,7 +245,7 @@ describe('Item', function () {
             'longitude must be between -180 and 180')
 
           nextSpec()
-      })
+        })
     })
 
     it('requires longitude is lte 180', function (nextSpec) {
@@ -258,7 +258,7 @@ describe('Item', function () {
             'longitude must be between -180 and 180')
 
           nextSpec()
-      })
+        })
     })
 
     it('requires radius', function (nextSpec) {
@@ -272,7 +272,7 @@ describe('Item', function () {
             'radius is required in a newly created item')
 
           nextSpec()
-      })
+        })
     })
 
     it('requires radius is gte 0', function (nextSpec) {
@@ -285,7 +285,7 @@ describe('Item', function () {
             'radius must be between 0 and 999999')
 
           nextSpec()
-      })
+        })
     })
 
     it('requires radius is lt 1000000', function (nextSpec) {
@@ -298,7 +298,7 @@ describe('Item', function () {
             'radius must be between 0 and 999999')
 
           nextSpec()
-      })
+        })
     })
 
     it('descriptions must be text', function (nextSpec) {
@@ -311,7 +311,7 @@ describe('Item', function () {
             'description is not a string')
 
           nextSpec()
-      })
+        })
     })
 
     it('priceInUnits must be numeric', function (nextSpec) {
@@ -325,7 +325,7 @@ describe('Item', function () {
             'priceInUnits is not an integer')
 
           nextSpec()
-      })
+        })
     })
 
     it('expirationIn must be numeric', function (nextSpec) {
@@ -338,11 +338,11 @@ describe('Item', function () {
             'expirationIn is not an integer')
 
           nextSpec()
-      })
+        })
     })
 
     it('price_currency must be present if price is present', function (nextSpec) {
-      chai.factory.create('item', connection, {priceInUnits: 100, 
+      chai.factory.create('item', connection, {priceInUnits: 100,
         priceCurrency: undefined}).isValid(
         function (err, res) {
           if (err) throw err
@@ -351,72 +351,72 @@ describe('Item', function () {
             'priceCurrency is required if priceInUnits is provided')
 
           nextSpec()
-      })
+        })
     })
   })
 
   describe('distance calculations', function () {
     it('calculates distance in meters between two points', function () {
-       nycToLondon = Item.distanceBetween(40.712784, -74.005941, 51.507351, -0.127758)
-       texas = Item.distanceBetween(31.428663, -99.096680, 36.279707, -102.568359)
-       hongKong = Item.distanceBetween(22.396428, 114.109497, 22.408489, 113.906937)
+      var nycToLondon = Item.distanceBetween(40.712784, -74.005941, 51.507351, -0.127758)
+      var texas = Item.distanceBetween(31.428663, -99.096680, 36.279707, -102.568359)
+      var hongKong = Item.distanceBetween(22.396428, 114.109497, 22.408489, 113.906937)
 
-       expect(Math.round(nycToLondon)).to.equal(5570224)
-       expect(Math.round(texas)).to.equal(627363)
-       expect(Math.round(hongKong)).to.equal(20867)
+      expect(Math.round(nycToLondon)).to.equal(5570224)
+      expect(Math.round(texas)).to.equal(627363)
+      expect(Math.round(hongKong)).to.equal(20867)
     })
   })
 
   describe('distance calculations', function () {
-    before(function (nextSpec) {
+    beforeEach(function (nextSpec) {
       var idFuchu
-        
+
       async.series([
         function (next) {
           // < 20 km from shinjuku
-          chai.factory.create('item', connection, { description: 'Fuchu', 
+          chai.factory.create('item', connection, { description: 'Fuchu',
             radius: 20000, latitude: 35.688533, longitude: 139.471436
-          }).save(globals.testerPrivateKey, function(err, fuchu) { 
+          }).save(globals.testerPrivateKey, function (err, fuchu) {
+            if (err) throw err
             idFuchu = fuchu.txid
             next()
           })
-        }, 
+        },
         function (next) {
           // 36 km from shinjuku
           connection.incrementBlockHeight()
 
-          chai.factory.create('item', connection, {description: 'Abiko', 
+          chai.factory.create('item', connection, {description: 'Abiko',
             radius: 20000, latitude: 35.865683, longitude: 140.031738
           }).save(globals.tester2PrivateKey, next)
-        }, 
+        },
         function (next) {
           // 3 km from shinjuku
-          chai.factory.create('item', connection, {description: 'Nakano', 
+          chai.factory.create('item', connection, {description: 'Nakano',
             radius: 20000, latitude: 35.708050, longitude: 139.664383
           }).save(globals.tester2PrivateKey, next)
-        }, 
+        },
         function (next) {
           connection.incrementBlockHeight()
 
           // 38.5 km from shinjuku
-          chai.factory.create('item', connection, {description: 'Chiba', 
+          chai.factory.create('item', connection, {description: 'Chiba',
             radius: 20000, latitude: 35.604835, longitude: 140.105209
           }).save(globals.testerPrivateKey, next)
-        }, 
+        },
         function (next) {
           // This shouldn't actually be returned, since it's an update, and
           // find_creates_since_block only looks for creates:
-          chai.factory.create('item', connection, {description: 'xyz', 
+          chai.factory.create('item', connection, {description: 'xyz',
             createTxid: idFuchu
           }).save(globals.testerPrivateKey, next)
         }], nextSpec)
     })
 
     it('.find_creates_since_block()', function (nextSpec) {
-      Item.findCreatesSinceBlock(connection, blockHeight, blockHeight,
-        function (err, items) {
+      Item.findCreatesSinceBlock(connection, connection.blockHeight,
+        connection.blockHeight, function (err, items) {
           if (err) throw err
-
           expect(items.length).to.equal(4)
           expect(items.map(function (i) { return i.description })).to.deep.equal(
             ['Chiba', 'Nakano', 'Abiko', 'Fuchu'])
@@ -424,9 +424,10 @@ describe('Item', function () {
         })
     })
 
-    it('.find_in_radius()', function () {
-      Item.findInRadius(connection, blockHeight, blockHeight, 35.689487, 
-        139.691706, 20000, function (err, items) {
+    it('.find_in_radius()', function (nextSpec) {
+      Item.findInRadius(connection, connection.blockHeight,
+        connection.blockHeight, 35.689487, 139.691706, 20000,
+        function (err, items) {
           if (err) throw err
 
           expect(items.length).to.equal(2)
@@ -442,22 +443,22 @@ describe('Item', function () {
     // txid: 73cfb35e1e6bb31b3ddffb41322c46f155970bfae3c40385b171ba02f88985a0
     it('Fails to decode invalid radius transaction', function (nextSpec) {
       var txId = '73cfb35e1e6bb31b3ddffb41322c46f155970bfae3c40385b171ba02f88985a0'
-      var txHex = '01000000017ecf3bcdd734881a466b2fcb8ff9c602ff96190ecbda86fadd2'+
-        'f907bfeb7f22a020000006b4830450221008b343292dbc140379bdcdad613fd8bd2b'+
-        'e739147a10f57b5dd3f6c23afe818e402201edbe946b27a0183a3d98ce61f0f88872'+
-        '1330c8694f8b700448d8c902317db4c0121031bf0b235cb0cefcf8c9c299f3009257'+
-        '04d6da7e6b448bd185c80d28f1216ef44ffffffff0536150000000000001976a9141'+
-        'f319c85b0cb2667e09fc4388dc209b0c4a240d388ac3615000000000000695121039'+
-        'fb679314a062d887537ad75b6e056bd4020807e56d742cd0aa77bf890aea5e121027'+
-        'fdb01ce03a72c67551b80e18a612a4789a6b3d168e4ca883dd7236d2c19b60f21031'+
-        'bf0b235cb0cefcf8c9c299f300925704d6da7e6b448bd185c80d28f1216ef4453ae3'+
-        '615000000000000695121039fb679166a6b5f8f5951a77ef1a258a50368c22f5dd15'+
-        '9dc07a824a29dacaa0a21026bdb01e004a62f2f7b1cceecde622814d2fdb4d63ca5c'+
-        '8d1668e2d78263defb421031bf0b235cb0cefcf8c9c299f300925704d6da7e6b448b'+
-        'd185c80d28f1216ef4453ae361500000000000069512103aeb679311f267c896372c'+
-        '86b8b823adc234ba05d34b631a868c61794bdcdc48221030ffb228a71c85c4a0f74e'+
-        'e84aa16582efdd2d6bf488ba4a849bf464d4a6bd93021031bf0b235cb0cefcf8c9c2'+
-        '99f300925704d6da7e6b448bd185c80d28f1216ef4453ae2cf41100000000001976a'+
+      var txHex = '01000000017ecf3bcdd734881a466b2fcb8ff9c602ff96190ecbda86fadd2' +
+        'f907bfeb7f22a020000006b4830450221008b343292dbc140379bdcdad613fd8bd2b' +
+        'e739147a10f57b5dd3f6c23afe818e402201edbe946b27a0183a3d98ce61f0f88872' +
+        '1330c8694f8b700448d8c902317db4c0121031bf0b235cb0cefcf8c9c299f3009257' +
+        '04d6da7e6b448bd185c80d28f1216ef44ffffffff0536150000000000001976a9141' +
+        'f319c85b0cb2667e09fc4388dc209b0c4a240d388ac3615000000000000695121039' +
+        'fb679314a062d887537ad75b6e056bd4020807e56d742cd0aa77bf890aea5e121027' +
+        'fdb01ce03a72c67551b80e18a612a4789a6b3d168e4ca883dd7236d2c19b60f21031' +
+        'bf0b235cb0cefcf8c9c299f300925704d6da7e6b448bd185c80d28f1216ef4453ae3' +
+        '615000000000000695121039fb679166a6b5f8f5951a77ef1a258a50368c22f5dd15' +
+        '9dc07a824a29dacaa0a21026bdb01e004a62f2f7b1cceecde622814d2fdb4d63ca5c' +
+        '8d1668e2d78263defb421031bf0b235cb0cefcf8c9c299f300925704d6da7e6b448b' +
+        'd185c80d28f1216ef4453ae361500000000000069512103aeb679311f267c896372c' +
+        '86b8b823adc234ba05d34b631a868c61794bdcdc48221030ffb228a71c85c4a0f74e' +
+        'e84aa16582efdd2d6bf488ba4a849bf464d4a6bd93021031bf0b235cb0cefcf8c9c2' +
+        '99f300925704d6da7e6b448bd185c80d28f1216ef4453ae2cf41100000000001976a' +
         '9142bb8d14d65d316483e24da5512bfd2a977da85ea88ac00000000'
 
       var record = new TxDecoder(new Transaction(txHex), {prefix: 'DZ'})
