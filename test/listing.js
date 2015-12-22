@@ -60,8 +60,8 @@ describe('Listing', function () {
             expect(attrs.description).to.equal('Item Description')
             expect(attrs.priceCurrency).to.equal('BTC')
             expect(attrs.priceInUnits).to.equal(100000000)
-            expect(attrs.expiration_in).to.equal(6)
-            expect(attrs.expiration_at).to.equal(7)
+            expect(attrs.expirationIn).to.equal(6)
+            expect(attrs.expirationAt).to.equal(7)
             expect(attrs.latitude).to.equal(51.500782)
             expect(attrs.longitude).to.equal(-0.124669)
             expect(attrs.radius).to.equal(1000)
@@ -103,8 +103,8 @@ describe('Listing', function () {
             expect(attrs.description).to.equal('xyz')
             expect(attrs.priceCurrency).to.equal('BTC')
             expect(attrs.priceInUnits).to.equal(99999999)
-            expect(attrs.expiration_in).to.equal(12)
-            expect(attrs.expiration_at).to.equal(13)
+            expect(attrs.expirationIn).to.equal(12)
+            expect(attrs.expirationAt).to.equal(13)
             expect(attrs.latitude).to.equal(51.500782)
             expect(attrs.longitude).to.equal(-0.124669)
             expect(attrs.radius).to.equal(1000)
@@ -115,7 +115,7 @@ describe('Listing', function () {
         }], nextSpec)
     })
 
-    it('combines attributes from mulitple messages', function (nextSpec) {
+    it('ignores incorrect txid\'s', function (nextSpec) {
       var txidItem
 
       async.series([
@@ -143,11 +143,12 @@ describe('Listing', function () {
 
             expect(attrs.validation).to.be.null
             expect(attrs.description).to.equal('xyz')
+            next()
           })
         }], nextSpec)
     })
 
-    it('combines attributes from mulitple messages', function (nextSpec) {
+    it('ignores messages from invalid senders', function (nextSpec) {
       var txidItem
 
       async.series([
@@ -171,6 +172,7 @@ describe('Listing', function () {
 
             expect(attrs.validation).to.be.null
             expect(attrs.description).to.equal('Item Description')
+            next()
           })
         }], nextSpec)
     })
