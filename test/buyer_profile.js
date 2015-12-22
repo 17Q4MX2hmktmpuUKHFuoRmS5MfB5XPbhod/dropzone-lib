@@ -39,7 +39,7 @@ describe('BuyerProfile', function () {
             connection).save(globals.testerPrivateKey, next)
         },
         function (next) {
-          profile.getAttributes(null, function (err, attrs) {
+          profile.getAttributes(function (err, attrs) {
             if (err) throw err
             expect(attrs.validation).to.be.null
             expect(attrs.description).to.equal('abc')
@@ -63,7 +63,7 @@ describe('BuyerProfile', function () {
         },
         function (next) {
           new BuyerProfile(connection, globals.testerPublicKey).getAttributes(
-            null, function (err, attrs) {
+            function (err, attrs) {
               if (err) throw err
 
               expect(attrs.validation).to.be.null
@@ -99,7 +99,7 @@ describe('BuyerProfile', function () {
         },
         function (next) {
           new BuyerProfile(connection, globals.tester2PublicKey).getAttributes(
-            null, function (err, attrs) {
+            function (err, attrs) {
               if (err) throw err
 
               expect(attrs.validation).to.be.null
@@ -136,7 +136,7 @@ describe('BuyerProfile', function () {
         },
         function (next) {
           new BuyerProfile(connection, globals.tester3PublicKey).getAttributes(
-            null, function (err, attrs) {
+            function (err, attrs) {
               if (err) throw err
 
               expect(attrs.validation).to.be.null
@@ -177,7 +177,7 @@ describe('BuyerProfile', function () {
         },
         function (next) {
           new BuyerProfile(connection, globals.tester3PublicKey).getAttributes(
-            null, function (err, attrs) {
+            function (err, attrs) {
               if (err) throw err
 
               expect(attrs.validation).to.be.null
@@ -206,7 +206,7 @@ describe('BuyerProfile', function () {
         },
         function (next) {
           new BuyerProfile(connection, globals.testerPublicKey).getAttributes(
-            null, function (err, attrs) {
+            function (err, attrs) {
               if (err) throw err
 
               expect(attrs.transferAddr).to.equal(0)
@@ -239,7 +239,7 @@ describe('BuyerProfile', function () {
         },
         function (next) {
           new BuyerProfile(connection, globals.testerPublicKey).getAttributes(
-            null, function (err, attrs) {
+            function (err, attrs) {
               if (err) throw err
 
               expect(attrs.description).to.equal('abc')
@@ -253,7 +253,7 @@ describe('BuyerProfile', function () {
         },
         function (next) {
           new BuyerProfile(connection, globals.tester2PublicKey).getAttributes(
-            null, function (err, attrs) {
+            function (err, attrs) {
               if (err) throw err
 
               expect(attrs.description).to.equal('abc')
@@ -288,7 +288,7 @@ describe('BuyerProfile', function () {
         },
         function (next) {
           new BuyerProfile(connection, globals.testerPublicKey).getAttributes(
-            null, function (err, attrs) {
+            function (err, attrs) {
               if (err) throw err
 
               expect(attrs.validation).to.be.null
@@ -318,7 +318,7 @@ describe('BuyerProfile', function () {
         },
         function (next) {
           new BuyerProfile(connection, globals.testerPublicKey).getAttributes(
-            null, function (err, attrs) {
+            function (err, attrs) {
               if (err) throw err
 
               expect(attrs.validation).to.be.null
@@ -348,7 +348,7 @@ describe('BuyerProfile', function () {
         },
         function (next) {
           new BuyerProfile(connection, globals.testerPublicKey).getAttributes(
-            null, function (err, attrs) {
+            function (err, attrs) {
               if (err) throw err
 
               expect(attrs.validation).to.be.null
@@ -386,7 +386,7 @@ describe('BuyerProfile', function () {
         },
         function (next) {
           new BuyerProfile(connection, globals.tester2PublicKey).getAttributes(
-            null, function (err, attrs) {
+            function (err, attrs) {
               if (err) throw err
 
               expect(attrs.validation.errors.length).to.equal(1)
@@ -400,7 +400,7 @@ describe('BuyerProfile', function () {
 
     it('requires a valid buyer message', function (nextSpec) {
       new BuyerProfile(connection, globals.tester2PublicKey).getAttributes(
-        null, function (err, attrs) {
+        function (err, attrs) {
           if (err) throw err
 
           expect(attrs.validation.errors.length).to.equal(1)
@@ -431,7 +431,7 @@ describe('BuyerProfile', function () {
         },
         function (next) {
           new BuyerProfile(connection, globals.tester2PublicKey).getAttributes(
-            null, function (err, attrs) {
+            function (err, attrs) {
               if (err) throw err
 
               expect(attrs.validation).to.be.null
@@ -445,7 +445,7 @@ describe('BuyerProfile', function () {
         },
         function (next) {
           new BuyerProfile(connection, globals.tester3PublicKey).getAttributes(
-            null, function (err, attrs) {
+            function (err, attrs) {
               if (err) throw err
 
               expect(attrs.validation.errors.length).to.equal(1)
