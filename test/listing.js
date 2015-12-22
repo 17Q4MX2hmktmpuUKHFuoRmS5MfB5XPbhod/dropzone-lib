@@ -5,14 +5,18 @@ var chai = require('chai')
 var crypto = require('crypto')
 var async = require('async')
 
-var expect = chai.expect
-
+var messages = require('../lib/messages')
+var factories = require('../test/factories/factories')
 var fakeConnection = require('../lib/drivers/fake')
 var listing = require('../lib/listing')
 
 var globals = require('./fixtures/globals')
 
+var expect = chai.expect
 var Listing = listing.Listing
+var Item = messages.Item
+
+factories.dz(chai)
 
 describe('Listing', function () {
   var connection = null
@@ -45,11 +49,11 @@ describe('Listing', function () {
           // Block height is now 2:
           connection.incrementBlockHeight()
 
-          var listing = new Listing(txidItem)
+          var listing = new Listing(connection, txidItem)
 
-          expect(listing.addr).to.equal(globals.testerPublicKey)
+          expect(listing.txid).to.equal(txidItem)
 
-          listing.getAttributes(null, function (err, attrs) {
+          listing.getAttributes(function (err, attrs) {
             if (err) throw err
 
             expect(attrs.validation).to.be.null
@@ -92,7 +96,7 @@ describe('Listing', function () {
             priceInUnits: 99999999, expirationIn: 12
           }).save(globals.testerPrivateKey, next)
         }, function (next) {
-          new Listing(txidItem).getAttributes(null, function (err, attrs) {
+          new Listing(connection, txidItem).getAttributes(function (err, attrs) {
             if (err) throw err
 
             expect(attrs.validation).to.be.null
@@ -134,7 +138,7 @@ describe('Listing', function () {
             receiverAddr: globals.testerPublicKey, description: '123',
           }).save(globals.testerPrivateKey, next)
         }, function (next) {
-          new Listing(txidItem).getAttributes(null, function (err, attrs) {
+          new Listing(connection, txidItem).getAttributes(function (err, attrs) {
             if (err) throw err
 
             expect(attrs.validation).to.be.null
@@ -162,7 +166,7 @@ describe('Listing', function () {
             receiverAddr: globals.testerPublicKey, description: 'xyz',
           }).save(globals.tester2PrivateKey, next)
         }, function (next) {
-          new Listing(txidItem).getAttributes(null, function (err, attrs) {
+          new Listing(connection, txidItem).getAttributes(function (err, attrs) {
             if (err) throw err
 
             expect(attrs.validation).to.be.null
@@ -174,7 +178,7 @@ describe('Listing', function () {
 
   describe('validations', function () {
     it('Cannot be created from nonsense', function (nextSpec) {
-      new Listing('non-existing-txid').getAttributes(null, function (err, attrs) {
+      new Listing(connection, 'non-existing-txid').getAttributes(function (err, attrs) {
         if (err) throw err
 
         expect(attrs.validation.errors.length).to.equal(2)
@@ -201,7 +205,7 @@ describe('Listing', function () {
             next()
           })
         }, function (next) {
-          new Listing(txidItem).getAttributes(null, function (err, attrs) {
+          new Listing(connection, txidItem).getAttributes(function (err, attrs) {
             if (err) throw err
 
             expect(attrs.validation.errors.length).to.equal(2)
@@ -224,7 +228,7 @@ describe('Listing', function () {
             })
 
         }, function (next) {
-          new Listing(txidItem).getAttributes(null, function (err, attrs) {
+          new Listing(connection, txidItem).getAttributes(function (err, attrs) {
             if (err) throw err
 
             expect(attrs.validation.errors.length).to.equal(1)
@@ -253,7 +257,7 @@ describe('Listing', function () {
             transferAddr: 0, receiverAddr: globals.testerPublicKey
           }).save(globals.testerPrivateKey, next)
         }, function (next) {
-          new Listing(txidItem).getAttributes(null, function (err, attrs) {
+          new Listing(connection, txidItem).getAttributes(function (err, attrs) {
             if (err) throw err
 
             expect(attrs.validation.errors.length).to.equal(1)
