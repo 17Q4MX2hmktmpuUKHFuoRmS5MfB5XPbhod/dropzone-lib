@@ -2,7 +2,6 @@
 /* eslint no-new: 0 */
 
 var chai = require('chai')
-var crypto = require('crypto')
 var async = require('async')
 
 var messages = require('../lib/messages')
@@ -14,6 +13,7 @@ var globals = require('./fixtures/globals')
 
 var expect = chai.expect
 var Listing = listing.Listing
+var Seller = messages.Seller
 var Item = messages.Item
 
 factories.dz(chai)
@@ -39,8 +39,8 @@ describe('Listing', function () {
           // Block height is now 1:
           connection.incrementBlockHeight()
 
-          chai.factory.create('item', connection).save(globals.testerPrivateKey, 
-            function(err, item) {
+          chai.factory.create('item', connection).save(globals.testerPrivateKey,
+            function (err, item) {
               if (err) throw err
               txidItem = item.txid
               next()
@@ -82,8 +82,8 @@ describe('Listing', function () {
         }, function (next) {
           connection.incrementBlockHeight()
 
-          chai.factory.create('item', connection).save(globals.testerPrivateKey, 
-            function(err, item) {
+          chai.factory.create('item', connection).save(globals.testerPrivateKey,
+            function (err, item) {
               if (err) throw err
               txidItem = item.txid
               next()
@@ -123,19 +123,19 @@ describe('Listing', function () {
           chai.factory.create('seller',
             connection).save(globals.testerPrivateKey, next)
         }, function (next) {
-          chai.factory.create('item', connection).save(globals.testerPrivateKey, 
-            function(err, item) {
+          chai.factory.create('item', connection).save(globals.testerPrivateKey,
+            function (err, item) {
               if (err) throw err
               txidItem = item.txid
               next()
             })
         }, function (next) {
           new Item(connection, {createTxid: txidItem,
-            receiverAddr: globals.testerPublicKey, description: 'xyz',
+            receiverAddr: globals.testerPublicKey, description: 'xyz'
           }).save(globals.testerPrivateKey, next)
         }, function (next) {
           new Item(connection, {createTxid: 'non-existing-txid',
-            receiverAddr: globals.testerPublicKey, description: '123',
+            receiverAddr: globals.testerPublicKey, description: '123'
           }).save(globals.testerPrivateKey, next)
         }, function (next) {
           new Listing(connection, txidItem).getAttributes(function (err, attrs) {
@@ -156,15 +156,15 @@ describe('Listing', function () {
           chai.factory.create('seller',
             connection).save(globals.testerPrivateKey, next)
         }, function (next) {
-          chai.factory.create('item', connection).save(globals.testerPrivateKey, 
-            function(err, item) {
+          chai.factory.create('item', connection).save(globals.testerPrivateKey,
+            function (err, item) {
               if (err) throw err
               txidItem = item.txid
               next()
             })
         }, function (next) {
           new Item(connection, {createTxid: txidItem,
-            receiverAddr: globals.testerPublicKey, description: 'xyz',
+            receiverAddr: globals.testerPublicKey, description: 'xyz'
           }).save(globals.tester2PrivateKey, next)
         }, function (next) {
           new Listing(connection, txidItem).getAttributes(function (err, attrs) {
@@ -180,15 +180,18 @@ describe('Listing', function () {
 
   describe('validations', function () {
     it('Cannot be created from nonsense', function (nextSpec) {
-      new Listing(connection, 'non-existing-txid').getAttributes(function (err, attrs) {
-        if (err) throw err
+      new Listing(connection, 'non-existing-txid').getAttributes(
+        function (err, attrs) {
+          if (err) throw err
 
-        expect(attrs.validation.errors.length).to.equal(2)
-        expect(validation.errors[0].message).to.equal('createTxid invalid or missing')
-        expect(validation.errors[1].message).to.equal('sellerProfile invalid or missing')
+          expect(attrs.validation.errors.length).to.equal(2)
+          expect(attrs.validation.errors[0].message).to.equal(
+              'item at provided txid could not be found')
+          expect(attrs.validation.errors[1].message).to.equal(
+              'sellerProfile invalid or missing')
 
-        nextSpec()
-      })
+          nextSpec()
+        })
     })
 
     it('Cannot be created from an update', function (nextSpec) {
@@ -200,8 +203,8 @@ describe('Listing', function () {
             connection).save(globals.testerPrivateKey, next)
         }, function (next) {
           new Item(connection, {createTxid: 'non-existing-txid',
-            receiverAddr: globals.testerPublicKey, description: '123',
-          }).save(globals.testerPrivateKey, function(err, item) {
+            receiverAddr: globals.testerPublicKey, description: '123'
+          }).save(globals.testerPrivateKey, function (err, item) {
             if (err) throw err
             txidItem = item.txid
             next()
@@ -211,8 +214,11 @@ describe('Listing', function () {
             if (err) throw err
 
             expect(attrs.validation.errors.length).to.equal(2)
-            expect(validation.errors[0].message).to.equal('createTxid invalid or missing')
-            expect(validation.errors[1].message).to.equal('sellerProfile invalid or missing')
+            expect(attrs.validation.errors[0].message).to.equal(
+              'item at provided txid could not be found')
+            expect(attrs.validation.errors[1].message).to.equal(
+                'sellerProfile invalid or missing')
+            next()
           })
         }], nextSpec)
     })
@@ -222,19 +228,20 @@ describe('Listing', function () {
 
       async.series([
         function (next) {
-          chai.factory.create('item', connection).save(globals.testerPrivateKey, 
-            function(err, item) {
+          chai.factory.create('item', connection).save(globals.testerPrivateKey,
+            function (err, item) {
               if (err) throw err
               txidItem = item.txid
               next()
             })
-
         }, function (next) {
           new Listing(connection, txidItem).getAttributes(function (err, attrs) {
             if (err) throw err
 
             expect(attrs.validation.errors.length).to.equal(1)
-            expect(validation.errors[0].message).to.equal('sellerProfile invalid or missing')
+            expect(attrs.validation.errors[0].message).to.equal(
+                'sellerProfile invalid or missing')
+            next()
           })
         }], nextSpec)
     })
@@ -247,15 +254,15 @@ describe('Listing', function () {
           chai.factory.create('seller',
             connection).save(globals.testerPrivateKey, next)
         }, function (next) {
-          chai.factory.create('item', connection).save(globals.testerPrivateKey, 
-            function(err, item) {
+          chai.factory.create('item', connection).save(globals.testerPrivateKey,
+            function (err, item) {
               if (err) throw err
               txidItem = item.txid
               next()
             })
         }, function (next) {
           // Seller deactivates account
-          new Seller(connection, { 
+          new Seller(connection, {
             transferAddr: 0, receiverAddr: globals.testerPublicKey
           }).save(globals.testerPrivateKey, next)
         }, function (next) {
@@ -263,7 +270,9 @@ describe('Listing', function () {
             if (err) throw err
 
             expect(attrs.validation.errors.length).to.equal(1)
-            expect(validation.errors[0].message).to.equal('sellerProfile invalid or missing')
+            expect(attrs.validation.errors[0].message).to.equal(
+              'sellerProfile is inactive')
+            next()
           })
         }], nextSpec)
     })
