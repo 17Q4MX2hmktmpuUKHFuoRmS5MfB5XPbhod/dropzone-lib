@@ -1,9 +1,0 @@
-#!/usr/bin/env node
-var program = require('commander')
-
-program
-  .usage('<command> [options]')
-  .description('Manage buyer profiles')
-  .command('create', 'Create a buyer profile')
-  .command('show', 'Show a buyer profile')
-  .parse(process.argv)

@@ -1,9 +1,0 @@
-#!/usr/bin/env node
-var program = require('commander')
-
-program
-  .usage('<command> [options]')
-  .description('Manage sales reviews')
-  .command('create', 'Leave a review on a generated invoice')
-  .command('show', 'Show review details')
-  .parse(process.argv)

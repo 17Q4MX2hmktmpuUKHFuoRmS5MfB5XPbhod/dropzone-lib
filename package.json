@@ -8,7 +8,6 @@
     "dropzone": "bin/dropzone"
   },
   "scripts": {
-    "postinstall": "sh scripts/postinstall.sh",
     "compile": "browserify index.js -s dropzone > dropzone.js",
     "coverage": "istanbul cover _mocha -- test/*.js",
     "coveralls": "npm run-script coverage && coveralls < coverage/lcov.info",
@@ -46,22 +45,15 @@
     "async": "^1.4.2",
     "bitcore-lib": "^0.13.10",
     "bitcore-p2p": "^1.0.0",
-    "cli-table": "^0.3.1",
-    "colors": "^1.1.2",
-    "commander": "=2.8.1",
     "diff": "^2.1.3",
     "eventemitter-pipe": "^0.2.0",
     "inherits": "^2.0.1",
-    "json-gate": "^0.8.22",
     "merge": "=1.2",
-    "migrate-orm2": "^1.2.14",
-    "mkdirp": "^0.5.1",
     "async-validate": "^0.12.3",
     "orm": "^2.1.27",
     "proxysocket": "^0.2.0",
     "shallow-extend": "0.0.1",
     "sqlite3": "^3.0.10",
-    "wordwrap": "^1.0.0",
     "bigdecimal": "^0.6.1"
   },
   "devDependencies": {
