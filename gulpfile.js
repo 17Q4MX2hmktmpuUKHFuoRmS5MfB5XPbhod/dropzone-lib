@@ -40,7 +40,7 @@ gulp.task('test', function(callback) {
 });
 
 gulp.task('browser:uncompressed', shell.task([
-  buildBinPath + 'browserify --require ./index.js:dropzone -o dropzone.js'
+  buildBinPath + 'browserify -d --require ./index.js:dropzone -o dropzone.js'
 ]));
 
 gulp.task('browser:compressed', ['browser:uncompressed'], function() {
