@@ -44,8 +44,7 @@
     "shallow-extend": "0.0.1",
     "sqlite3": "^3.0.10",
     "bigdecimal": "^0.6.1",
-    "evp_bytestokey": "1.0.0",
-    "arc4": "^3.2.1"
+    "evp_bytestokey": "1.0.0"
   },
   "devDependencies": {
     "brfs": "^1.2.0",
