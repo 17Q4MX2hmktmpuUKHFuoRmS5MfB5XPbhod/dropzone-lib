@@ -39,10 +39,8 @@
     "inherits": "^2.0.1",
     "merge": "=1.2",
     "async-validate": "^0.12.3",
-    "orm": "^2.1.27",
     "proxysocket": "^0.2.0",
     "shallow-extend": "0.0.1",
-    "sqlite3": "^3.0.10",
     "bigdecimal": "^0.6.1",
     "evp_bytestokey": "1.0.0"
   },
