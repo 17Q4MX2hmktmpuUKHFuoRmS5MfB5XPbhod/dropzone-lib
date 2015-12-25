@@ -86,6 +86,8 @@ describe('TxEncode', function () {
     /* This was from Txid:
        14200afba2c8f91664afc37143763e5987a20647db3443c999137cc41b4db6e4 */
 
+    this.timeout(8000) // NOTE: This seems to take forever on firefox
+
     var encoder = new TxEncoder(new Buffer([ 19, 162, 25, 76, 71, 71, 199, 103,
       133, 167, 78, 254, 81, 184, 120, 121, 71, 22, 69, 221, 193, 38, 141, 233,
       202, 166, 37, 243, 169, 163, 5, 69 ]),
