@@ -11,11 +11,13 @@ var session = require('./lib/session')
 
 module.exports = {
   bitcore: bitcore,
-  actions: actions,
   drivers: drivers,
   blockchain: blockchain,
   messages: messages,
-  session: session,
-  txDecoder: txDecoder,
-  txEncoder: txEncoder
+  Session: session.Session,
+  Listing: listing.Listing,
+  BuyerProfile: profile.BuyerProfile,
+  SellerProfile: profile.SellerProfile,
+  TxDecoder: txDecoder,
+  TxEncoder: txEncoder
 }
