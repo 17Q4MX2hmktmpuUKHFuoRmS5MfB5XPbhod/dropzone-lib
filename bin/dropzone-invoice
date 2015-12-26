@@ -1,9 +1,0 @@
-#!/usr/bin/env node
-var program = require('commander')
-
-program
-  .usage('<command> [options]')
-  .description('Manage invoices')
-  .command('create', 'Create an invoice to a potential buyer')
-  .command('show', 'Show invoice details')
-  .parse(process.argv)

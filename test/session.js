@@ -23,6 +23,7 @@ var getDecrypted = function (c) { return c.contentsPlain() }
  */
 
 describe('Session', function () {
+  this.timeout(10000)
   var connection = null
 
   before(function (next) {
