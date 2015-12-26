@@ -30,19 +30,18 @@
   },
   "homepage": "https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/node-dropzone",
   "dependencies": {
+    "inherits": "^2.0.1",
+    "merge": "=1.2",
+    "shallow-extend": "0.0.1",
     "asn1.js": "^2.2.0",
     "async": "^1.4.2",
     "bitcore-lib": "^0.13.10",
     "bitcore-p2p": "^1.0.0",
     "eventemitter-pipe": "^0.2.0",
     "emitter": "0.0.5",
-    "inherits": "^2.0.1",
-    "merge": "=1.2",
     "async-validate": "^0.12.3",
     "proxysocket": "^0.2.0",
-    "shallow-extend": "0.0.1",
-    "bigdecimal": "^0.6.1",
-    "evp_bytestokey": "1.0.0"
+    "bigdecimal": "^0.6.1"
   },
   "devDependencies": {
     "brfs": "^1.2.0",
