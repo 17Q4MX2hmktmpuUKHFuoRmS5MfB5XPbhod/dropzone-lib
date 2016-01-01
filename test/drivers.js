@@ -21,82 +21,96 @@ var GENESIS_ITEM_DESC = 'One Bible in fair condition. Conveys the truth of the'+
   ' hands of evil. A perfect purchase for the person who already has'+
   ' "everything."'
 
-var testDriver = function(connectionInit) {
-  var connection = null
+var testItemById = function (next) {
+  Item.find(this.connection, GENESIS_ITEM_TXID, function (err, genesisItem) {
+    if (err) throw err
 
-  before(function(next) { connection = connectionInit(next)})
-
-  it('fetches genesis item by id', function (next) {
-
-    Item.find(connection, GENESIS_ITEM_TXID, function (err, genesisItem) {
-      if (err) throw err
-
-      expect(genesisItem.txid).to.equal(GENESIS_ITEM_TXID)
-      expect(genesisItem.blockHeight).to.equal(371812)
-      expect(genesisItem.description).to.equal(GENESIS_ITEM_DESC)
-      expect(genesisItem.priceCurrency).to.equal('BTC')
-      expect(genesisItem.priceInUnits).to.equal(1000000000)
-      expect(genesisItem.expirationIn).to.be.undefined
-      expect(genesisItem.latitude).to.equal(37.774836)
-      expect(genesisItem.longitude).to.equal(-122.224081)
-      expect(genesisItem.radius).to.equal(100)
-      expect(genesisItem.receiverAddr).to.equal(
-        '1DZ127774836X57775919XXX1XXXXGEZDD')
-      expect(genesisItem.senderAddr).to.equal(
-        '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod')
-
-      next()
-    })
-  })
-
-  it('fetches messagesByAddr', function(next) {
-    var maxProfile = new SellerProfile(connection,
+    expect(genesisItem.txid).to.equal(GENESIS_ITEM_TXID)
+    expect(genesisItem.blockHeight).to.equal(371812)
+    expect(genesisItem.description).to.equal(GENESIS_ITEM_DESC)
+    expect(genesisItem.priceCurrency).to.equal('BTC')
+    expect(genesisItem.priceInUnits).to.equal(1000000000)
+    expect(genesisItem.expirationIn).to.be.undefined
+    expect(genesisItem.latitude).to.equal(37.774836)
+    expect(genesisItem.longitude).to.equal(-122.224081)
+    expect(genesisItem.radius).to.equal(100)
+    expect(genesisItem.receiverAddr).to.equal(
+      '1DZ127774836X57775919XXX1XXXXGEZDD')
+    expect(genesisItem.senderAddr).to.equal(
       '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod')
 
-    maxProfile.getAttributes(function (err, attrs) {
-      if (err) throw err
-
-      expect(attrs.validation).to.be.null
-      expect(attrs.description).to.equal('Creator of the Protocol.')
-      expect(attrs.alias).to.equal('Miracle Max')
-      expect(attrs.communicationsAddr).to.equal(
-        'mw8Ge8HDBStKyn8u4LTkUwueheFNhuo7Ch')
-      expect(attrs.isActive).to.be.true
-
-      next()
-    })
-  })
-
-  it('fetches messagesInBlock', function(next) {
-    Item.findCreatesSinceBlock(connection, 371812, 1, function(err, items) {
-      if (err) throw err
-
-      expect(items.length).to.equal(1)
-      expect(items[0].txid).to.equal(GENESIS_ITEM_TXID)
-      expect(items[0].blockHeight).to.equal(371812)
-      expect(items[0].description).to.equal(GENESIS_ITEM_DESC)
-      expect(items[0].priceCurrency).to.equal('BTC')
-      expect(items[0].priceInUnits).to.equal(1000000000)
-      expect(items[0].expirationIn).to.be.undefined
-      expect(items[0].latitude).to.equal(37.774836)
-      expect(items[0].longitude).to.equal(-122.224081)
-      expect(items[0].radius).to.equal(100)
-      expect(items[0].receiverAddr).to.equal(
-        '1DZ127774836X57775919XXX1XXXXGEZDD')
-      expect(items[0].senderAddr).to.equal(
-        '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod')
-
-      next()
-    })
+    next()
   })
 }
 
+var testMessagesByAddr = function(next) {
+  var maxProfile = new SellerProfile(this.connection,
+    '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod')
+
+  maxProfile.getAttributes(function (err, attrs) {
+    if (err) throw err
+
+    expect(attrs.validation).to.be.null
+    expect(attrs.description).to.equal('Creator of the Protocol.')
+    expect(attrs.alias).to.equal('Miracle Max')
+    expect(attrs.communicationsAddr).to.equal(
+      'mw8Ge8HDBStKyn8u4LTkUwueheFNhuo7Ch')
+    expect(attrs.isActive).to.be.true
+
+    next()
+  })
+}
+
+var testMessagesInBlock = function(next) {
+  Item.findCreatesSinceBlock(this.connection, 371812, 1, function(err, items) {
+    if (err) throw err
+
+    expect(items.length).to.equal(1)
+    expect(items[0].txid).to.equal(GENESIS_ITEM_TXID)
+    expect(items[0].blockHeight).to.equal(371812)
+    expect(items[0].description).to.equal(GENESIS_ITEM_DESC)
+    expect(items[0].priceCurrency).to.equal('BTC')
+    expect(items[0].priceInUnits).to.equal(1000000000)
+    expect(items[0].expirationIn).to.be.undefined
+    expect(items[0].latitude).to.equal(37.774836)
+    expect(items[0].longitude).to.equal(-122.224081)
+    expect(items[0].radius).to.equal(100)
+    expect(items[0].receiverAddr).to.equal(
+      '1DZ127774836X57775919XXX1XXXXGEZDD')
+    expect(items[0].senderAddr).to.equal(
+      '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod')
+
+    next()
+  })
+}
+
+
 describe('BlockchainDotInfo', function () {
   this.timeout(30000)
-  testDriver(function (next) { return new drivers.BlockchainDotInfo({}, next) })
+
+  before(function(next) { 
+    this.connection = new drivers.BlockchainDotInfo({}, next)
+  })
+
+  it('fetches genesis item by id', testItemById)
+  it('fetches messagesByAddr', testMessagesByAddr)
+  it('fetches messagesInBlock', testMessagesInBlock)
 })
 
 describe('BlockrIo', function () {
   this.timeout(30000)
-  testDriver(function (next) { return new drivers.BlockrIo({}, next) })
+
+  before(function(next) { 
+    this.connection = new drivers.BlockrIo({}, next)
+  })
+
+  it('fetches genesis item by id', testItemById)
+  it('fetches messagesByAddr', testMessagesByAddr)
+  it('messagesInBlock is unsupported', function (next) {
+    this.connection.messagesInBlock(371812,{},function(err, messages) {
+      expect(err.name).to.equal('UnsupportedFeatureError')
+      expect(messages).to.be.undefined
+      next()
+    })
+  })
 })
