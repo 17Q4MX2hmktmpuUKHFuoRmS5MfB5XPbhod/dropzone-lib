@@ -84,6 +84,13 @@ var testMessagesInBlock = function(next) {
   })
 }
 
+var unsupportedMessagesInBlock = function(next) {
+  this.connection.messagesInBlock(371812,{},function(err, messages) {
+    expect(err.name).to.equal('UnsupportedFeatureError')
+    expect(messages).to.be.undefined
+    next()
+  })
+}
 
 describe('BlockchainDotInfo', function () {
   this.timeout(30000)
@@ -106,11 +113,29 @@ describe('BlockrIo', function () {
 
   it('fetches genesis item by id', testItemById)
   it('fetches messagesByAddr', testMessagesByAddr)
-  it('messagesInBlock is unsupported', function (next) {
-    this.connection.messagesInBlock(371812,{},function(err, messages) {
-      expect(err.name).to.equal('UnsupportedFeatureError')
-      expect(messages).to.be.undefined
-      next()
-    })
+  it('messagesInBlock is unsupported', unsupportedMessagesInBlock)
+})
+
+describe('Insight', function () {
+  this.timeout(30000)
+
+  before(function(next) { 
+    this.connection = new drivers.Insight({}, next)
   })
+
+  it('fetches genesis item by id', testItemById)
+  it('fetches messagesByAddr', testMessagesByAddr)
+  it('messagesInBlock is unsupported', unsupportedMessagesInBlock)
+})
+
+describe('SoChain', function () {
+  this.timeout(30000)
+
+  before(function(next) { 
+    this.connection = new drivers.SoChain({}, next)
+  })
+
+  it('fetches genesis item by id', testItemById)
+  it('fetches messagesByAddr', testMessagesByAddr)
+  it('fetches messagesInBlock', testMessagesInBlock)
 })
