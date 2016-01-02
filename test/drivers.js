@@ -20,6 +20,7 @@ var GENESIS_ITEM_DESC = 'One Bible in fair condition. Conveys the truth of the'+
   ' belief that this book will keep you from suffering for eternity at the'+
   ' hands of evil. A perfect purchase for the person who already has'+
   ' "everything."'
+var MAX_ADDR = '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod'
 
 var testItemById = function (next) {
   Item.find(this.connection, GENESIS_ITEM_TXID, function (err, genesisItem) {
@@ -44,8 +45,7 @@ var testItemById = function (next) {
 }
 
 var testMessagesByAddr = function(next) {
-  var maxProfile = new SellerProfile(this.connection,
-    '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod')
+  var maxProfile = new SellerProfile(this.connection, MAX_ADDR)
 
   maxProfile.getAttributes(function (err, attrs) {
     if (err) throw err
@@ -92,6 +92,16 @@ var unsupportedMessagesInBlock = function(next) {
   })
 }
 
+var unsupportedMessagesByAddr = function(next) {
+  var maxProfile = new SellerProfile(this.connection, MAX_ADDR)
+
+  maxProfile.getAttributes(function (err, attrs) {
+    expect(err.name).to.equal('UnsupportedFeatureError')
+    expect(attrs).to.be.undefined
+    next()
+  })
+}
+
 describe('BlockchainDotInfo', function () {
   this.timeout(30000)
 
@@ -100,8 +110,10 @@ describe('BlockchainDotInfo', function () {
   })
 
   it('fetches genesis item by id', testItemById)
-  it('fetches messagesByAddr', testMessagesByAddr)
-  it('fetches messagesInBlock', testMessagesInBlock)
+  it('fetches messagesByAddr', (typeof window === 'undefined') 
+    ? testMessagesByAddr : unsupportedMessagesByAddr)
+  it('fetches messagesInBlock', (typeof window === 'undefined')
+    ? testMessagesByAddr : unsupportedMessagesInBlock)
 })
 
 describe('BlockrIo', function () {
@@ -129,7 +141,7 @@ describe('Insight', function () {
 })
 
 describe('SoChain', function () {
-  this.timeout(30000)
+  this.timeout(50000)
 
   before(function(next) { 
     this.connection = new drivers.SoChain({}, next)
