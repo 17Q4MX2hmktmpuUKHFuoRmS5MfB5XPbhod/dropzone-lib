@@ -110,10 +110,14 @@ describe('BlockchainDotInfo', function () {
   })
 
   it('fetches genesis item by id', testItemById)
-  it('fetches messagesByAddr', (typeof window === 'undefined') 
-    ? testMessagesByAddr : unsupportedMessagesByAddr)
-  it('fetches messagesInBlock', (typeof window === 'undefined')
-    ? testMessagesByAddr : unsupportedMessagesInBlock)
+  if (typeof window === 'undefined') {
+    it('fetches messagesByAddr', testMessagesByAddr)
+    it('fetches messagesInBlock', testMessagesByAddr)
+  } else {
+    // CORS support is limited with blockchain.info:
+    it('messagesByAddr is unsupported', unsupportedMessagesByAddr)
+    it('messagesInBlock is unsupported', unsupportedMessagesInBlock)
+  }
 })
 
 describe('BlockrIo', function () {
