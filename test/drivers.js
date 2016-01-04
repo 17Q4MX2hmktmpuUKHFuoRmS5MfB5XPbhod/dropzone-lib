@@ -145,7 +145,7 @@ describe('Insight', function () {
 })
 
 describe('SoChain', function () {
-  this.timeout(50000)
+  this.timeout(80000)
 
   before(function(next) { 
     this.connection = new drivers.SoChain({}, next)
