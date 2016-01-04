@@ -62,7 +62,7 @@ var testMessagesByAddr = function(next) {
 }
 
 var testMessagesInBlock = function(next) {
-  Item.findCreatesSinceBlock(this.connection, 371812, 1, function(err, items) {
+  Item.findCreatesSinceBlock(this.connection, 371812, 0, function(err, items) {
     if (err) throw err
 
     expect(items.length).to.equal(1)
@@ -133,7 +133,7 @@ describe('BlockrIo', function () {
 })
 
 describe('Insight', function () {
-  this.timeout(30000)
+  this.timeout(80000)
 
   before(function(next) { 
     this.connection = new drivers.Insight({}, next)
@@ -141,7 +141,7 @@ describe('Insight', function () {
 
   it('fetches genesis item by id', testItemById)
   it('fetches messagesByAddr', testMessagesByAddr)
-  it('messagesInBlock is unsupported', unsupportedMessagesInBlock)
+  it('messagesInBlock is unsupported', testMessagesInBlock)
 })
 
 describe('SoChain', function () {
