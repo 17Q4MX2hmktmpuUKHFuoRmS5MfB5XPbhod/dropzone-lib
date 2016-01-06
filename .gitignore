@@ -4,6 +4,5 @@ node_modules
 npm-debug.log
 TODO.txt
 dropzone.js
-dropzone.min.js
 tests.js
 coverage

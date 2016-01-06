@@ -133,7 +133,7 @@ describe('BlockrIo', function () {
 })
 
 describe('Insight', function () {
-  this.timeout(80000)
+  this.timeout(120000)
 
   before(function(next) { 
     this.connection = new drivers.Insight({}, next)

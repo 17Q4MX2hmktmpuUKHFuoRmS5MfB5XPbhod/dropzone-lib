@@ -1,7 +1,27 @@
-#node-dropzone ![Drop Zone](dropzone-logo-32x32.png)
- An Anonymous Peer-To-Peer Local Contraband Marketplace
+#dropzone-lib ![Drop Zone](dropzone-logo-32x32.png)
+[![Build Status](https://img.shields.io/travis/ScroogeMcDuckButWithBitcoin/dropzone-lib.svg?branch=master&style=flat-square)](https://travis-ci.org/ScroogeMcDuckButWithBitcoin/dropzone-lib)
 
-[White Paper](Drop Zone - Whitepaper.pdf)
+An Anonymous Peer-To-Peer Local Contraband Marketplace built with Bitcoin. [Read the White Paper](Drop Zone - Whitepaper.pdf)
+
+## Getting Started in your Web Browser
+TODO: 
+
+## Getting Started in node
+
+Before you begin you'll need to have Node.js v0.12 installed. There are several options for installation. One method is to use [nvm](https://github.com/creationix/nvm) to easily switch between different versions, or download directly from [Node.js](https://nodejs.org/).
+
+```bash
+npm install -g bitcore
+```
+
+## Using dropzone-lib
+TODO: Create a transaction:
+```js
+var bitcore = require('bitcore');
+var transaction = new bitcore.Transaction();
+var transaction.from(unspent).to(address, amount);
+transaction.sign(privateKey);
+```
 
 ## Author's Manifesto
 ![Drop Zone](dropzone-screenshot.jpg)
