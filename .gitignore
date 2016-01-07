@@ -3,6 +3,6 @@ node_modules
 *.swo
 npm-debug.log
 TODO.txt
-dropzone.js
+dropzone-lib.js
 tests.js
 coverage

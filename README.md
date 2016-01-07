@@ -1,31 +1,83 @@
 #dropzone-lib ![Drop Zone](dropzone-logo-32x32.png)
 [![NPM Package](https://img.shields.io/npm/v/dropzone-lib.svg?style=flat-square)](https://www.npmjs.org/package/dropzone-lib)
-[![Build Status](https://img.shields.io/travis/ScroogeMcDuckButWithBitcoin/node-dropzone.svg?branch=master&style=flat-square)](https://travis-ci.org/ScroogeMcDuckButWithBitcoin/node-dropzone)
+[![Build Status](https://img.shields.io/travis/ScroogeMcDuckButWithBitcoin/dropzone-lib.svg?branch=master&style=flat-square)](https://travis-ci.org/ScroogeMcDuckButWithBitcoin/dropzone-lib)
 
 An Anonymous Peer-To-Peer Local Contraband Marketplace built with Bitcoin.  
-[Read the White Paper](Drop Zone - Whitepaper.pdf)
+[Start By Reading the White Paper](Drop Zone - Whitepaper.pdf) (it's not too technical)
 
 ## Getting Started in your Web Browser
 
-Download the the dropzone.min.js and include it in your html via a script tag:
+Download our packaged dropzone-lib.min.js and include it in your html via a script tag:
 ```html
-<script src="dropzone.min.js"></script>
+<script src="dropzone-lib.min.js"></script>
 ```
 
 ## Getting Started in node
 
-Before you begin you'll need to have Node.js v0.12 installed. There are several options for installation. One method is to use [nvm](https://github.com/creationix/nvm) to easily switch between different versions, or download directly from [Node.js](https://nodejs.org/).
+Before you begin you'll need to have Node.js v0.12 installed. There are several 
+options for installation. One method is to use 
+[nvm](https://github.com/creationix/nvm) to easily switch between different 
+versions, or download directly from [Node.js](https://nodejs.org/).
 
 ```bash
 npm install -g dropzone-lib
 ```
 
 ## Using dropzone-lib
-TODO: Create a transaction:
+The library syntax is still being finalized, but almost all dropzone functions 
+are currently supported in this library.
+
+**NOTE: One glaring exception at the time of writing is the ability to persist 
+records on the blockchain.**
+
+### Create a Connection/Driver
+Unless you plan to feed raw binary data into objects yourself (more on this later)
+you're going to want to start by connecting dropzone to a blockchain.
+
+Blockchain connection objects should be created at the inception of your program.
+Currently (and let's be real here - all that matters), Bitcoin connections are 
+the only supported blockchain connections.
+
+An SPV driver is still being developed, but for the time being, support exists
+for the following block explorers, which are queried via http: BlockchainDotInfo,
+BlockrIo, Insight, and SoChain. Only Insight andSochain support all functions 
+via cors requests, and SoChain is the reccommended driver at this time due to
+its speed.
+
+Connections are created like so:
+
 ```js
 var dropzone = require('dropzone-lib');
-// TODO
+
+connection = new dropzone.drivers.SoChain({}, function(err, soChain){ 
+  // Connection initialized...
+})
 ```
+
+### Load a listing from a transaction id
+This example loads the Miracle Max bible listing from the blockchain. Note that
+"Listings" contain the up-to-date state of an Item, and will reflect the attributes
+present in the original listing, plus all modifications to that listing thereafter.
+
+```js
+bibleListing = new dropzone.Listing(connection, '6a9013b8684862e9ccfb527bf8f5ea5eb213e77e3970ff2cd8bbc22beb7cebfb')
+
+// Scans the seller's address for the original listing, plus all updates:
+bibleListing.getAttributes(function (err, attrs) {
+  if (err) throw err
+
+  console.log(attrs)
+})
+```
+
+### Load a Seller profile from an address
+TODO
+
+### Load a review from a transaction id
+TODO
+
+### Load an item from raw transaction hex
+TODO
 
 ## Author's Manifesto
 ![Drop Zone](dropzone-screenshot.jpg)
