@@ -2,7 +2,8 @@
 [![NPM Package](https://img.shields.io/npm/v/dropzone-lib.svg?style=flat-square)](https://www.npmjs.org/package/dropzone-lib)
 [![Build Status](https://img.shields.io/travis/ScroogeMcDuckButWithBitcoin/dropzone-lib.svg?branch=master&style=flat-square)](https://travis-ci.org/ScroogeMcDuckButWithBitcoin/dropzone-lib)
 
-An Anonymous Peer-To-Peer Local Contraband Marketplace built with Bitcoin.  
+An Anonymous Peer-To-Peer Local Contraband Marketplace built with Bitcoin.
+
 [Start By Reading the White Paper](Drop Zone - Whitepaper.pdf) (it's not too technical)
 
 ## Getting Started in your Web Browser
@@ -27,8 +28,8 @@ npm install -g dropzone-lib
 The library syntax is still being finalized, but almost all dropzone functions 
 are currently supported in this library.
 
-**NOTE: One glaring exception at the time of writing is the ability to persist 
-records on the blockchain.**
+NOTE: One glaring exception at the time of writing is the ability to persist 
+records on the blockchain.
 
 ### Create a Connection/Driver
 Unless you plan to feed raw binary data into objects yourself (more on this later)
@@ -48,10 +49,11 @@ Connections are created like so:
 
 ```js
 var dropzone = require('dropzone-lib');
+var SoChain = dropzone.drivers.SoChain;
 
-connection = new dropzone.drivers.SoChain({}, function(err, soChain){ 
+connection = new SoChain({}, function(err, soChain){ 
   // Connection initialized...
-})
+});
 ```
 
 ### Load a listing from a transaction id
@@ -60,24 +62,75 @@ This example loads the Miracle Max bible listing from the blockchain. Note that
 present in the original listing, plus all modifications to that listing thereafter.
 
 ```js
-bibleListing = new dropzone.Listing(connection, '6a9013b8684862e9ccfb527bf8f5ea5eb213e77e3970ff2cd8bbc22beb7cebfb')
+var Listing = dropzone.Listing;
+
+var BIBLE_TXID = '6a9013b8684862e9ccfb527bf8f5ea5eb213e77e3970ff2cd8bbc22beb7cebfb';
+
+bible = new Listing(connection, BIBLE_TXID);
 
 // Scans the seller's address for the original listing, plus all updates:
-bibleListing.getAttributes(function (err, attrs) {
-  if (err) throw err
+bible.getAttributes(function (err, attrs) {
+  if (err) throw err;
 
-  console.log(attrs)
-})
+  console.log(attrs);
+});
 ```
 
 ### Load a Seller profile from an address
-TODO
+This example loads the Miracle Max seller profile from the blockchain. Note that
+"SellerProfile" contains the up-to-date state of an seller, and will reflect the 
+attributes present in the original seller declaration, plus all modifications 
+to that declaration thereafter.
 
-### Load a review from a transaction id
-TODO
+```js
+var SellerProfile = dropzone.SellerProfile;
 
-### Load an item from raw transaction hex
-TODO
+var maxProfile = new SellerProfile(connection, '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod');
+
+// Scans the seller's address for the original declaration, plus all updates:
+maxProfile.getAttributes(function (err, attrs) {
+  if (err) throw err;
+
+  console.log(attrs);
+});
+```
+
+### Load an invoice from a transaction id
+This example loads an invoice message directly. "Messages" do not track state
+outside the current transaction, and can be located in dropzone.messages. 
+These messages are loosely based on an ORM pattern's 'model'.
+
+```js
+var Invoice = dropzone.messages.Invoice;
+
+var INVOICE_TXID = 'e5a564d54ab9de50fc6eba4176991b7eb8f84bbeca3482ca032c12c1c0050ae3';
+
+Invoice.find(connection, INVOICE_TXID, function (err, invoice) {
+  console.log(invoice.expirationIn);
+  console.log(invoice.amountDue);
+  console.log(invoice.receiverAddr);
+  console.log(invoice.senderAddr);
+});
+```
+
+### Load an item from raw transaction hex string
+For those who have a transaction already available, and simply want to de-serialize
+that transaction into it's Drop Zone representation, the code to do so is as
+follows:
+
+```js
+var Invoice = dropzone.messages.Invoice;
+
+var txId = '6a9013b8684862e9ccfb527bf8f5ea5eb213e77e3970ff2cd8bbc22beb7cebfb';
+var txHex = '01000000017....'; // Be sure to include the entire hex here
+
+var record = new TxDecoder(new Transaction(txHex), {prefix: 'DZ'});
+
+var item = new Item(connection, {data: record.data, txid: txId,
+  receiverAddr: record.receiverAddr, senderAddr: record.senderAddr});
+
+console.log(item.description);
+```
 
 ## Author's Manifesto
 ![Drop Zone](dropzone-screenshot.jpg)
