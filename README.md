@@ -2,10 +2,15 @@
 [![NPM Package](https://img.shields.io/npm/v/dropzone-lib.svg?style=flat-square)](https://www.npmjs.org/package/dropzone-lib)
 [![Build Status](https://img.shields.io/travis/ScroogeMcDuckButWithBitcoin/node-dropzone.svg?branch=master&style=flat-square)](https://travis-ci.org/ScroogeMcDuckButWithBitcoin/node-dropzone)
 
-An Anonymous Peer-To-Peer Local Contraband Marketplace built with Bitcoin. [Read the White Paper](Drop Zone - Whitepaper.pdf)
+An Anonymous Peer-To-Peer Local Contraband Marketplace built with Bitcoin.  
+[Read the White Paper](Drop Zone - Whitepaper.pdf)
 
 ## Getting Started in your Web Browser
-TODO: 
+
+Download the the dropzone.min.js and include it in your html via a script tag:
+```html
+<script src="dropzone.min.js"></script>
+```
 
 ## Getting Started in node
 

@@ -1,22 +1,26 @@
 {
-  "name": "dropzone",
-  "version": "0.0.1",
+  "name": "dropzone-lib",
+  "version": "0.1.0",
   "readme": "README.md",
   "description": "An anonymous peer-to-peer local contraband marketplace",
   "main": "index.js",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/node-dropzone.git"
+    "url": "https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib.git"
   },
   "keywords": [
     "bitcoin",
     "p2p",
     "market",
+    "blockchain",
+    "cryptocurrency",
+    "payment",
+    "clearinghouse",
     "buy",
     "sell",
-    "drop",
-    "cli"
+    "dead drop",
+    "bitcore"
   ],
   "author": "aynik",
   "contributors": [
@@ -26,9 +30,9 @@
     }
   ],
   "bugs": {
-    "url": "https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/node-dropzone/issues"
+    "url": "https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib/issues"
   },
-  "homepage": "https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/node-dropzone",
+  "homepage": "https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib",
   "dependencies": {
     "inherits": "^2.0.1",
     "merge": "=1.2",
