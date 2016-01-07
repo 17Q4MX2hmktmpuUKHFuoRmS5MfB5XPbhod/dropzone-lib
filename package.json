@@ -72,6 +72,7 @@
     "karma-detect-browsers": "^2.0.0",
     "karma-firefox-launcher": "^0.1.4",
     "karma-mocha": "^0.1.9",
-    "run-sequence": "^1.0.2"
+    "run-sequence": "^1.0.2",
+    "jsdoc": "^3.4.0"
   }
 }
