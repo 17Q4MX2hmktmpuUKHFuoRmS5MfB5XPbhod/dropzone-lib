@@ -177,7 +177,7 @@ Invoice.find(connection, INVOICE_TXID, function (err, invoice) {
 
 ### Load an item from raw transaction hex string
 For those who have a transaction already available, and simply want to de-serialize
-that transaction into it's Drop Zone representation, the code to do so is as
+that transaction into its Drop Zone representation, the code to do so is as
 follows:
 
 ```js
