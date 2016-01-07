@@ -7,27 +7,22 @@ var bitcore = require('bitcore-lib')
 
 var factories = require('../test/factories/factories')
 var messages = require('../lib/messages')
-var fakeConnection = require('../lib/drivers/fake')
+var drivers = require('../lib/drivers')
 var globals = require('./fixtures/globals')
-var tx_decoder = require('../lib/tx_decoder')
+var txDecoder = require('../lib/tx_decoder')
 
 var expect = chai.expect
 var Item = messages.Item
 var Transaction = bitcore.Transaction
-var TxDecoder = tx_decoder.TxDecoder
+var TxDecoder = txDecoder.TxDecoder
 
 factories.dz(chai)
 
 describe('Item', function () {
   var connection = null
 
-  before(function (next) {
-    connection = new fakeConnection.FakeBitcoinConnection(next)
-  })
-
-  afterEach(function (next) {
-    connection.clearTransactions(next)
-  })
+  before(function (next) { connection = new drivers.FakeChain({}, next) })
+  afterEach(function (next) { connection.clearTransactions(next) })
 
   it('has accessors', function () {
     var item = chai.factory.create('item', connection)

@@ -7,7 +7,7 @@ var async = require('async')
 
 var expect = chai.expect
 
-var fakeConnection = require('../lib/drivers/fake')
+var drivers = require('../lib/drivers')
 var session = require('../lib/session')
 
 var globals = require('./fixtures/globals')
@@ -24,12 +24,10 @@ var getDecrypted = function (c) { return c.contentsPlain() }
 
 describe('Session', function () {
   this.timeout(10000)
+
   var connection = null
 
-  before(function (next) {
-    connection = new fakeConnection.FakeBitcoinConnection(next)
-  })
-
+  before(function (next) { connection = new drivers.FakeChain({}, next) })
   afterEach(function (next) { connection.clearTransactions(next) })
 
   // NOTE: The ruby version is non-deterministic, but due to the RNG time, I

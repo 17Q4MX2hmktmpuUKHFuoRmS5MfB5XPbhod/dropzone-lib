@@ -5,11 +5,10 @@ var chai = require('chai')
 var async = require('async')
 
 var messages = require('../lib/messages')
+var drivers = require('../lib/drivers')
 var factories = require('../test/factories/factories')
-var fakeConnection = require('../lib/drivers/fake')
-var listing = require('../lib/listing')
-
 var globals = require('./fixtures/globals')
+var listing = require('../lib/listing')
 
 var expect = chai.expect
 var Listing = listing.Listing
@@ -21,10 +20,7 @@ factories.dz(chai)
 describe('Listing', function () {
   var connection = null
 
-  before(function (next) {
-    connection = new fakeConnection.FakeBitcoinConnection(next)
-  })
-
+  before(function (next) { connection = new drivers.FakeChain({}, next) })
   afterEach(function (next) { connection.clearTransactions(next) })
 
   describe('accessors', function () {

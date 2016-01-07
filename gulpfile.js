@@ -10,7 +10,7 @@ var runsequence = require('run-sequence')
 
 runsequence.use(gulp)
 
-var fullname = 'dropzone'
+var fullname = 'dropzone-lib'
 var files = ['lib/**/*.js']
 var tests = ['test/**/*.js']
 var alljs = files.concat(tests)
@@ -43,7 +43,7 @@ gulp.task('test', function(callback) {
 })
 
 gulp.task('browser:uncompressed', shell.task([
-  buildBinPath + 'browserify -d --require ./index.js:dropzone -o dropzone.js'
+  buildBinPath + 'browserify -d --require ./index.js:dropzone-lib -o dropzone-lib.js'
 ]))
 
 gulp.task('browser:compressed', ['browser:uncompressed'], function() {

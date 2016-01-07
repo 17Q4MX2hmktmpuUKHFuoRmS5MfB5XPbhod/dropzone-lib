@@ -3,8 +3,7 @@ var drivers = require('./lib/drivers')
 var messages = require('./lib/messages')
 var session = require('./lib/session')
 var txDecoder = require('./lib/tx_decoder')
-var txEncoder = require('./lib/tx_decoder')
-var blockchain = require('./lib/blockchain')
+var txEncoder = require('./lib/tx_encoder')
 var listing = require('./lib/listing')
 var profile = require('./lib/profile')
 var session = require('./lib/session')
@@ -12,12 +11,11 @@ var session = require('./lib/session')
 module.exports = {
   bitcore: bitcore,
   drivers: drivers,
-  blockchain: blockchain,
   messages: messages,
   Session: session.Session,
   Listing: listing.Listing,
   BuyerProfile: profile.BuyerProfile,
   SellerProfile: profile.SellerProfile,
-  TxDecoder: txDecoder,
-  TxEncoder: txEncoder
+  TxDecoder: txDecoder.TxDecoder,
+  TxEncoder: txEncoder.TxEncoder
 }

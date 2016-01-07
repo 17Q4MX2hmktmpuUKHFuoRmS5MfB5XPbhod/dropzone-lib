@@ -1,7 +1,10 @@
-#node-dropzone ![Drop Zone](dropzone-logo-32x32.png)
- An Anonymous Peer-To-Peer Local Contraband Marketplace
+#dropzone-lib ![Drop Zone](dropzone-logo-32x32.png)
+[![NPM Package](https://img.shields.io/npm/v/dropzone-lib.svg?style=flat-square)](https://www.npmjs.org/package/dropzone-lib)
+[![Build Status](https://img.shields.io/travis/ScroogeMcDuckButWithBitcoin/dropzone-lib.svg?branch=master&style=flat-square)](https://travis-ci.org/ScroogeMcDuckButWithBitcoin/dropzone-lib)
 
-[White Paper](Drop Zone - Whitepaper.pdf)
+An Anonymous Peer-To-Peer Local Contraband Marketplace built with Bitcoin.
+
+[Start By Reading the White Paper](Drop Zone - Whitepaper.pdf) (it's not too technical)
 
 ## Author's Manifesto
 ![Drop Zone](dropzone-screenshot.jpg)
@@ -60,8 +63,139 @@ Today is a Beautiful day,
 __Miracle Max__
 __quia omnis qui se exaltat humiliabitur et qui se humiliat exaltabitur__
 
-## Errata
+## Important Whitepaper Errata
   * The white paper expressed 8 digits of precision for the listing radius. This implementation instead uses 6 digits. If additional precision is later deemed necessary, a field can be added to the listing to accomodate enhanced precision
   * The white paper expressed pkeys (addresses) as being encoded ints. These are instead encoded as variable length strings.
   * The white paper expressed transaction ids as being encoded ints. These are instead encoded as variable length strings.
 
+## Getting Started in your Web Browser
+
+Download our packaged dropzone-lib.min.js and include it in your html via a script tag:
+```html
+<script src="dropzone-lib.min.js"></script>
+```
+
+## Getting Started in node
+
+Before you begin you'll need to have Node.js v0.12 installed. There are several 
+options for installation. One method is to use 
+[nvm](https://github.com/creationix/nvm) to easily switch between different 
+versions, or download directly from [Node.js](https://nodejs.org/).
+
+```bash
+npm install -g dropzone-lib
+```
+
+## Using dropzone-lib
+The library syntax is still being finalized, but almost all dropzone functions 
+are currently supported in this library.
+
+NOTE: One glaring exception at the time of writing is the ability to persist 
+records on the blockchain.
+
+### Create a Connection/Driver
+Unless you plan to feed raw binary data into objects yourself (more on this later)
+you're going to want to start by connecting dropzone to a blockchain.
+
+Blockchain connection objects should be created at the inception of your program.
+Currently (and let's be real here - all that matters), Bitcoin connections are 
+the only supported blockchain connections.
+
+An SPV driver is still being developed, but for the time being, support exists
+for the following block explorers, which are queried via http: BlockchainDotInfo,
+BlockrIo, Insight, and SoChain. Only Insight andSochain support all functions 
+via cors requests, and SoChain is the reccommended driver at this time due to
+its speed.
+
+Connections are created like so:
+
+```js
+var dropzone = require('dropzone-lib');
+var SoChain = dropzone.drivers.SoChain;
+
+connection = new SoChain({}, function(err, soChain){ 
+  // Connection initialized...
+});
+```
+
+### Load a listing from a transaction id
+This example loads the Miracle Max bible listing from the blockchain. Note that
+"Listings" contain the up-to-date state of an Item, and will reflect the attributes
+present in the original listing, plus all modifications to that listing thereafter.
+
+```js
+var Listing = dropzone.Listing;
+
+var BIBLE_TXID = '6a9013b8684862e9ccfb527bf8f5ea5eb213e77e3970ff2cd8bbc22beb7cebfb';
+
+bible = new Listing(connection, BIBLE_TXID);
+
+// Scans the seller's address for the original listing, plus all updates:
+bible.getAttributes(function (err, attrs) {
+  if (err) throw err;
+
+  console.log(attrs);
+});
+```
+
+### Load a Seller profile from an address
+This example loads the Miracle Max seller profile from the blockchain. Note that
+"SellerProfile" contains the up-to-date state of an seller, and will reflect the 
+attributes present in the original seller declaration, plus all modifications 
+to that declaration thereafter.
+
+```js
+var SellerProfile = dropzone.SellerProfile;
+
+var maxProfile = new SellerProfile(connection, '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod');
+
+// Scans the seller's address for the original declaration, plus all updates:
+maxProfile.getAttributes(function (err, attrs) {
+  if (err) throw err;
+
+  console.log(attrs);
+});
+```
+
+### Load an invoice from a transaction id
+This example loads an invoice message directly. "Messages" do not track state
+outside the current transaction, and can be located in dropzone.messages. 
+These messages are loosely based on an ORM pattern's 'model'.
+
+```js
+var Invoice = dropzone.messages.Invoice;
+
+var INVOICE_TXID = 'e5a564d54ab9de50fc6eba4176991b7eb8f84bbeca3482ca032c12c1c0050ae3';
+
+Invoice.find(connection, INVOICE_TXID, function (err, invoice) {
+  console.log(invoice.expirationIn);
+  console.log(invoice.amountDue);
+  console.log(invoice.receiverAddr);
+  console.log(invoice.senderAddr);
+});
+```
+
+### Load an item from raw transaction hex string
+For those who have a transaction already available, and simply want to de-serialize
+that transaction into it's Drop Zone representation, the code to do so is as
+follows:
+
+```js
+var Invoice = dropzone.messages.Invoice;
+
+var txId = '6a9013b8684862e9ccfb527bf8f5ea5eb213e77e3970ff2cd8bbc22beb7cebfb';
+var txHex = '01000000017....'; // Be sure to include the entire hex here
+
+var record = new TxDecoder(new Transaction(txHex), {prefix: 'DZ'});
+
+var item = new Item(connection, {data: record.data, txid: txId,
+  receiverAddr: record.receiverAddr, senderAddr: record.senderAddr});
+
+console.log(item.description);
+```
+
+## License
+
+Code released under [the MIT license](https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib/blob/master/LICENSE).
+
+Copyright 2015 Miracle Max

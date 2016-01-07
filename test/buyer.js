@@ -4,8 +4,8 @@
 var chai = require('chai')
 var factories = require('../test/factories/factories')
 
-var fakeConnection = require('../lib/drivers/fake')
 var messages = require('../lib/messages')
+var drivers = require('../lib/drivers')
 var globals = require('./fixtures/globals')
 
 var expect = chai.expect
@@ -16,10 +16,7 @@ factories.dz(chai)
 describe('Buyer', function () {
   var connection = null
 
-  before(function (next) {
-    connection = new fakeConnection.FakeBitcoinConnection(next)
-  })
-
+  before(function (next) { connection = new drivers.FakeChain({}, next) })
   after(function (next) { connection.clearTransactions(next) })
 
   it('has accessors', function () {
