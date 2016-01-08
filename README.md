@@ -1,10 +1,10 @@
-#dropzone-lib ![Drop Zone](dropzone-logo-32x32.png)
+#dropzone-lib ![Drop Zone](https://raw.githubusercontent.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib/master/dropzone-logo-32x32.png)
 [![NPM Package](https://img.shields.io/npm/v/dropzone-lib.svg?style=flat-square)](https://www.npmjs.org/package/dropzone-lib)
 [![Build Status](https://img.shields.io/travis/ScroogeMcDuckButWithBitcoin/dropzone-lib.svg?branch=master&style=flat-square)](https://travis-ci.org/ScroogeMcDuckButWithBitcoin/dropzone-lib)
 
 An Anonymous Peer-To-Peer Local Contraband Marketplace built with Bitcoin.
 
-[Start By Reading the White Paper](Drop Zone - Whitepaper.pdf) (it's not too technical)
+[Start By Reading the White Paper](https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib/blob/master/Drop%20Zone%20-%20Whitepaper.pdf) (it's not too technical)
 
 ## Author's Manifesto
 ![Drop Zone](dropzone-screenshot.jpg)

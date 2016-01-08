@@ -82,5 +82,5 @@ gulp.task('standard', function () {
 })
 
 gulp.task('jsdoc', shell.task([
-  buildBinPath + 'jsdoc -d docs -r ./lib -R ./README.md -a all'
+  buildBinPath + 'jsdoc -c ./jsdoc.conf'
 ]))
