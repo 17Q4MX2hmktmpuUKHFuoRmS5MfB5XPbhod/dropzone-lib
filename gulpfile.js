@@ -81,3 +81,6 @@ gulp.task('standard', function () {
     }))
 })
 
+gulp.task('jsdoc', shell.task([
+  buildBinPath + 'jsdoc -c ./jsdoc.conf'
+]))
