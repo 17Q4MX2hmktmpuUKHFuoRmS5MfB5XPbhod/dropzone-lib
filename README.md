@@ -1,13 +1,15 @@
-#dropzone-lib ![Drop Zone](https://raw.githubusercontent.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib/master/dropzone-logo-32x32.png)
+# dropzone-lib ![Drop Zone](https://raw.githubusercontent.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib/master/dropzone-logo-32x32.png)
 [![NPM Package](https://img.shields.io/npm/v/dropzone-lib.svg?style=flat-square)](https://www.npmjs.org/package/dropzone-lib)
 [![Build Status](https://img.shields.io/travis/ScroogeMcDuckButWithBitcoin/dropzone-lib.svg?branch=master&style=flat-square)](https://travis-ci.org/ScroogeMcDuckButWithBitcoin/dropzone-lib)
 
 An Anonymous Peer-To-Peer Local Contraband Marketplace built with Bitcoin.
 
-[Start By Reading the White Paper](https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib/blob/master/Drop%20Zone%20-%20Whitepaper.pdf) (it's not too technical)
+* [Start By Reading the White Paper](https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib/blob/master/Drop%20Zone%20-%20Whitepaper.pdf) (it's not too technical)
+* [Then check out an explorer](http://dropzone.xchain.io/) to see who's posting and what they're buying.
+* And then check out the jsdoc for detailed information on how to use this library.
 
 ## Author's Manifesto
-![Drop Zone](dropzone-screenshot.jpg)
+![Drop Zone](https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib/raw/master/dropzone-screenshot.jpg)
 
 To whom it may concern,
 
