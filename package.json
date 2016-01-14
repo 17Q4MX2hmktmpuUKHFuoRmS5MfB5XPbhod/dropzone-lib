@@ -1,6 +1,6 @@
 {
   "name": "dropzone-lib",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "An anonymous peer-to-peer local contraband marketplace",
   "main": "index.js",
   "license": "MIT",
