@@ -6,6 +6,7 @@ var mocha = require('gulp-mocha')
 var uglify = require('gulp-uglify')
 var standard = require('gulp-standard')
 var rename = require('gulp-rename')
+var ghPages = require('gulp-gh-pages')
 var runsequence = require('run-sequence')
 
 runsequence.use(gulp)
@@ -84,3 +85,8 @@ gulp.task('standard', function () {
 gulp.task('jsdoc', shell.task([
   buildBinPath + 'jsdoc -c ./jsdoc.conf'
 ]))
+
+gulp.task('publish:jsdoc', ['jsdoc'], function() {
+  return gulp.src('./docs/**/*')
+    .pipe(ghPages())
+})
