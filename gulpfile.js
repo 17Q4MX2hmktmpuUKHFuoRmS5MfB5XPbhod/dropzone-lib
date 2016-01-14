@@ -87,6 +87,5 @@ gulp.task('jsdoc', shell.task([
 ]))
 
 gulp.task('publish:jsdoc', ['jsdoc'], function() {
-  return gulp.src('./docs/**/*')
-    .pipe(ghPages())
+  return gulp.src('./docs/**/*').pipe(ghPages())
 })

@@ -5,8 +5,8 @@
 An Anonymous Peer-To-Peer Local Contraband Marketplace built with Bitcoin.
 
 * [Start By Reading the White Paper](https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib/blob/master/Drop%20Zone%20-%20Whitepaper.pdf) (it's not too technical)
-* [Then check out an explorer](http://dropzone.xchain.io/) to see who's posting and what they're buying.
-* And then check out the jsdoc for detailed information on how to use this library.
+* Then [check out an explorer](http://dropzone.xchain.io/) to see who's posting and what they're buying.
+* And lastly [check out the dropzone-lib jsdoc](http://17q4mx2hmktmpuukhfuorms5mfb5xpbhod.github.io/dropzone-lib/) for detailed information on how to use this library.
 
 ## Author's Manifesto
 ![Drop Zone](https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib/raw/master/dropzone-screenshot.jpg)
