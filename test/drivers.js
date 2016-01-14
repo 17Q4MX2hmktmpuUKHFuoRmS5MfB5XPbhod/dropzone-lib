@@ -122,9 +122,7 @@ describe('BlockchainDotInfo', function () {
 describe('BlockrIo', function () {
   this.timeout(30000)
 
-  before(function (next) {
-    this.connection = new drivers.BlockrIo({}, next)
-  })
+  before(function (next) { this.connection = new drivers.BlockrIo({}, next) })
 
   it('fetches genesis item by id', testItemById)
   it('fetches messagesByAddr', testMessagesByAddr)
@@ -134,9 +132,7 @@ describe('BlockrIo', function () {
 describe('Insight', function () {
   this.timeout(30000)
 
-  before(function (next) {
-    this.connection = new drivers.Insight({}, next)
-  })
+  before(function (next) { this.connection = new drivers.Insight({}, next) })
 
   it('fetches genesis item by id', testItemById)
   it('fetches messagesByAddr', testMessagesByAddr)
@@ -148,9 +144,17 @@ describe('Insight', function () {
 describe('SoChain', function () {
   this.timeout(80000)
 
-  before(function (next) {
-    this.connection = new drivers.SoChain({}, next)
-  })
+  before(function (next) { this.connection = new drivers.SoChain({}, next) })
+
+  it('fetches genesis item by id', testItemById)
+  it('fetches messagesByAddr', testMessagesByAddr)
+  it('fetches messagesInBlock', testMessagesInBlock)
+})
+
+describe('Toshi', function () {
+  this.timeout(80000)
+
+  before(function (next) { this.connection = new drivers.Toshi({}, next) })
 
   it('fetches genesis item by id', testItemById)
   it('fetches messagesByAddr', testMessagesByAddr)
