@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>dropzone-lib Index</title>
+
+	<!--[if lt IE 9]>
+	<script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+	<link type="text/css" rel="stylesheet" href="styles/sunlight.default.css">
+
+	<link type="text/css" rel="stylesheet" href="styles/site.lumen.css">
+
+</head>
+
+<body>
+
+<div class="navbar navbar-default navbar-fixed-top ">
+<div class="container">
+	<div class="navbar-header">
+		<a class="navbar-brand" href="index.html">dropzone-lib</a>
+		<button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#topNavigation">
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+        </button>
+	</div>
+	<div class="navbar-collapse collapse" id="topNavigation">
+		<ul class="nav navbar-nav">
+			
+			<li class="dropdown">
+				<a href="modules.list.html" class="dropdown-toggle" data-toggle="dropdown">Modules<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="module-arc4.html">arc4</a></li><li><a href="module-messages.html">messages</a></li><li><a href="module-profile.html">profile</a></li><li><a href="module-session.html">session</a></li><li><a href="module-tx_decoder.html">tx_decoder</a></li><li><a href="module-tx_encoder.html">tx_encoder</a></li>
+				</ul>
+			</li>
+			
+			<li class="dropdown">
+				<a href="classes.list.html" class="dropdown-toggle" data-toggle="dropdown">Classes<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="DropzoneError.html">DropzoneError</a></li><li><a href="Listing.html">Listing</a></li><li><a href="module-arc4-Arc4.html">arc4~Arc4</a></li><li><a href="module-messages-Buyer.html">messages~Buyer</a></li><li><a href="module-messages-Chat.html">messages~Chat</a></li><li><a href="module-messages-Invoice.html">messages~Invoice</a></li><li><a href="module-messages-Item.html">messages~Item</a></li><li><a href="module-messages-MessageBase.html">messages~MessageBase</a></li><li><a href="module-messages-Payment.html">messages~Payment</a></li><li><a href="module-messages-Seller.html">messages~Seller</a></li><li><a href="module-profile-BuyerProfile.html">profile~BuyerProfile</a></li><li><a href="module-profile-Profile.html">profile~Profile</a></li><li><a href="module-profile-SellerProfile.html">profile~SellerProfile</a></li><li><a href="module-session-InvalidCommunication.html">session~InvalidCommunication</a></li><li><a href="module-session-InvalidWithReceiverError.html">session~InvalidWithReceiverError</a></li><li><a href="module-session-MissingReceiverError.html">session~MissingReceiverError</a></li><li><a href="module-session-NotAuthenticatedError.html">session~NotAuthenticatedError</a></li><li><a href="module-session-Session.html">session~Session</a></li><li><a href="module-tx_decoder-BadDecodingError.html">tx_decoder~BadDecodingError</a></li><li><a href="module-tx_decoder-BadEncodingError.html">tx_decoder~BadEncodingError</a></li><li><a href="module-tx_decoder-TxDecoder.html">tx_decoder~TxDecoder</a></li><li><a href="module-tx_encoder-InvalidGenPublicKeyError.html">tx_encoder~InvalidGenPublicKeyError</a></li><li><a href="module-tx_encoder-InvalidPublicKeyError.html">tx_encoder~InvalidPublicKeyError</a></li><li><a href="module-tx_encoder-MissingSenderAddrError.html">tx_encoder~MissingSenderAddrError</a></li><li><a href="module-tx_encoder-MissingSenderPubKeyError.html">tx_encoder~MissingSenderPubKeyError</a></li><li><a href="module-tx_encoder-TxEncoder.html">tx_encoder~TxEncoder</a></li>
+				</ul>
+			</li>
+			
+		</ul>
+		<div class="col-sm-3 col-md-3">
+            <form class="navbar-form" role="search">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Search" name="q" id="search-input">
+                    <div class="input-group-btn">
+                        <button class="btn btn-default" id="search-submit"><i class="glyphicon glyphicon-search"></i></button>
+                    </div>
+                </div>
+            </form>
+        </div>
+	</div>
+
+</div>
+</div>
+
+
+<div class="container" id="toc-content">
+<div class="row">
+
+	
+	<div class="col-md-8">
+	
+		<div id="main">
+			
+
+	
+	
+
+
+
+
+
+
+
+
+
+
+
+	
+	
+
+
+
+
+
+    <section class="readme-section">
+        <article><h1>dropzone-lib <img src="https://raw.githubusercontent.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib/master/dropzone-logo-32x32.png" alt="Drop Zone"></h1><p><a href="https://www.npmjs.org/package/dropzone-lib"><img src="https://img.shields.io/npm/v/dropzone-lib.svg?style=flat-square" alt="NPM Package"></a>
+<a href="https://travis-ci.org/ScroogeMcDuckButWithBitcoin/dropzone-lib"><img src="https://img.shields.io/travis/ScroogeMcDuckButWithBitcoin/dropzone-lib.svg?branch=master&amp;style=flat-square" alt="Build Status"></a></p>
+<p>An Anonymous Peer-To-Peer Local Contraband Marketplace built with Bitcoin.</p>
+<ul>
+<li><a href="https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib/blob/master/Drop%20Zone%20-%20Whitepaper.pdf">Start By Reading the White Paper</a> (it's not too technical)</li>
+<li>Then <a href="http://dropzone.xchain.io/">check out an explorer</a> to see who's posting and what they're buying.</li>
+<li>And lastly <a href="http://17q4mx2hmktmpuukhfuorms5mfb5xpbhod.github.io/dropzone-lib/">check out the dropzone-lib jsdoc</a> for detailed information on how to use this library.</li>
+</ul>
+<h2>Author's Manifesto</h2><p><img src="https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib/raw/master/dropzone-screenshot.jpg" alt="Drop Zone"></p>
+<p>To whom it may concern,</p>
+<p>Markets are objects of censorship and always have been.  There is a presumed 
+division, that renders commerce distinct from the notion of free speech.  But I 
+will allege that the act of commerce is, itself, indistinct from speech.  Where 
+or how one spends their value is a decision as personal and poignant as any 
+words ever spoken or letters ever written.</p>
+<p>As a unfortunate consequence of freedom, bad actors will engage in repugnant 
+trade that impinges upon the rights and freedoms of others.  It is the job of 
+humanity to cooperate and see to it that trade, such as this, becomes 
+unprofitable.  Whether it is accomplished through technological achievement or 
+through the adjustment of social mores, or perhaps a simple appeal to the 
+underlying natural law, it is not the job of bad acting third parties to force 
+into hiding commerce that must be dealt with by means of an adjustment to the 
+global, social conscience.</p>
+<p>Cooperation, in the manner I was just speaking about, has never been plausible 
+until the invention of The Blockchain.  I will not foist upon Satoshi's humble 
+creation such impracticable possibilities as the achievement of world peace.<br>But in approaching Drop Zone, I am attempting to do nothing more than what is 
+possible and possibly more efficient than what exists.  I wish for Drop Zone 
+to be nothing more than an appendage to The Blockchain.  As such, it is every 
+bit as much Bitcoin as Bitcoin itself.  Just as a fungible Bitcoin enables the 
+exchange of spaceless value with near impunity, Drop Zone removes the ability 
+of unwelcome parties from glancing over the shoulders of those in the act of an 
+exchange, whatever it entails.  This technology disrupts the ability of buyers 
+to gain insight into the identities or movements of suppliers making supply 
+chains far less vulnerable to disruption.  It is this innovation that separates 
+this project from all other decentralized market solutions.</p>
+<p>Whereas Bitcoin forces us to consider the nature of money and value, Drop Zone 
+will do the same for commerce.  At its root, Bitcoin is a message passing 
+system.  Those messages that are passed, unlike any electronic message that's 
+come before it, articulate value.  Commerce is, and has always been, similarly 
+inclined toward message passing.  Whether in-person, over email, or through 
+large, online shopping carts, fundamentally, commerce is composed of messages 
+that are in service of the transaction wherein a final message of value is sent 
+to a recipient in exchange for a negotiated good or service.  As such, Drop 
+Zone is a secure message passing protocol inasmuch as it is a platform for 
+commerce.  And while the problem is far beyond the scope or capabilities of 
+the protocol in its most fundamental form, the observant might even see the 
+tenuous skeleton of a full-fledged reputation system.  Such a project is, in 
+itself, as important and difficult as any facing this decentralized ecosystem.</p>
+<p>I hope that Drop Zone lets us all dream of a day when no man will any longer be 
+made to suffer indignity for simply engaging in unpopular or stigmatized 
+commerce.  May all commerce be created equal.</p>
+<p>Today is a Beautiful day,</p>
+<p><strong>Miracle Max</strong>
+<strong>quia omnis qui se exaltat humiliabitur et qui se humiliat exaltabitur</strong></p>
+<h2>Important Whitepaper Errata</h2><ul>
+<li>The white paper expressed 8 digits of precision for the listing radius. This implementation instead uses 6 digits. If additional precision is later deemed necessary, a field can be added to the listing to accomodate enhanced precision</li>
+<li>The white paper expressed pkeys (addresses) as being encoded ints. These are instead encoded as variable length strings.</li>
+<li>The white paper expressed transaction ids as being encoded ints. These are instead encoded as variable length strings.</li>
+</ul>
+<h2>Getting Started in your Web Browser</h2><p>Download our packaged dropzone-lib.min.js and include it in your html via a script tag:</p>
+<pre class="prettyprint source lang-html"><code>&lt;script src=&quot;dropzone-lib.min.js&quot;>&lt;/script></code></pre><h2>Getting Started in node</h2><p>Before you begin you'll need to have Node.js v0.12 installed. There are several 
+options for installation. One method is to use 
+<a href="https://github.com/creationix/nvm">nvm</a> to easily switch between different 
+versions, or download directly from <a href="https://nodejs.org/">Node.js</a>.</p>
+<pre class="prettyprint source lang-bash"><code>npm install -g dropzone-lib</code></pre><h2>Using dropzone-lib</h2><p>The library syntax is still being finalized, but almost all dropzone functions 
+are currently supported in this library.</p>
+<p>NOTE: One glaring exception at the time of writing is the ability to persist 
+records on the blockchain.</p>
+<h3>Create a Connection/Driver</h3><p>Unless you plan to feed raw binary data into objects yourself (more on this later)
+you're going to want to start by connecting dropzone to a blockchain.</p>
+<p>Blockchain connection objects should be created at the inception of your program.
+Currently (and let's be real here - all that matters), Bitcoin connections are 
+the only supported blockchain connections.</p>
+<p>An SPV driver is still being developed, but for the time being, support exists
+for the following block explorers, which are queried via http: BlockchainDotInfo,
+BlockrIo, Insight, and SoChain. Only Insight andSochain support all functions 
+via cors requests, and SoChain is the reccommended driver at this time due to
+its speed.</p>
+<p>Connections are created like so:</p>
+<pre class="prettyprint source lang-js"><code>var dropzone = require('dropzone-lib');
+var SoChain = dropzone.drivers.SoChain;
+
+connection = new SoChain({}, function(err, soChain){ 
+  // Connection initialized...
+});</code></pre><h3>Load a listing from a transaction id</h3><p>This example loads the Miracle Max bible listing from the blockchain. Note that
+&quot;Listings&quot; contain the up-to-date state of an Item, and will reflect the attributes
+present in the original listing, plus all modifications to that listing thereafter.</p>
+<pre class="prettyprint source lang-js"><code>var Listing = dropzone.Listing;
+
+var BIBLE_TXID = '6a9013b8684862e9ccfb527bf8f5ea5eb213e77e3970ff2cd8bbc22beb7cebfb';
+
+bible = new Listing(connection, BIBLE_TXID);
+
+// Scans the seller's address for the original listing, plus all updates:
+bible.getAttributes(function (err, attrs) {
+  if (err) throw err;
+
+  console.log(attrs);
+});</code></pre><h3>Load a Seller profile from an address</h3><p>This example loads the Miracle Max seller profile from the blockchain. Note that
+&quot;SellerProfile&quot; contains the up-to-date state of an seller, and will reflect the 
+attributes present in the original seller declaration, plus all modifications 
+to that declaration thereafter.</p>
+<pre class="prettyprint source lang-js"><code>var SellerProfile = dropzone.SellerProfile;
+
+var maxProfile = new SellerProfile(connection, '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod');
+
+// Scans the seller's address for the original declaration, plus all updates:
+maxProfile.getAttributes(function (err, attrs) {
+  if (err) throw err;
+
+  console.log(attrs);
+});</code></pre><h3>Load an invoice from a transaction id</h3><p>This example loads an invoice message directly. &quot;Messages&quot; do not track state
+outside the current transaction, and can be located in dropzone.messages. 
+These messages are loosely based on an ORM pattern's 'model'.</p>
+<pre class="prettyprint source lang-js"><code>var Invoice = dropzone.messages.Invoice;
+
+var INVOICE_TXID = 'e5a564d54ab9de50fc6eba4176991b7eb8f84bbeca3482ca032c12c1c0050ae3';
+
+Invoice.find(connection, INVOICE_TXID, function (err, invoice) {
+  console.log(invoice.expirationIn);
+  console.log(invoice.amountDue);
+  console.log(invoice.receiverAddr);
+  console.log(invoice.senderAddr);
+});</code></pre><h3>Load an item from raw transaction hex string</h3><p>For those who have a transaction already available, and simply want to de-serialize
+that transaction into its Drop Zone representation, the code to do so is as
+follows:</p>
+<pre class="prettyprint source lang-js"><code>var Invoice = dropzone.messages.Invoice;
+
+var txId = '6a9013b8684862e9ccfb527bf8f5ea5eb213e77e3970ff2cd8bbc22beb7cebfb';
+var txHex = '01000000017....'; // Be sure to include the entire hex here
+
+var record = new TxDecoder(new Transaction(txHex), {prefix: 'DZ'});
+
+var item = new Item(connection, {data: record.data, txid: txId,
+  receiverAddr: record.receiverAddr, senderAddr: record.senderAddr});
+
+console.log(item.description);</code></pre><h2>License</h2><p>Code released under <a href="https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib/blob/master/LICENSE">the MIT license</a>.</p>
+<p>Copyright 2015 Miracle Max</p></article>
+    </section>
+
+
+
+
+
+
+
+	<h1 class="page-title">Index</h1>
+<section>
+
+<header>
+    
+        <h2>
+        dropzone_error.js
+        </h2>
+        
+    
+</header>
+
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Contains the DropzoneError object, and shared error related concerns</p></div>
+        
+
+        
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+	<h1 class="page-title">Index</h1>
+<section>
+
+<header>
+    
+        <h2>
+        listing.js
+        </h2>
+        
+    
+</header>
+
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Contains the Listing object and related code</p></div>
+        
+
+        
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+		</div>
+	</div>
+
+	<div class="clearfix"></div>
+
+	
+		<div class="col-md-3">
+			<div id="toc" class="col-md-3 hidden-xs hidden-sm hidden-md"></div>
+		</div>
+	
+
+</div>
+</div>
+
+<div class="modal fade" id="searchResults">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">Search results</h4>
+      </div>
+      <div class="modal-body"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div>
+
+<footer>
+
+
+<span class="jsdoc-message">
+	Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a>
+	
+		on 2016-01-13T20:25:20-05:00
+	
+	using the <a href="https://github.com/docstrap/docstrap">DocStrap template</a>.
+</span>
+</footer>
+
+<script src="scripts/docstrap.lib.js"></script>
+<script src="scripts/toc.js"></script>
+<script type="text/javascript" src="scripts/fulltext-search-ui.js"></script>
+
+<script>
+$( function () {
+	$( "[id*='$']" ).each( function () {
+		var $this = $( this );
+
+		$this.attr( "id", $this.attr( "id" ).replace( "$", "__" ) );
+	} );
+
+	$( ".tutorial-section pre, .readme-section pre" ).each( function () {
+		var $this = $( this );
+
+		var example = $this.find( "code" );
+		exampleText = example.html();
+		var lang = /{@lang (.*?)}/.exec( exampleText );
+		if ( lang && lang[1] ) {
+			exampleText = exampleText.replace( lang[0], "" );
+			example.html( exampleText );
+			lang = lang[1];
+		} else {
+			var langClassMatch = example.parent()[0].className.match(/lang\-(\S+)/);
+			lang = langClassMatch ? langClassMatch[1] : "javascript";
+		}
+
+		if ( lang ) {
+
+			$this
+			.addClass( "sunlight-highlight-" + lang )
+			.addClass( "linenums" )
+			.html( example.html() );
+
+		}
+	} );
+
+	Sunlight.highlightAll( {
+		lineNumbers : true,
+		showMenu : true,
+		enableDoclinks : true
+	} );
+
+	$.catchAnchorLinks( {
+        navbarOffset: 10
+	} );
+	$( "#toc" ).toc( {
+		anchorName  : function ( i, heading, prefix ) {
+			var id = $( heading ).attr( "id" );
+			return id && id.replace(/\~/g, '-inner-').replace(/\./g, '-static-') || ( prefix + i );
+		},
+		selectors   : "#toc-content h1,#toc-content h2,#toc-content h3,#toc-content h4",
+		showAndHide : false,
+		smoothScrolling: true
+	} );
+
+	$( "#main span[id^='toc']" ).addClass( "toc-shim" );
+	$( '.dropdown-toggle' ).dropdown();
+
+    $( "table" ).each( function () {
+      var $this = $( this );
+      $this.addClass('table');
+    } );
+
+} );
+</script>
+
+
+
+<!--Navigation and Symbol Display-->
+
+
+<!--Google Analytics-->
+
+
+<script type="text/javascript">
+	$(document).ready(function() {
+		SearcherDisplay.init();
+	});
+</script>
+
+</body>
+</html>
