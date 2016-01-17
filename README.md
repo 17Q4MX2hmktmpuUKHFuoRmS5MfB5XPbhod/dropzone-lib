@@ -105,17 +105,17 @@ the only supported blockchain connections.
 
 An SPV driver is still being developed, but for the time being, support exists
 for the following block explorers, which are queried via http: BlockchainDotInfo,
-BlockrIo, Insight, and SoChain. Only Insight andSochain support all functions 
-via cors requests, and SoChain is the reccommended driver at this time due to
-its speed.
+BlockrIo, Insight, Toshi, and SoChain. Only Insight, Toshi, and Sochain support
+all functions via cors requests, and Toshi is the reccommended driver at this 
+time due to its speed.
 
 Connections are created like so:
 
 ```js
 var dropzone = require('dropzone-lib');
-var SoChain = dropzone.drivers.SoChain;
+var Toshi = dropzone.drivers.Toshi;
 
-connection = new SoChain({}, function(err, soChain){ 
+connection = new Toshi({}, function(err, soChain){ 
   // Connection initialized...
 });
 ```
