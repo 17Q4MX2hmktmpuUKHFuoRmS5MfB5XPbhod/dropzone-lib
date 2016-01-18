@@ -21,6 +21,8 @@ var GENESIS_ITEM_DESC = 'One Bible in fair condition. Conveys the truth of the' 
   ' "everything."'
 var MAX_ADDR = '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod'
 
+var TESTNET_PRIVATE_KEY_WIF = "92UvdTpmxA6cvD6YeJZSiHW8ff8DsZXL2PHZu9Mg7JY3zbaETJw"
+
 var testItemById = function (next) {
   Item.find(this.connection, GENESIS_ITEM_TXID, function (err, genesisItem) {
     if (err) throw err
@@ -159,4 +161,18 @@ describe('Toshi', function () {
   it('fetches genesis item by id', testItemById)
   it('fetches messagesByAddr', testMessagesByAddr)
   it('fetches messagesInBlock', testMessagesInBlock)
+  it('issues a spend', function (next) {
+    new drivers.Toshi({isMutable: true}, function (err, testnetConnection) {
+      testnetConnection.sendValue(TESTNET_PRIVATE_KEY_WIF,
+        "msj42CCGruhRsFrGATiUuh25dtxYtnpbTx", 1000000, 500000,
+        function (err, transaction) {
+          if (err) return next(err)
+
+          // TODO: Test the return for txid and values and such
+          console.log("Done") 
+          console.log(transaction) 
+          next()
+        })
+    })
+  })
 })
