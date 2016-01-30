@@ -7,6 +7,7 @@ var chai = require('chai')
 var factories = require('../test/factories/factories')
 var drivers = require('../lib/drivers')
 var messages = require('../lib/messages')
+var globals = require('./fixtures/globals')
 var profile = require('../lib/profile')
 
 var expect = chai.expect
@@ -22,8 +23,6 @@ var GENESIS_ITEM_DESC = 'One Bible in fair condition. Conveys the truth of the' 
   ' hands of evil. A perfect purchase for the person who already has' +
   ' "everything."'
 var MAX_ADDR = '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod'
-
-var TESTNET_PRIVATE_KEY_WIF = "92UvdTpmxA6cvD6YeJZSiHW8ff8DsZXL2PHZu9Mg7JY3zbaETJw"
 
 factories.dz(chai)
 
@@ -157,7 +156,7 @@ describe('SoChain', function () {
   it('fetches messagesInBlock', testMessagesInBlock)
 })
 
-// TOOD: Nix this
+// TODO: Nix this
 function inspectTransaction(transaction) {
   console.log("Transaction Inputs:") 
   for (var i=0; i<transaction.inputs.length; i++) {
@@ -184,14 +183,15 @@ describe('Toshi', function () {
   it('issues a spend', function (next) {
     var connection = new drivers.Toshi({isMutable: true})
 
-    connection.sendValue(TESTNET_PRIVATE_KEY_WIF,
+    connection.sendValue(globals.testerPrivateKey,
       "msj42CCGruhRsFrGATiUuh25dtxYtnpbTx", 1000000, 40000,
       function (err, transaction) {
         if (err) return next(err)
 
         // TODO: Test the return for txid and values and such
         // TODO: Test the push
-        inspectTransaction(transaction)
+        console.log('oeauo')
+
         next()
       })
   })
@@ -199,13 +199,9 @@ describe('Toshi', function () {
   it('saves an item', function (next) {
     var connection = new drivers.Toshi({isMutable: true})
 
-    chai.factory.create('item', connection).save(TESTNET_PRIVATE_KEY_WIF,
+    chai.factory.create('item', connection).save(globals.testerPrivateKey,
       function (err, createItem) {
         if (err) throw err
-
-        // TODO: 
-        // inspectTransaction(transaction)
-        console.log(createItem)
 
         expect(createItem.txid).to.be.a('string')
         expect(createItem.description).to.equal('Item Description')
@@ -217,6 +213,8 @@ describe('Toshi', function () {
         expect(createItem.radius).to.equal(1000)
         expect(createItem.receiverAddr).to.equal('mfZ1415XX782179875331XX1XXXXXgtzWu')
         expect(createItem.senderAddr).to.equal(globals.testerPublicKey)
+
+        next()
       })
   })
 })
