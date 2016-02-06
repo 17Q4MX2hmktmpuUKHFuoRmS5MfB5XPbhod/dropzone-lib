@@ -156,21 +156,6 @@ describe('SoChain', function () {
   it('fetches messagesInBlock', testMessagesInBlock)
 })
 
-// TODO: Nix this
-function inspectTransaction(transaction) {
-  console.log("Transaction Inputs:") 
-  for (var i=0; i<transaction.inputs.length; i++) {
-    var txi = transaction.inputs[i]
-    console.log(['  -'+i+':', 'prevTxId:'+txi.prevTxId.toString('hex'),
-      'outputIndex:'+txi.outputIndex].join(' '))
-  }
-  console.log("Transaction Outputs:") 
-  for (var i=0; i<transaction.outputs.length; i++) {
-    var txo = transaction.outputs[i]
-    console.log('  -'+i+': '+txo.inspect())
-  }
-}
-
 describe('Toshi', function () {
   this.timeout(80000)
 
