@@ -212,13 +212,14 @@ describe('Toshi', function () {
         function (err, tx) {
           if (err) throw err
 
-
           console.log('Created: '+tx.id)
-          console.log(tx.serialize())
-/*
+
           expect(tx.id).to.be.a('string')
-          var tx = new Transaction(tx.serialize())
+
           var record = new TxDecoder(tx, {prefix: 'DZ'})
+          console.log('huhu')
+          console.log(tx.outputs[0])
+
           var createItem = new Item(connection, {data: record.data, 
             receiverAddr: record.receiverAddr, senderAddr: record.senderAddr,
             txid: tx.id, tip: tx.getFee()})
@@ -234,7 +235,7 @@ describe('Toshi', function () {
           expect(createItem.receiverAddr).to.equal(
             'mfZ1415XX782179875331XX1XXXXXgtzWu')
           expect(createItem.senderAddr).to.equal(globals.testerPublicKey)
-*/
+
           validateRawTx(tx.serialize(), function(err, isValid) {
             if (err) throw err
             expect(isValid).to.be.true
