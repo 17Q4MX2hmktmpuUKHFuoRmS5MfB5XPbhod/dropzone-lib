@@ -1,7 +1,6 @@
 /* global describe it before */
 /* eslint no-new: 0 */
 
-var util = require('util')
 var chai = require('chai')
 var request = require('superagent')
 var bitcore = require('bitcore-lib')
@@ -16,7 +15,6 @@ var txDecoder = require('../lib/tx_decoder')
 var expect = chai.expect
 var Item = messages.Item
 var SellerProfile = profile.SellerProfile
-var Transaction = bitcore.Transaction
 var TxDecoder = txDecoder.TxDecoder
 
 var MUTABLE_ITEM_ID = 'bf01750dab74209fb93e51c659504bb3d155eba7301467f4304e73766881b793'
@@ -38,13 +36,13 @@ var validateRawTx = function (rawTx, cb) {
     .end(function (err, res) {
       if (err) return cb(err)
 
-      cb(null, ((res.statusCode === 200) && 
+      cb(null, ((res.statusCode === 200) &&
         (JSON.parse(res.text).status === 'success')))
     })
 }
 
 var testImmutableItemById = function (next) {
-  var connection = new this.driver()
+  var connection = new this.Driver()
 
   Item.find(connection, GENESIS_ITEM_TXID, function (err, genesisItem) {
     if (err) throw err
@@ -68,13 +66,13 @@ var testImmutableItemById = function (next) {
 }
 
 var testItemSerialization = function (next) {
-  var connection = new this.driver({isMutable: true})
+  var connection = new this.Driver({isMutable: true})
 
   // NOTE: This is fairly coupled with the bitcoin/WebExplorer implementation
   // atm, but that's probably just fine.
   connection.toSignedTx(
-    chai.factory.create('item', connection).toTransaction(), 
-      globals.testerPrivateKey, 
+    chai.factory.create('item', connection).toTransaction(),
+      globals.testerPrivateKey,
       function (err, tx) {
         if (err) throw err
 
@@ -84,10 +82,10 @@ var testItemSerialization = function (next) {
 
         expect(tx.id).to.be.a('string')
 
-        var record = new TxDecoder(tx, 
+        var record = new TxDecoder(tx,
           {prefix: 'DZ', network: bitcore.Networks.testnet})
 
-        var createItem = new Item(connection, {data: record.data, 
+        var createItem = new Item(connection, {data: record.data,
           receiverAddr: record.receiverAddr, senderAddr: record.senderAddr,
           txid: tx.id, tip: tx.getFee()})
 
@@ -103,7 +101,7 @@ var testItemSerialization = function (next) {
           'mfZ1415XX782179875331XX1XXXXXgtzWu')
         expect(createItem.senderAddr).to.equal(globals.testerPublicKey)
 
-        validateRawTx(tx.serialize(), function(err, isValid) {
+        validateRawTx(tx.serialize(), function (err, isValid) {
           if (err) throw err
           expect(isValid).to.be.true
           next()
@@ -112,7 +110,7 @@ var testItemSerialization = function (next) {
 }
 
 var testMutableItemById = function (next) {
-  var connection = new this.driver({isMutable: true})
+  var connection = new this.Driver({isMutable: true})
 
   Item.find(connection, MUTABLE_ITEM_ID, function (err, item) {
     if (err) throw err
@@ -134,7 +132,7 @@ var testMutableItemById = function (next) {
 }
 
 var testMessagesByAddr = function (next) {
-  var connection = new this.driver()
+  var connection = new this.Driver()
 
   var maxProfile = new SellerProfile(connection, MAX_ADDR)
 
@@ -153,7 +151,7 @@ var testMessagesByAddr = function (next) {
 }
 
 var testMessagesInBlock = function (next) {
-  var connection = new this.driver()
+  var connection = new this.Driver()
 
   Item.findCreatesSinceBlock(connection, 371812, 0, function (err, items) {
     if (err) throw err
@@ -178,7 +176,7 @@ var testMessagesInBlock = function (next) {
 }
 
 var unsupportedMessagesInBlock = function (next) {
-  var connection = new this.driver()
+  var connection = new this.Driver()
 
   connection.messagesInBlock(371812, {}, function (err, messages) {
     expect(err.name).to.equal('UnsupportedFeatureError')
@@ -188,7 +186,7 @@ var unsupportedMessagesInBlock = function (next) {
 }
 
 var unsupportedMessagesByAddr = function (next) {
-  var connection = new this.driver()
+  var connection = new this.Driver()
 
   var maxProfile = new SellerProfile(connection, MAX_ADDR)
 
@@ -200,15 +198,15 @@ var unsupportedMessagesByAddr = function (next) {
 }
 
 var unsupportedMutableItemById = function () {
-  expect(function() { 
-    new this.driver({isMutable: true})
+  expect(function () {
+    new this.Driver({isMutable: true})
   }.bind(this)).to.throw('bitcore.ErrorInvalidState')
 }
 
 describe('BlockchainDotInfo', function () {
   this.timeout(30000)
 
-  before(function () { this.driver = drivers.BlockchainDotInfo})
+  before(function () { this.Driver = drivers.BlockchainDotInfo })
 
   it('fetches immutable item by id', testImmutableItemById)
   it('mutable item by id is unsupported', unsupportedMutableItemById)
@@ -226,7 +224,7 @@ describe('BlockchainDotInfo', function () {
 describe('BlockrIo', function () {
   this.timeout(30000)
 
-  before(function () { this.driver = drivers.BlockrIo})
+  before(function () { this.Driver = drivers.BlockrIo })
 
   it('fetches immutable item by id', testImmutableItemById)
   it('fetches mutable item by id', testMutableItemById)
@@ -238,7 +236,7 @@ describe('BlockrIo', function () {
 describe('Insight', function () {
   this.timeout(30000)
 
-  before(function () { this.driver = drivers.Insight})
+  before(function () { this.Driver = drivers.Insight })
 
   it('fetches immutable item by id', testImmutableItemById)
   it('fetches mutable item by id', testMutableItemById)
@@ -252,7 +250,7 @@ describe('Insight', function () {
 describe('SoChain', function () {
   this.timeout(80000)
 
-  before(function () { this.driver = drivers.SoChain})
+  before(function () { this.Driver = drivers.SoChain })
 
   it('fetches immutable item by id', testImmutableItemById)
   it('fetches mutable item by id', testMutableItemById)
@@ -264,7 +262,7 @@ describe('SoChain', function () {
 describe('Toshi', function () {
   this.timeout(80000)
 
-  before(function () { this.driver = drivers.Toshi})
+  before(function () { this.Driver = drivers.Toshi })
 
   it('fetches immutable item by id', testImmutableItemById)
   it('fetches mutable item by id', testMutableItemById)
