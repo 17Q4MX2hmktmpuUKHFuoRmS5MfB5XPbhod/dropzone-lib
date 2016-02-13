@@ -2,15 +2,22 @@
 /* eslint no-new: 0 */
 
 var chai = require('chai')
+var request = require('superagent')
+var bitcore = require('bitcore-lib')
 
+var factories = require('../test/factories/factories')
 var drivers = require('../lib/drivers')
 var messages = require('../lib/messages')
+var globals = require('./fixtures/globals')
 var profile = require('../lib/profile')
+var txDecoder = require('../lib/tx_decoder')
 
 var expect = chai.expect
 var Item = messages.Item
 var SellerProfile = profile.SellerProfile
+var TxDecoder = txDecoder.TxDecoder
 
+var MUTABLE_ITEM_ID = 'bf01750dab74209fb93e51c659504bb3d155eba7301467f4304e73766881b793'
 var GENESIS_ITEM_TXID = '6a9013b8684862e9ccfb527bf8f5ea5eb213e77e3970ff2cd8bbc22beb7cebfb'
 var GENESIS_ITEM_DESC = 'One Bible in fair condition. Conveys the truth of the' +
   ' word of God with little difficulty, even still. Secrets within. Conveys' +
@@ -21,8 +28,23 @@ var GENESIS_ITEM_DESC = 'One Bible in fair condition. Conveys the truth of the' 
   ' "everything."'
 var MAX_ADDR = '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod'
 
-var testItemById = function (next) {
-  Item.find(this.connection, GENESIS_ITEM_TXID, function (err, genesisItem) {
+factories.dz(chai)
+
+var validateRawTx = function (rawTx, cb) {
+  var data = {hex: rawTx}
+  request.post('http://tbtc.blockr.io/api/v1/tx/decode').send(data)
+    .end(function (err, res) {
+      if (err) return cb(err)
+
+      cb(null, ((res.statusCode === 200) &&
+        (JSON.parse(res.text).status === 'success')))
+    })
+}
+
+var testImmutableItemById = function (next) {
+  var connection = new this.Driver()
+
+  Item.find(connection, GENESIS_ITEM_TXID, function (err, genesisItem) {
     if (err) throw err
 
     expect(genesisItem.txid).to.equal(GENESIS_ITEM_TXID)
@@ -43,8 +65,76 @@ var testItemById = function (next) {
   })
 }
 
+var testItemSerialization = function (next) {
+  var connection = new this.Driver({isMutable: true})
+
+  // NOTE: This is fairly coupled with the bitcoin/WebExplorer implementation
+  // atm, but that's probably just fine.
+  connection.toSignedTx(
+    chai.factory.create('item', connection).toTransaction(),
+      globals.testerPrivateKey,
+      function (err, tx) {
+        if (err) throw err
+
+        // Kind of useful for testing the fruit of our labor here:
+        // console.log('Created: '+tx.id)
+        // console.log('Tx: '+tx.serialize())
+
+        expect(tx.id).to.be.a('string')
+
+        var record = new TxDecoder(tx,
+          {prefix: 'DZ', network: bitcore.Networks.testnet})
+
+        var createItem = new Item(connection, {data: record.data,
+          receiverAddr: record.receiverAddr, senderAddr: record.senderAddr,
+          txid: tx.id, tip: tx.getFee()})
+
+        expect(createItem.txid).to.be.a('string')
+        expect(createItem.description).to.equal('Item Description')
+        expect(createItem.priceCurrency).to.equal('BTC')
+        expect(createItem.priceInUnits).to.equal(100000000)
+        expect(createItem.expirationIn).to.equal(6)
+        expect(createItem.latitude).to.equal(51.500782)
+        expect(createItem.longitude).to.equal(-0.124669)
+        expect(createItem.radius).to.equal(1000)
+        expect(createItem.receiverAddr).to.equal(
+          'mfZ1415XX782179875331XX1XXXXXgtzWu')
+        expect(createItem.senderAddr).to.equal(globals.testerPublicKey)
+
+        validateRawTx(tx.serialize(), function (err, isValid) {
+          if (err) throw err
+          expect(isValid).to.be.true
+          next()
+        })
+      })
+}
+
+var testMutableItemById = function (next) {
+  var connection = new this.Driver({isMutable: true})
+
+  Item.find(connection, MUTABLE_ITEM_ID, function (err, item) {
+    if (err) throw err
+
+    expect(item.txid).to.be.a('string')
+    expect(item.description).to.equal('Item Description')
+    expect(item.priceCurrency).to.equal('BTC')
+    expect(item.priceInUnits).to.equal(100000000)
+    expect(item.expirationIn).to.equal(6)
+    expect(item.latitude).to.equal(51.500782)
+    expect(item.longitude).to.equal(-0.124669)
+    expect(item.radius).to.equal(1000)
+    expect(item.receiverAddr).to.equal(
+      'mfZ1415XX782179875331XX1XXXXXgtzWu')
+    expect(item.senderAddr).to.equal(globals.testerPublicKey)
+
+    next()
+  })
+}
+
 var testMessagesByAddr = function (next) {
-  var maxProfile = new SellerProfile(this.connection, MAX_ADDR)
+  var connection = new this.Driver()
+
+  var maxProfile = new SellerProfile(connection, MAX_ADDR)
 
   maxProfile.getAttributes(function (err, attrs) {
     if (err) throw err
@@ -61,7 +151,9 @@ var testMessagesByAddr = function (next) {
 }
 
 var testMessagesInBlock = function (next) {
-  Item.findCreatesSinceBlock(this.connection, 371812, 0, function (err, items) {
+  var connection = new this.Driver()
+
+  Item.findCreatesSinceBlock(connection, 371812, 0, function (err, items) {
     if (err) throw err
 
     expect(items.length).to.equal(1)
@@ -84,7 +176,9 @@ var testMessagesInBlock = function (next) {
 }
 
 var unsupportedMessagesInBlock = function (next) {
-  this.connection.messagesInBlock(371812, {}, function (err, messages) {
+  var connection = new this.Driver()
+
+  connection.messagesInBlock(371812, {}, function (err, messages) {
     expect(err.name).to.equal('UnsupportedFeatureError')
     expect(messages).to.be.undefined
     next()
@@ -92,7 +186,9 @@ var unsupportedMessagesInBlock = function (next) {
 }
 
 var unsupportedMessagesByAddr = function (next) {
-  var maxProfile = new SellerProfile(this.connection, MAX_ADDR)
+  var connection = new this.Driver()
+
+  var maxProfile = new SellerProfile(connection, MAX_ADDR)
 
   maxProfile.getAttributes(function (err, attrs) {
     expect(err.name).to.equal('UnsupportedFeatureError')
@@ -101,14 +197,19 @@ var unsupportedMessagesByAddr = function (next) {
   })
 }
 
+var unsupportedMutableItemById = function () {
+  expect(function () {
+    new this.Driver({isMutable: true})
+  }.bind(this)).to.throw('bitcore.ErrorInvalidState')
+}
+
 describe('BlockchainDotInfo', function () {
   this.timeout(30000)
 
-  before(function (next) {
-    this.connection = new drivers.BlockchainDotInfo({}, next)
-  })
+  before(function () { this.Driver = drivers.BlockchainDotInfo })
 
-  it('fetches genesis item by id', testItemById)
+  it('fetches immutable item by id', testImmutableItemById)
+  it('mutable item by id is unsupported', unsupportedMutableItemById)
   if (typeof window === 'undefined') {
     it('fetches messagesByAddr', testMessagesByAddr)
     it('fetches messagesInBlock', testMessagesByAddr)
@@ -117,42 +218,55 @@ describe('BlockchainDotInfo', function () {
     it('messagesByAddr is unsupported', unsupportedMessagesByAddr)
     it('messagesInBlock is unsupported', unsupportedMessagesInBlock)
   }
+  it('serializes an item', testItemSerialization)
 })
 
 describe('BlockrIo', function () {
   this.timeout(30000)
 
-  before(function (next) {
-    this.connection = new drivers.BlockrIo({}, next)
-  })
+  before(function () { this.Driver = drivers.BlockrIo })
 
-  it('fetches genesis item by id', testItemById)
+  it('fetches immutable item by id', testImmutableItemById)
+  it('fetches mutable item by id', testMutableItemById)
   it('fetches messagesByAddr', testMessagesByAddr)
   it('messagesInBlock is unsupported', unsupportedMessagesInBlock)
+  it('serializes an item', testItemSerialization)
 })
 
 describe('Insight', function () {
   this.timeout(30000)
 
-  before(function (next) {
-    this.connection = new drivers.Insight({}, next)
-  })
+  before(function () { this.Driver = drivers.Insight })
 
-  it('fetches genesis item by id', testItemById)
+  it('fetches immutable item by id', testImmutableItemById)
+  it('fetches mutable item by id', testMutableItemById)
   it('fetches messagesByAddr', testMessagesByAddr)
   // NOTE: This largely works, but the test takes so long that I'm no longer
   // running it anymore.
-  // it('messagesInBlock is unsupported', testMessagesInBlock)
+  // it('fetches messagesInBlock', testMessagesInBlock)
+  it('serializes an item', testItemSerialization)
 })
 
 describe('SoChain', function () {
   this.timeout(80000)
 
-  before(function (next) {
-    this.connection = new drivers.SoChain({}, next)
-  })
+  before(function () { this.Driver = drivers.SoChain })
 
-  it('fetches genesis item by id', testItemById)
+  it('fetches immutable item by id', testImmutableItemById)
+  it('fetches mutable item by id', testMutableItemById)
   it('fetches messagesByAddr', testMessagesByAddr)
   it('fetches messagesInBlock', testMessagesInBlock)
+  it('serializes an item', testItemSerialization)
+})
+
+describe('Toshi', function () {
+  this.timeout(80000)
+
+  before(function () { this.Driver = drivers.Toshi })
+
+  it('fetches immutable item by id', testImmutableItemById)
+  it('fetches mutable item by id', testMutableItemById)
+  it('fetches messagesByAddr', testMessagesByAddr)
+  it('fetches messagesInBlock', testMessagesInBlock)
+  it('serializes an item', testItemSerialization)
 })

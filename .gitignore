@@ -4,6 +4,7 @@ node_modules
 npm-debug.log
 TODO.txt
 dropzone-lib.js
+dropzone.js
 tests.js
 coverage
 docs
