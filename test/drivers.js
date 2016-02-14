@@ -218,7 +218,9 @@ describe('BlockchainDotInfo', function () {
     it('messagesByAddr is unsupported', unsupportedMessagesByAddr)
     it('messagesInBlock is unsupported', unsupportedMessagesInBlock)
   }
-  it('serializes an item', testItemSerialization)
+  // It's kind of impossible to test this code path, since blockchain.info
+  // doesn't support mutable blockchains:
+  // it('serializes an item', testItemSerialization)
 })
 
 describe('BlockrIo', function () {
