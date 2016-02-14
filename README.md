@@ -92,10 +92,7 @@ npm install -g dropzone-lib
 The library syntax is still being finalized, but almost all dropzone functions 
 are currently supported in this library.
 
-NOTE: One glaring exception at the time of writing is the ability to persist 
-records on the blockchain.
-
-### Create a Connection/Driver
+### Define a Connection/Driver
 Unless you plan to feed raw binary data into objects yourself (more on this later)
 you're going to want to start by connecting dropzone to a blockchain.
 
@@ -106,18 +103,33 @@ the only supported blockchain connections.
 An SPV driver is still being developed, but for the time being, support exists
 for the following block explorers, which are queried via http: BlockchainDotInfo,
 BlockrIo, Insight, Toshi, and SoChain. Only Insight, Toshi, and Sochain support
-all functions via cors requests, and Toshi is the reccommended driver at this 
-time due to its speed.
+all functions via cors requests. 
 
-Connections are created like so:
+**Toshi is the reccommended driver for read** queries at this time 
+due to its speed.
+
+**BlockrIo is the reccommended driver for write/save operations** at this time.
+Toshi seems to have problems with relaying to the mempool quickly.
+
+Mainnet Connections are created like so:
 
 ```js
 var dropzone = require('dropzone-lib');
 var Toshi = dropzone.drivers.Toshi;
 
+// By default, connections are instantiated to mainnet
 connection = new Toshi({}, function(err, soChain){ 
   // Connection initialized...
 });
+```
+
+Testnet Connections are created with the isMutable parameter set to true:
+
+```js
+var dropzone = require('dropzone-lib');
+var BlockrIo = dropzone.drivers.BlockrIo;
+
+connection = new BlockrIo({isMutable: true});
 ```
 
 ### Load a listing from a transaction id
@@ -195,6 +207,45 @@ var item = new Item(connection, {data: record.data, txid: txId,
 
 console.log(item.description);
 ```
+
+### Create a Seller Profile:
+TODO
+
+### Create an Item (For retrieval with Listing):
+For those who have a transaction already available, and simply want to de-serialize
+that transaction into its Drop Zone representation, the code to do so is as
+follows:
+
+```js
+var Item = dropzone.messages.Item;
+
+new Item(connection, {description: 'Item Description',
+  priceCurrency: 'BTC',
+  priceInUnits: 100000000,
+  expirationIn: 6,
+  latitude: 51.500782, 
+  longitude: -0.124669,
+  radius: 1000}).save('seller-private-key-wif-here', function (err, testItem) {
+  if (err) throw err
+
+  console.log("Created Item at: "+item.txid);
+})
+```
+
+### Update the Item (For retrieval with Listing):
+TODO
+
+### Create an Invoice
+TODO
+
+### Create an Payment (aka a 'Product Review'):
+TODO
+
+## Messaging over Testnet
+TODO
+
+### Initiate a message:
+TODO
 
 ## License
 
