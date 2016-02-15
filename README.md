@@ -292,7 +292,7 @@ new Invoice(connection, {
 For a buyer who has received an item, and wishes to review it
 
 ```js
-var Invoice = dropzone.messages.Invoice;
+var Payment = dropzone.messages.Payment;
 var buyerAddress = '....'; // Mainnet buyer address. Communicated over testnet.
 
 new Payment(connection, { 
