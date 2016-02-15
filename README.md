@@ -118,7 +118,7 @@ var dropzone = require('dropzone-lib');
 var Toshi = dropzone.drivers.Toshi;
 
 // By default, connections are instantiated to mainnet
-connection = new Toshi({}, function(err, soChain){ 
+connection = new Toshi({}, function(err, toshiConnection){ 
   // Connection initialized...
 });
 ```
@@ -209,7 +209,25 @@ console.log(item.description);
 ```
 
 ### Create a Seller Profile:
-TODO
+Before you can post items for sale, you'll need to provide some basic info on
+how people can message you. Optionally, you may want to set up a nickname.
+
+```js
+var Seller = dropzone.messages.Seller;
+var privKey = bitcore.PrivateKey.fromWIF('seller-private-mainnet-key-wif-here')
+
+new Seller(connection, {
+  description: 'Optional Description',
+  alias: 'Satoshi Nakatoto',
+  receiverAddr: privKey.toAddress(this.network).toString(),
+  // NOTE: This is a testnet address, unconnected to your mainnet privKey:
+  communicationsAddr: 'n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv'
+  }).save(privKey.toWIF(), function (err, seller) {
+  if (err) throw err;
+
+  console.log("Created Seller at: "+seller.txid);
+})
+```
 
 ### Create an Item (For retrieval with Listing):
 For those who have a transaction already available, and simply want to de-serialize
@@ -219,27 +237,77 @@ follows:
 ```js
 var Item = dropzone.messages.Item;
 
-new Item(connection, {description: 'Item Description',
+new Item(connection, {
+  description: 'Item Description',
   priceCurrency: 'BTC',
   priceInUnits: 100000000,
-  expirationIn: 6,
+  expirationIn: 6*24*7, // One week.
   latitude: 51.500782, 
   longitude: -0.124669,
-  radius: 1000}).save('seller-private-key-wif-here', function (err, testItem) {
-  if (err) throw err
+  radius: 1000}).save('seller-private-key-wif-here', function (err, item) {
+  if (err) throw err;
 
   console.log("Created Item at: "+item.txid);
 })
 ```
 
 ### Update the Item (For retrieval with Listing):
-TODO
+If you want to update your listing, it's pretty easy to do. Check it out player:
+
+```js
+var Item = dropzone.messages.Item;
+var itemCreateTxid = '6a9013b8684862e9ccfb527bf8f5ea5eb213e77e3970ff2cd8bbc22beb7cebfb';
+var sellerAddr = '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod'
+
+new Item(connection, {
+  createTxid: itemCreateTxid,
+  receiverAddr: senderAddr, 
+  description: 'New & Updated Item Description',
+  }).save('seller-private-key-wif-here', function (err, item) {
+  if (err) throw err
+
+  console.log("Item Update: "+item.txid);
+})
+```
 
 ### Create an Invoice
-TODO
+To create an invoice, as a seller:
+
+```js
+var Invoice = dropzone.messages.Invoice;
+var buyerAddress = '....'; // Negotiated over testnet.
+
+new Invoice(connection, { 
+  expirationIn: 6,
+  amountDue: 100000000,
+  receiverAddr: buyerAddress 
+  }).save('seller-private-key-wif-here', function (err, invoice) {
+  if (err) throw err;
+
+  console.log("Created Invoice at: "+invoice.txid);
+})
+```
 
 ### Create an Payment (aka a 'Product Review'):
-TODO
+For a buyer who has received an item, and wishes to review it
+
+```js
+var Invoice = dropzone.messages.Invoice;
+var buyerAddress = '....'; // Mainnet buyer address. Communicated over testnet.
+
+new Payment(connection, { 
+  description: 'High Quality, no issues',
+  // Quality attributes must be integers gte 0 and lte 8:
+  deliveryQuality: 8,
+  productQuality: 8, 
+  communicationsQuality: 8,
+  receiverAddr: buyerAddress
+  }).save('seller-private-key-wif-here', function (err, payment) {
+  if (err) throw err;
+
+  console.log("Created Payment/Review at: "+payment.txid);
+})
+```
 
 ## Messaging over Testnet
 TODO
