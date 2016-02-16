@@ -277,7 +277,7 @@ To create an invoice, as a seller:
 
 ```js
 var Invoice = dropzone.messages.Invoice;
-var buyerAddress = '....'; // Negotiated over testnet.
+var buyerAddress = '14zBTbnhzHjdAKkaR4J9kCPiyVyNoaqoti'; // A mainnet addess, Negotiated over testnet.
 
 new Invoice(connMainnet, { 
   expirationIn: 6,
@@ -295,7 +295,7 @@ For a buyer who has received an item, and wishes to review it
 
 ```js
 var Payment = dropzone.messages.Payment;
-var buyerAddress = '....'; // Mainnet buyer address. Communicated over testnet.
+var sellerAddress = '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod';
 
 new Payment(connMainnet, { 
   description: 'High Quality, no issues',
@@ -303,7 +303,7 @@ new Payment(connMainnet, {
   deliveryQuality: 8,
   productQuality: 8, 
   communicationsQuality: 8,
-  receiverAddr: buyerAddress
+  receiverAddr: sellerAddress
   }).save('seller-private-key-wif-here', function (err, payment) {
   if (err) throw err;
 
@@ -328,7 +328,7 @@ key-negotiation/initialization request:
 
 ```js
 // This code is running from the buyer's web browser:
-var sellerTestnetAddr = '...';
+var sellerTestnetAddr = 'mi37WkBomHJpUghCn7Vgh3ah33h6L9Nkqw';
 
 // Save this for as long as you need to converse!
 // (And kindly throw it away when you're done conversing.)
