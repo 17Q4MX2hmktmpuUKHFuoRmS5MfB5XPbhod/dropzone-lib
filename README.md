@@ -102,7 +102,7 @@ the only supported blockchain connections.
 
 An SPV driver is still being developed, but for the time being, support exists
 for the following block explorers, which are queried via http: BlockchainDotInfo,
-BlockrIo, Insight, Toshi, and SoChain. Only Insight, Toshi, and Sochain support
+BlockrIo, Insight, Toshi, and SoChain. Only Insight, Toshi, and SoChain support
 all functions via cors requests. 
 
 **Toshi is the reccommended driver for read** queries at this time 
@@ -127,9 +127,11 @@ Testnet Connections are created with the isMutable parameter set to true:
 
 ```js
 var dropzone = require('dropzone-lib');
-var BlockrIo = dropzone.drivers.BlockrIo;
+// If you're not save()'ing transactions, toshi is actually a better driver
+// SoChain was used here to demonstrate that multiple explorers are supported:
+var SoChain = dropzone.drivers.SoChain;
 
-connTestnet = new BlockrIo({isMutable: true});
+connTestnet = new SoChain({isMutable: true});
 ```
 
 ### Load a listing from a transaction id
