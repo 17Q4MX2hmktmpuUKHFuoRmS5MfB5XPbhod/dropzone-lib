@@ -118,7 +118,7 @@ var dropzone = require('dropzone-lib');
 var Toshi = dropzone.drivers.Toshi;
 
 // By default, connections are instantiated to mainnet
-connection = new Toshi({}, function(err, toshiConnection){ 
+connMainnet = new Toshi({}, function(err, toshiConnection){ 
   // Connection initialized...
 });
 ```
@@ -129,7 +129,7 @@ Testnet Connections are created with the isMutable parameter set to true:
 var dropzone = require('dropzone-lib');
 var BlockrIo = dropzone.drivers.BlockrIo;
 
-connection = new BlockrIo({isMutable: true});
+connTestnet = new BlockrIo({isMutable: true});
 ```
 
 ### Load a listing from a transaction id
@@ -142,7 +142,7 @@ var Listing = dropzone.Listing;
 
 var BIBLE_TXID = '6a9013b8684862e9ccfb527bf8f5ea5eb213e77e3970ff2cd8bbc22beb7cebfb';
 
-bible = new Listing(connection, BIBLE_TXID);
+bible = new Listing(connMainnet, BIBLE_TXID);
 
 // Scans the seller's address for the original listing, plus all updates:
 bible.getAttributes(function (err, attrs) {
@@ -161,7 +161,7 @@ to that declaration thereafter.
 ```js
 var SellerProfile = dropzone.SellerProfile;
 
-var maxProfile = new SellerProfile(connection, '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod');
+var maxProfile = new SellerProfile(connMainnet, '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod');
 
 // Scans the seller's address for the original declaration, plus all updates:
 maxProfile.getAttributes(function (err, attrs) {
@@ -181,7 +181,7 @@ var Invoice = dropzone.messages.Invoice;
 
 var INVOICE_TXID = 'e5a564d54ab9de50fc6eba4176991b7eb8f84bbeca3482ca032c12c1c0050ae3';
 
-Invoice.find(connection, INVOICE_TXID, function (err, invoice) {
+Invoice.find(connMainnet, INVOICE_TXID, function (err, invoice) {
   console.log(invoice.expirationIn);
   console.log(invoice.amountDue);
   console.log(invoice.receiverAddr);
@@ -202,7 +202,7 @@ var txHex = '01000000017....'; // Be sure to include the entire hex here
 
 var record = new TxDecoder(new Transaction(txHex), {prefix: 'DZ'});
 
-var item = new Item(connection, {data: record.data, txid: txId,
+var item = new Item(connMainnet, {data: record.data, txid: txId,
   receiverAddr: record.receiverAddr, senderAddr: record.senderAddr});
 
 console.log(item.description);
@@ -216,7 +216,7 @@ how people can message you. Optionally, you may want to set up a nickname.
 var Seller = dropzone.messages.Seller;
 var privKey = bitcore.PrivateKey.fromWIF('seller-private-mainnet-key-wif-here')
 
-new Seller(connection, {
+new Seller(connMainnet, {
   description: 'Optional Description',
   alias: 'Satoshi Nakatoto',
   receiverAddr: privKey.toAddress(this.network).toString(),
@@ -237,7 +237,7 @@ follows:
 ```js
 var Item = dropzone.messages.Item;
 
-new Item(connection, {
+new Item(connMainnet, {
   description: 'Item Description',
   priceCurrency: 'BTC',
   priceInUnits: 100000000,
@@ -259,7 +259,7 @@ var Item = dropzone.messages.Item;
 var itemCreateTxid = '6a9013b8684862e9ccfb527bf8f5ea5eb213e77e3970ff2cd8bbc22beb7cebfb';
 var sellerAddr = '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod'
 
-new Item(connection, {
+new Item(connMainnet, {
   createTxid: itemCreateTxid,
   receiverAddr: senderAddr, 
   description: 'New & Updated Item Description',
@@ -277,7 +277,7 @@ To create an invoice, as a seller:
 var Invoice = dropzone.messages.Invoice;
 var buyerAddress = '....'; // Negotiated over testnet.
 
-new Invoice(connection, { 
+new Invoice(connMainnet, { 
   expirationIn: 6,
   amountDue: 100000000,
   receiverAddr: buyerAddress 
@@ -295,7 +295,7 @@ For a buyer who has received an item, and wishes to review it
 var Payment = dropzone.messages.Payment;
 var buyerAddress = '....'; // Mainnet buyer address. Communicated over testnet.
 
-new Payment(connection, { 
+new Payment(connMainnet, { 
   description: 'High Quality, no issues',
   // Quality attributes must be integers gte 0 and lte 8:
   deliveryQuality: 8,
@@ -310,10 +310,75 @@ new Payment(connection, {
 ```
 
 ## Messaging over Testnet
-TODO
+In Drop Zone, negotiations between sellers and buyers is performed over the
+bitcoin testnet. Why testnet? 
+- Well, it's cheap. 
+- And, there's no need to preserve the contents of communications for very long. 
+  (In fact the mempool is often enough)
+- testnet offers a pretty excellent queueing system, that doesn't require running
+  a server, and that persists even when your client isn't running.
+- It's *really* easy to work with if you're already using this library anyways.
+- It should be trivial for mobile bitcoin wallets to support in the future.
 
-### Initiate a message:
-TODO
+### Initiate a message (Generally By a buyer):
+For a buyer who wishes to communicate with a seller, they must first send a
+key-negotiation/initialization request:
+
+```js
+// This code is running from the buyer's web browser:
+var sellerTestnetAddr = '...';
+
+// Save this for as long as you need to converse!
+// (And kindly throw it away when you're done conversing.)
+// NOTE: The conversation key has nothing to do with the bitcoin key.
+var buyerConversationPrivkey = crypto.randomBytes(128); 
+
+var buyerToSeller = new Session(connTestnet, 'buyer-testnet-private-key-wif',
+  buyerConversationPrivkey, {receiverAddr: sellerTestnetAddr});
+
+// This authenticate() message sends a transaction to the seller that allows
+// the buyer to compute the shared symmKey through DH:
+buyerToSeller.authenticate(function (err, chatInit) {
+  if (err) throw err;
+  console.log("Buyer initiated a connection via transaction: "+chatInit.txid);
+})
+```
+
+### Authenticating a message initiation request:
+The seller can list sessions (authenticated or otherwise) using the Seller.all
+method. In this example, we'll assume the initiation request was the first 
+session in this list, and authenticate it.
+
+```js
+// This code is running from the seller's web browser:
+Session.all(connTestnet, sellerTestnetAddr, function (err, sessions) {
+  if (err) throw err;
+
+  console.log("We found "+sessions.length+" sessions");
+
+  var sellerConversationPrivkey = crypto.randomBytes(128); 
+
+  var sellerToBuyer = new Session(connTestnet,
+    'seller-testnet-private-key-wif', sellerConversationPrivkey,
+    {withChat: sessions[0]});
+
+  // This authenticate() message sends a transaction to the buyer that allows
+  // the buyer to compute the shared symmKey through DH:
+  sellerToBuyer.authenticate(function (err, chatAuth) {
+    if (err) throw err;
+    console.log("Session authenticated via the transaction:"+chatAuth.txid);
+  });
+})
+```
+
+### Conversing:
+Once authenticated, on either the seller or buyer's browser, a message can be
+communicated via the send() method of their Session object:
+```js
+sellerToBuyer.send('Hello Buyer, what you need bro?', function(err, bitcoinTx) {
+  // Standard callback here..
+} )
+```
 
 ## License
 
