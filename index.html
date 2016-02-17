@@ -3,6 +3,7 @@
 <html lang="en">
 <head>
 	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
 	<title>dropzone-lib Index</title>
 
 	<!--[if lt IE 9]>
@@ -156,32 +157,40 @@ options for installation. One method is to use
 versions, or download directly from <a href="https://nodejs.org/">Node.js</a>.</p>
 <pre class="prettyprint source lang-bash"><code>npm install -g dropzone-lib</code></pre><h2>Using dropzone-lib</h2><p>The library syntax is still being finalized, but almost all dropzone functions 
 are currently supported in this library.</p>
-<p>NOTE: One glaring exception at the time of writing is the ability to persist 
-records on the blockchain.</p>
-<h3>Create a Connection/Driver</h3><p>Unless you plan to feed raw binary data into objects yourself (more on this later)
+<h3>Define a Connection/Driver</h3><p>Unless you plan to feed raw binary data into objects yourself (more on this later)
 you're going to want to start by connecting dropzone to a blockchain.</p>
 <p>Blockchain connection objects should be created at the inception of your program.
 Currently (and let's be real here - all that matters), Bitcoin connections are 
 the only supported blockchain connections.</p>
 <p>An SPV driver is still being developed, but for the time being, support exists
 for the following block explorers, which are queried via http: BlockchainDotInfo,
-BlockrIo, Insight, and SoChain. Only Insight andSochain support all functions 
-via cors requests, and SoChain is the reccommended driver at this time due to
-its speed.</p>
-<p>Connections are created like so:</p>
+BlockrIo, Insight, Toshi, and SoChain. Only Insight, Toshi, and SoChain support
+all functions via cors requests. </p>
+<p><strong>Toshi is the reccommended driver for read</strong> queries at this time 
+due to its speed.</p>
+<p><strong>BlockrIo is the reccommended driver for write/save operations</strong> at this time.
+Toshi seems to have problems with relaying to the mempool quickly.</p>
+<p>Mainnet Connections are created like so:</p>
 <pre class="prettyprint source lang-js"><code>var dropzone = require('dropzone-lib');
+var Toshi = dropzone.drivers.Toshi;
+
+// By default, connections are instantiated to mainnet
+connMainnet = new Toshi({}, function(err, toshiConnection){ 
+  // Connection initialized...
+});</code></pre><p>Testnet Connections are created with the isMutable parameter set to true:</p>
+<pre class="prettyprint source lang-js"><code>var dropzone = require('dropzone-lib');
+// If you're not save()'ing transactions, toshi is actually a better driver
+// SoChain was used here to demonstrate that multiple explorers are supported:
 var SoChain = dropzone.drivers.SoChain;
 
-connection = new SoChain({}, function(err, soChain){ 
-  // Connection initialized...
-});</code></pre><h3>Load a listing from a transaction id</h3><p>This example loads the Miracle Max bible listing from the blockchain. Note that
+connTestnet = new SoChain({isMutable: true});</code></pre><h3>Load a listing from a transaction id</h3><p>This example loads the Miracle Max bible listing from the blockchain. Note that
 &quot;Listings&quot; contain the up-to-date state of an Item, and will reflect the attributes
 present in the original listing, plus all modifications to that listing thereafter.</p>
 <pre class="prettyprint source lang-js"><code>var Listing = dropzone.Listing;
 
 var BIBLE_TXID = '6a9013b8684862e9ccfb527bf8f5ea5eb213e77e3970ff2cd8bbc22beb7cebfb';
 
-bible = new Listing(connection, BIBLE_TXID);
+bible = new Listing(connMainnet, BIBLE_TXID);
 
 // Scans the seller's address for the original listing, plus all updates:
 bible.getAttributes(function (err, attrs) {
@@ -194,7 +203,7 @@ attributes present in the original seller declaration, plus all modifications
 to that declaration thereafter.</p>
 <pre class="prettyprint source lang-js"><code>var SellerProfile = dropzone.SellerProfile;
 
-var maxProfile = new SellerProfile(connection, '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod');
+var maxProfile = new SellerProfile(connMainnet, '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod');
 
 // Scans the seller's address for the original declaration, plus all updates:
 maxProfile.getAttributes(function (err, attrs) {
@@ -208,7 +217,7 @@ These messages are loosely based on an ORM pattern's 'model'.</p>
 
 var INVOICE_TXID = 'e5a564d54ab9de50fc6eba4176991b7eb8f84bbeca3482ca032c12c1c0050ae3';
 
-Invoice.find(connection, INVOICE_TXID, function (err, invoice) {
+Invoice.find(connMainnet, INVOICE_TXID, function (err, invoice) {
   console.log(invoice.expirationIn);
   console.log(invoice.amountDue);
   console.log(invoice.receiverAddr);
@@ -223,10 +232,135 @@ var txHex = '01000000017....'; // Be sure to include the entire hex here
 
 var record = new TxDecoder(new Transaction(txHex), {prefix: 'DZ'});
 
-var item = new Item(connection, {data: record.data, txid: txId,
+var item = new Item(connMainnet, {data: record.data, txid: txId,
   receiverAddr: record.receiverAddr, senderAddr: record.senderAddr});
 
-console.log(item.description);</code></pre><h2>License</h2><p>Code released under <a href="https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib/blob/master/LICENSE">the MIT license</a>.</p>
+console.log(item.description);</code></pre><h3>Create a Seller Profile:</h3><p>Before you can post items for sale, you'll need to provide some basic info on
+how people can message you. Optionally, you may want to set up a nickname.</p>
+<pre class="prettyprint source lang-js"><code>var Seller = dropzone.messages.Seller;
+var privKey = bitcore.PrivateKey.fromWIF('seller-private-mainnet-key-wif-here')
+
+new Seller(connMainnet, {
+  description: 'Optional Description',
+  alias: 'Satoshi Nakatoto',
+  receiverAddr: privKey.toAddress(this.network).toString(),
+  // NOTE: This is a testnet address, unconnected to your mainnet privKey:
+  communicationsAddr: 'n3EMs5L3sHcZqRy35cmoPFgw5AzAtWSDUv'
+  }).save(privKey.toWIF(), function (err, seller) {
+  if (err) throw err;
+
+  console.log(&quot;Created Seller at: &quot;+seller.txid);
+})</code></pre><h3>Create an Item (For retrieval with Listing):</h3><p>For those who have a transaction already available, and simply want to de-serialize
+that transaction into its Drop Zone representation, the code to do so is as
+follows:</p>
+<pre class="prettyprint source lang-js"><code>var Item = dropzone.messages.Item;
+
+new Item(connMainnet, {
+  description: 'Item Description',
+  priceCurrency: 'BTC',
+  priceInUnits: 100000000,
+  expirationIn: 6*24*7, // One week.
+  latitude: 51.500782, 
+  longitude: -0.124669,
+  radius: 1000}).save('seller-private-key-wif-here', function (err, item) {
+  if (err) throw err;
+
+  console.log(&quot;Created Item at: &quot;+item.txid);
+})</code></pre><h3>Update the Item (For retrieval with Listing):</h3><p>If you want to update your listing, it's pretty easy to do. Check it out player:</p>
+<pre class="prettyprint source lang-js"><code>var Item = dropzone.messages.Item;
+var itemCreateTxid = '6a9013b8684862e9ccfb527bf8f5ea5eb213e77e3970ff2cd8bbc22beb7cebfb';
+var sellerAddr = '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod'
+
+new Item(connMainnet, {
+  createTxid: itemCreateTxid,
+  receiverAddr: senderAddr, 
+  description: 'New & Updated Item Description',
+  }).save('seller-private-key-wif-here', function (err, item) {
+  if (err) throw err
+
+  console.log(&quot;Item Update: &quot;+item.txid);
+})</code></pre><h3>Create an Invoice</h3><p>To create an invoice, as a seller:</p>
+<pre class="prettyprint source lang-js"><code>var Invoice = dropzone.messages.Invoice;
+var buyerAddress = '....'; // Negotiated over testnet.
+
+new Invoice(connMainnet, { 
+  expirationIn: 6,
+  amountDue: 100000000,
+  receiverAddr: buyerAddress 
+  }).save('seller-private-key-wif-here', function (err, invoice) {
+  if (err) throw err;
+
+  console.log(&quot;Created Invoice at: &quot;+invoice.txid);
+})</code></pre><h3>Create an Payment (aka a 'Product Review'):</h3><p>For a buyer who has received an item, and wishes to review it</p>
+<pre class="prettyprint source lang-js"><code>var Payment = dropzone.messages.Payment;
+var buyerAddress = '....'; // Mainnet buyer address. Communicated over testnet.
+
+new Payment(connMainnet, { 
+  description: 'High Quality, no issues',
+  // Quality attributes must be integers gte 0 and lte 8:
+  deliveryQuality: 8,
+  productQuality: 8, 
+  communicationsQuality: 8,
+  receiverAddr: buyerAddress
+  }).save('seller-private-key-wif-here', function (err, payment) {
+  if (err) throw err;
+
+  console.log(&quot;Created Payment/Review at: &quot;+payment.txid);
+})</code></pre><h2>Messaging over Testnet</h2><p>In Drop Zone, negotiations between sellers and buyers is performed over the
+bitcoin testnet. Why testnet? </p>
+<ul>
+<li>Well, it's cheap. </li>
+<li>And, there's no need to preserve the contents of communications for very long. 
+(In fact the mempool is often enough)</li>
+<li>testnet offers a pretty excellent queueing system, that doesn't require running
+a server, and that persists even when your client isn't running.</li>
+<li>It's <em>really</em> easy to work with if you're already using this library anyways.</li>
+<li>It should be trivial for mobile bitcoin wallets to support in the future.</li>
+</ul>
+<h3>Initiate a message (Generally By a buyer):</h3><p>For a buyer who wishes to communicate with a seller, they must first send a
+key-negotiation/initialization request:</p>
+<pre class="prettyprint source lang-js"><code>// This code is running from the buyer's web browser:
+var sellerTestnetAddr = '...';
+
+// Save this for as long as you need to converse!
+// (And kindly throw it away when you're done conversing.)
+// NOTE: The conversation key has nothing to do with the bitcoin key.
+var buyerConversationPrivkey = crypto.randomBytes(128); 
+
+var buyerToSeller = new Session(connTestnet, 'buyer-testnet-private-key-wif',
+  buyerConversationPrivkey, {receiverAddr: sellerTestnetAddr});
+
+// This authenticate() message sends a transaction to the seller that allows
+// the buyer to compute the shared symmKey through DH:
+buyerToSeller.authenticate(function (err, chatInit) {
+  if (err) throw err;
+  console.log(&quot;Buyer initiated a connection via transaction: &quot;+chatInit.txid);
+})</code></pre><h3>Authenticating a message initiation request:</h3><p>The seller can list sessions (authenticated or otherwise) using the Seller.all
+method. In this example, we'll assume the initiation request was the first 
+session in this list, and authenticate it.</p>
+<pre class="prettyprint source lang-js"><code>// This code is running from the seller's web browser:
+Session.all(connTestnet, sellerTestnetAddr, function (err, sessions) {
+  if (err) throw err;
+
+  console.log(&quot;We found &quot;+sessions.length+&quot; sessions&quot;);
+
+  var sellerConversationPrivkey = crypto.randomBytes(128); 
+
+  var sellerToBuyer = new Session(connTestnet,
+    'seller-testnet-private-key-wif', sellerConversationPrivkey,
+    {withChat: sessions[0]});
+
+  // This authenticate() message sends a transaction to the buyer that allows
+  // the buyer to compute the shared symmKey through DH:
+  sellerToBuyer.authenticate(function (err, chatAuth) {
+    if (err) throw err;
+    console.log(&quot;Session authenticated via the transaction:&quot;+chatAuth.txid);
+  });
+})</code></pre><h3>Conversing:</h3><p>Once authenticated, on either the seller or buyer's browser, a message can be
+communicated via the send() method of their Session object:</p>
+<pre class="prettyprint source lang-js"><code>sellerToBuyer.send('Hello Buyer, what you need bro?', function(err, bitcoinTx) {
+  // Standard callback here..
+} )</code></pre><h2>License</h2><p>Code released under <a href="https://github.com/17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod/dropzone-lib/blob/master/LICENSE">the MIT license</a>.</p>
 <p>Copyright 2015 Miracle Max</p></article>
     </section>
 
@@ -447,7 +581,7 @@ console.log(item.description);</code></pre><h2>License</h2><p>Code released unde
 <span class="jsdoc-message">
 	Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a>
 	
-		on 2016-01-13T20:25:20-05:00
+		on 2016-02-16T20:19:40-05:00
 	
 	using the <a href="https://github.com/docstrap/docstrap">DocStrap template</a>.
 </span>
