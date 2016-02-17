@@ -154,6 +154,21 @@ bible.getAttributes(function (err, attrs) {
 });
 ```
 
+### Find all Listings created in the last 'n' blocks
+To find all items created between blocks 371814 to 371810:
+
+```js
+var Item = dropzone.messages.Item;
+
+Item.findCreatesSinceBlock(connMainnet, 371814, 4, function (err, items) {
+  if (err) throw err;
+
+  for (i=0; i < items.length; i++) {
+    console.log(items[i].description);
+  }
+});
+```
+
 ### Load a Seller profile from an address
 This example loads the Miracle Max seller profile from the blockchain. Note that
 "SellerProfile" contains the up-to-date state of an seller, and will reflect the 
