@@ -129,9 +129,9 @@ describe('Session', function () {
         function (err, communications) {
           if (err) throw err
 
-          var sellerToBuyerContents = communications[2].map(
+          var sellerToBuyerContents = communications[4].map(
             function (comm) { return comm.contentsPlain() })
-          var buyerToSellerContents = communications[3].map(
+          var buyerToSellerContents = communications[5].map(
             function (comm) { return comm.contentsPlain() })
 
           expect(sellerToBuyerContents).to.deep.equal(['Hello Seller 2',
@@ -370,7 +370,7 @@ describe('Session', function () {
         next()
       }, function (next) {
         buyerToSeller.send('Hello Buyer', function (err, chat) {
-          expect(err).to.deep.equal(new session.NotAuthenticatedError())
+          expect(err).to.deep.equal(new session.NotInitializedError())
           next()
         })
       }, function (next) {
@@ -390,11 +390,6 @@ describe('Session', function () {
           sellerToBuyer = new Session(connection, globals.tester2PrivateKey,
             new Buffer(globalsSession.sellerSecret, 'hex'),
             {withChat: sessions[0]})
-          next()
-        })
-      }, function (next) {
-        sellerToBuyer.send('Hello Buyer', function (err, chat) {
-          expect(err).to.deep.equal(new session.NotAuthenticatedError())
           next()
         })
       }],
