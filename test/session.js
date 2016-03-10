@@ -32,7 +32,7 @@ describe('Session', function () {
 
   // NOTE: The ruby version is non-deterministic, but due to the RNG time, I
   // decided to furnish a der and secret rather than crypto.randomBytes(128)
-  it('performs a simple non-deterministic chat', function (nextSpec) {
+  it('performs a simple non-deterministic chat (v1/original)', function (nextSpec) {
     async.series([
       function (next) {
         // Buyer initiates Authentication To Seller:
@@ -84,6 +84,60 @@ describe('Session', function () {
             'Hello Buyer'])
           expect(buyerToSellerContents).to.deep.equal(['Hello Seller',
             'Hello Buyer'])
+
+          nextSpec()
+        })
+      })
+  })
+
+  it('performs a simple non-deterministic chat (v2)', function (nextSpec) {
+    async.series([
+      function (next) {
+        // Buyer initiates Authentication To Seller:
+        var buyerToSeller = new Session(connection, globals.testerPrivateKey,
+          new Buffer(globalsSession.sessionSecret1, 'hex'),
+          {receiverAddr: globals.tester2PublicKey})
+
+        buyerToSeller.authenticate(function (err, chatInit) {
+          if (err) throw err
+          next(null, buyerToSeller)
+        }, new Buffer(globalsSession.der1, 'hex'))
+      }, function (next) {
+        // Seller initiates Authentication To Buyer
+        Session.all(connection, globals.tester2PublicKey, function (err, sessions) {
+          if (err) return next(err)
+
+          expect(sessions.length).to.equal(1)
+
+          next(null, new Session(connection, globals.tester2PrivateKey,
+            crypto.randomBytes(128), {withChat: sessions[0]}))
+        })
+      }],
+      function (err, sessions) {
+        if (err) throw err
+        var buyerToSeller = sessions[0]
+        var sellerToBuyer = sessions[1]
+
+        async.series([
+          function (next) { sellerToBuyer.send('Hello Buyer', next) },
+          function (next) { buyerToSeller.send('Hello Seller', next) },
+          function (next) { sellerToBuyer.send('Hello Buyer 2', next) },
+          function (next) { buyerToSeller.send('Hello Seller 2', next) },
+          function (next) { sellerToBuyer.getCommunications(next) },
+          function (next) { buyerToSeller.getCommunications(next) }
+        ],
+        function (err, communications) {
+          if (err) throw err
+
+          var sellerToBuyerContents = communications[2].map(
+            function (comm) { return comm.contentsPlain() })
+          var buyerToSellerContents = communications[3].map(
+            function (comm) { return comm.contentsPlain() })
+
+          expect(sellerToBuyerContents).to.deep.equal(['Hello Seller 2',
+            'Hello Buyer 2', 'Hello Seller', 'Hello Buyer'])
+          expect(buyerToSellerContents).to.deep.equal(['Hello Seller 2',
+            'Hello Buyer 2', 'Hello Seller', 'Hello Buyer'])
 
           nextSpec()
         })
