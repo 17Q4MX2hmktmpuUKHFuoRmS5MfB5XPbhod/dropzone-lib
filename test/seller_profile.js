@@ -21,7 +21,8 @@ factories.dz(chai)
 describe('SellerProfile', function () {
   var connection = null
 
-  before(function (next) { connection = new drivers.FakeChain({}, next) })
+  before(function (next) { connection = new drivers.FakeChain({
+    blockHeight: messages.LATEST_VERSION_HEIGHT}, next) })
   afterEach(function (next) { connection.clearTransactions(next) })
 
   describe('accessors', function () {

@@ -18,15 +18,16 @@ factories.dz(chai)
 describe('Payment', function () {
   var connection = null
 
-  before(function (next) { connection = new drivers.FakeChain({}, next) })
+  before(function (next) { connection = new drivers.FakeChain({
+    blockHeight: messages.LATEST_VERSION_HEIGHT}, next) })
   after(function (next) { connection.clearTransactions(next) })
 
   it('has accessors', function () {
     // Note that this invoiceId was merely pulled from the ruby version
-    var payment = chai.factory.create('payment', connection, {invoiceTxid: '2'})
+    var payment = chai.factory.create('payment', connection, {invoiceTxid: '02'})
 
     expect(payment.description).to.equal('abc')
-    expect(payment.invoiceTxid).to.equal('2')
+    expect(payment.invoiceTxid).to.equal('02')
     expect(payment.deliveryQuality).to.equal(8)
     expect(payment.productQuality).to.equal(8)
     expect(payment.communicationsQuality).to.equal(8)
@@ -36,21 +37,21 @@ describe('Payment', function () {
 
   it('serializes toTransaction', function () {
     expect(chai.factory.create('payment', connection,
-      {invoiceTxid: '2'}).toTransaction()).to.eql(
+      {invoiceTxid: '02'}).toTransaction()).to.eql(
       { tip: 40000, receiverAddr: globals.tester2PublicKey,
-        data: new Buffer([73, 78, 80, 65, 73, 68, 1, 100, 3, 97, 98, 99,
-          1, 116, 1, 50, 1, 113, 8, 1, 112, 8, 1, 99, 8]) })
+        data: new Buffer([73, 78, 80, 65, 73, 68, 1, 100, 3, 97, 98, 99, 1, 116,
+          1, 2, 1, 113, 8, 1, 112, 8, 1, 99, 8]) })
   })
 
   describe('#save() and #find()', function () {
     it('persists and loads', function (next) {
       chai.factory.create('payment', connection,
-        {invoiceTxid: '2'}).save(globals.testerPrivateKey,
+        {invoiceTxid: '02'}).save(globals.testerPrivateKey,
         function (err, createPayment) {
           if (err) throw err
 
           expect(createPayment.description).to.equal('abc')
-          expect(createPayment.invoiceTxid).to.equal('2')
+          expect(createPayment.invoiceTxid).to.equal('02')
           expect(createPayment.deliveryQuality).to.equal(8)
           expect(createPayment.productQuality).to.equal(8)
           expect(createPayment.communicationsQuality).to.equal(8)
@@ -62,7 +63,7 @@ describe('Payment', function () {
               if (err) throw err
 
               expect(findPayment.description).to.equal('abc')
-              expect(findPayment.invoiceTxid).to.equal('2')
+              expect(findPayment.invoiceTxid).to.equal('02')
               expect(findPayment.deliveryQuality).to.equal(8)
               expect(findPayment.productQuality).to.equal(8)
               expect(findPayment.communicationsQuality).to.equal(8)

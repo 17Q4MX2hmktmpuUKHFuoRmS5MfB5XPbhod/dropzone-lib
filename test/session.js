@@ -27,7 +27,8 @@ describe('Session', function () {
 
   var connection = null
 
-  before(function (next) { connection = new drivers.FakeChain({}, next) })
+  before(function (next) { connection = new drivers.FakeChain({
+    blockHeight: messages.LATEST_VERSION_HEIGHT}, next) })
   afterEach(function (next) { connection.clearTransactions(next) })
 
   // NOTE: The ruby version is non-deterministic, but due to the RNG time, I
