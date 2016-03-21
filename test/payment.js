@@ -5,6 +5,7 @@ var chai = require('chai')
 var factories = require('../test/factories/factories')
 var async = require('async')
 
+var extend = require('shallow-extend')
 var drivers = require('../lib/drivers')
 var messages = require('../lib/messages')
 var globals = require('./fixtures/globals')
@@ -317,6 +318,72 @@ describe('Payment', function () {
 
         nextSpec()
       })
+    })
+  })
+
+  describe('versioning', function () {
+    var JUNSETH_PAYMENT_ATTRS = { communicationsQuality: 8,
+      receiverAddr: 'mjW8kesgoKAswSEC8dGXa7c3qVa5ixiG4M',
+      description: 
+        "Good communication with seller. Fast to create invoice. Looking "+
+        "forward to getting hat. A+++ Seller",
+      invoiceTxid: 
+        "e5a564d54ab9de50fc6eba4176991b7eb8f84bbeca3482ca032c12c1c0050ae3"}
+
+    it('encodes v0 payments with string transaction ids', function () {
+      var blockHeight = 389557
+
+      var payment = new Payment(connection, extend(JUNSETH_PAYMENT_ATTRS,
+        {blockHeight: blockHeight}))
+
+      var data = payment.toTransaction().data
+
+      expect(data.toString('utf8', 0, 6)).to.equal('INPAID')
+      expect(data.toString('utf8', 6, 9)).to.equal("\u0001dc")
+      expect(data.toString('utf8', 9, 108)).to.equal(
+        JUNSETH_PAYMENT_ATTRS.description)
+
+      // This was the problem (at 64 bytes instead of 32): 
+      expect(data.toString('utf8', 108, 111)).to.equal("\u0001t@")
+      expect(data.toString('utf8', 111, 175)).to.equal(
+        JUNSETH_PAYMENT_ATTRS.invoiceTxid)
+
+      expect(data.toString('utf8', 175, data.length)).to.equal("\u0001c\b")
+
+      //  Now decode this payment:
+      var payment = new Payment(connection, {data: data, 
+        blockHeight: blockHeight, 
+        receiverAddr: JUNSETH_PAYMENT_ATTRS.receiverAddr})
+
+      expect(payment.description).to.equal(JUNSETH_PAYMENT_ATTRS.description)
+      expect(payment.invoiceTxid).to.equal(JUNSETH_PAYMENT_ATTRS.invoiceTxid)
+      expect(payment.receiverAddr).to.equal(JUNSETH_PAYMENT_ATTRS.receiverAddr)
+    })
+
+    it('encodes v1 payments with string transaction ids', function () {
+      var payment = new Payment(connection, JUNSETH_PAYMENT_ATTRS)
+
+      var data = payment.toTransaction().data
+
+      expect(data.toString('utf8', 0, 6)).to.equal('INPAID')
+      expect(data.toString('utf8', 6, 9)).to.equal("\u0001dc")
+      expect(data.toString('utf8', 9, 108)).to.equal(
+        JUNSETH_PAYMENT_ATTRS.description)
+
+      // This was the problem (at 64 bytes instead of 32): 
+      expect(data.toString('utf8', 108, 111)).to.equal("\u0001t ")
+      expect(data.toString('hex', 111, 143)).to.equal(
+        JUNSETH_PAYMENT_ATTRS.invoiceTxid)
+
+      expect(data.toString('utf8', 143, data.length)).to.equal("\u0001c\b")
+
+      //  Now decode this payment:
+      var payment = new Payment(connection, {data: data, 
+        receiverAddr: JUNSETH_PAYMENT_ATTRS.receiverAddr})
+
+      expect(payment.description).to.equal(JUNSETH_PAYMENT_ATTRS.description)
+      expect(payment.invoiceTxid).to.equal(JUNSETH_PAYMENT_ATTRS.invoiceTxid)
+      expect(payment.receiverAddr).to.equal(JUNSETH_PAYMENT_ATTRS.receiverAddr)
     })
   })
 })
