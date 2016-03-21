@@ -7,6 +7,7 @@ var async = require('async')
 
 var expect = chai.expect
 
+var messages = require('../lib/messages')
 var drivers = require('../lib/drivers')
 var session = require('../lib/session')
 

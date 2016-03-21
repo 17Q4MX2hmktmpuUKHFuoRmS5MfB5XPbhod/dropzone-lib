@@ -412,7 +412,7 @@ describe('Item', function () {
 
     it('.find_creates_since_block()', function (nextSpec) {
       Item.findCreatesSinceBlock(connection, connection.blockHeight,
-        connection.blockHeight, function (err, items) {
+        2, function (err, items) {
           if (err) throw err
           expect(items.length).to.equal(4)
           expect(items.map(function (i) { return i.description })).to.deep.equal(
@@ -423,7 +423,7 @@ describe('Item', function () {
 
     it('.find_in_radius()', function (nextSpec) {
       Item.findInRadius(connection, connection.blockHeight,
-        connection.blockHeight, 35.689487, 139.691706, 20000,
+        2, 35.689487, 139.691706, 20000,
         function (err, items) {
           if (err) throw err
 

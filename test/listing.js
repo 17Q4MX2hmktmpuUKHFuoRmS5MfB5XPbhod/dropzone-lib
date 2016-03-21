@@ -131,7 +131,7 @@ describe('Listing', function () {
             receiverAddr: globals.testerPublicKey, description: 'xyz'
           }).save(globals.testerPrivateKey, next)
         }, function (next) {
-          new Item(connection, {createTxid: 'non-existing-txid',
+          new Item(connection, {createTxid: 'ffffffffffff', // Non-existing-id
             receiverAddr: globals.testerPublicKey, description: '123'
           }).save(globals.testerPrivateKey, next)
         }, function (next) {
@@ -177,7 +177,7 @@ describe('Listing', function () {
 
   describe('validations', function () {
     it('Cannot be created from nonsense', function (nextSpec) {
-      new Listing(connection, 'non-existing-txid').getAttributes(
+      new Listing(connection, 'ffffffffffff').getAttributes(
         function (err, attrs) {
           if (err) throw err
 
@@ -199,7 +199,7 @@ describe('Listing', function () {
           chai.factory.create('seller',
             connection).save(globals.testerPrivateKey, next)
         }, function (next) {
-          new Item(connection, {createTxid: 'non-existing-txid',
+          new Item(connection, {createTxid: 'ffffffffffff',
             receiverAddr: globals.testerPublicKey, description: '123'
           }).save(globals.testerPrivateKey, function (err, item) {
             if (err) throw err
