@@ -20,7 +20,10 @@ factories.dz(chai)
 describe('Listing', function () {
   var connection = null
 
-  before(function (next) { connection = new drivers.FakeChain({}, next) })
+  before(function (next) {
+    connection = new drivers.FakeChain({
+      blockHeight: messages.LATEST_VERSION_HEIGHT}, next)
+  })
   afterEach(function (next) { connection.clearTransactions(next) })
 
   describe('accessors', function () {
@@ -57,7 +60,7 @@ describe('Listing', function () {
             expect(attrs.priceCurrency).to.equal('BTC')
             expect(attrs.priceInUnits).to.equal(100000000)
             expect(attrs.expirationIn).to.equal(6)
-            expect(attrs.expirationAt).to.equal(7)
+            expect(attrs.expirationAt).to.equal(messages.LATEST_VERSION_HEIGHT + 7)
             expect(attrs.latitude).to.equal(51.500782)
             expect(attrs.longitude).to.equal(-0.124669)
             expect(attrs.radius).to.equal(1000)
@@ -100,7 +103,7 @@ describe('Listing', function () {
             expect(attrs.priceCurrency).to.equal('BTC')
             expect(attrs.priceInUnits).to.equal(99999999)
             expect(attrs.expirationIn).to.equal(12)
-            expect(attrs.expirationAt).to.equal(13)
+            expect(attrs.expirationAt).to.equal(messages.LATEST_VERSION_HEIGHT + 13)
             expect(attrs.latitude).to.equal(51.500782)
             expect(attrs.longitude).to.equal(-0.124669)
             expect(attrs.radius).to.equal(1000)
@@ -130,7 +133,7 @@ describe('Listing', function () {
             receiverAddr: globals.testerPublicKey, description: 'xyz'
           }).save(globals.testerPrivateKey, next)
         }, function (next) {
-          new Item(connection, {createTxid: 'non-existing-txid',
+          new Item(connection, {createTxid: 'ffffffffffff', // Non-existing-id
             receiverAddr: globals.testerPublicKey, description: '123'
           }).save(globals.testerPrivateKey, next)
         }, function (next) {
@@ -176,7 +179,7 @@ describe('Listing', function () {
 
   describe('validations', function () {
     it('Cannot be created from nonsense', function (nextSpec) {
-      new Listing(connection, 'non-existing-txid').getAttributes(
+      new Listing(connection, 'ffffffffffff').getAttributes(
         function (err, attrs) {
           if (err) throw err
 
@@ -198,7 +201,7 @@ describe('Listing', function () {
           chai.factory.create('seller',
             connection).save(globals.testerPrivateKey, next)
         }, function (next) {
-          new Item(connection, {createTxid: 'non-existing-txid',
+          new Item(connection, {createTxid: 'ffffffffffff',
             receiverAddr: globals.testerPublicKey, description: '123'
           }).save(globals.testerPrivateKey, function (err, item) {
             if (err) throw err

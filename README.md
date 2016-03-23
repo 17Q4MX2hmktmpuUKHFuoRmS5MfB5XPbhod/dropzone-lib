@@ -154,6 +154,21 @@ bible.getAttributes(function (err, attrs) {
 });
 ```
 
+### Find all Listings created in the last 'n' blocks
+To find all items created between blocks 371814 to 371810:
+
+```js
+var Item = dropzone.messages.Item;
+
+Item.findCreatesSinceBlock(connMainnet, 371814, 4, function (err, items) {
+  if (err) throw err;
+
+  for (i=0; i < items.length; i++) {
+    console.log(items[i].description);
+  }
+});
+```
+
 ### Load a Seller profile from an address
 This example loads the Miracle Max seller profile from the blockchain. Note that
 "SellerProfile" contains the up-to-date state of an seller, and will reflect the 
@@ -277,7 +292,7 @@ To create an invoice, as a seller:
 
 ```js
 var Invoice = dropzone.messages.Invoice;
-var buyerAddress = '....'; // Negotiated over testnet.
+var buyerAddress = '14zBTbnhzHjdAKkaR4J9kCPiyVyNoaqoti'; // A mainnet addess, Negotiated over testnet.
 
 new Invoice(connMainnet, { 
   expirationIn: 6,
@@ -295,7 +310,7 @@ For a buyer who has received an item, and wishes to review it
 
 ```js
 var Payment = dropzone.messages.Payment;
-var buyerAddress = '....'; // Mainnet buyer address. Communicated over testnet.
+var sellerAddress = '17Q4MX2hmktmpuUKHFuoRmS5MfB5XPbhod';
 
 new Payment(connMainnet, { 
   description: 'High Quality, no issues',
@@ -303,7 +318,7 @@ new Payment(connMainnet, {
   deliveryQuality: 8,
   productQuality: 8, 
   communicationsQuality: 8,
-  receiverAddr: buyerAddress
+  receiverAddr: sellerAddress
   }).save('seller-private-key-wif-here', function (err, payment) {
   if (err) throw err;
 
@@ -328,7 +343,7 @@ key-negotiation/initialization request:
 
 ```js
 // This code is running from the buyer's web browser:
-var sellerTestnetAddr = '...';
+var sellerTestnetAddr = 'mi37WkBomHJpUghCn7Vgh3ah33h6L9Nkqw';
 
 // Save this for as long as you need to converse!
 // (And kindly throw it away when you're done conversing.)

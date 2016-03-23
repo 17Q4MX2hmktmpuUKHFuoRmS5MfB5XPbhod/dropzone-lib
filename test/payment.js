@@ -1,10 +1,11 @@
-/* global describe it before after */
+/* global describe it before after afterEach */
 /* eslint no-new: 0 */
 
 var chai = require('chai')
 var factories = require('../test/factories/factories')
 var async = require('async')
 
+var extend = require('shallow-extend')
 var drivers = require('../lib/drivers')
 var messages = require('../lib/messages')
 var globals = require('./fixtures/globals')
@@ -17,15 +18,18 @@ factories.dz(chai)
 describe('Payment', function () {
   var connection = null
 
-  before(function (next) { connection = new drivers.FakeChain({}, next) })
+  before(function (next) {
+    connection = new drivers.FakeChain({
+      blockHeight: messages.LATEST_VERSION_HEIGHT}, next)
+  })
   after(function (next) { connection.clearTransactions(next) })
 
   it('has accessors', function () {
     // Note that this invoiceId was merely pulled from the ruby version
-    var payment = chai.factory.create('payment', connection, {invoiceTxid: '2'})
+    var payment = chai.factory.create('payment', connection, {invoiceTxid: '02'})
 
     expect(payment.description).to.equal('abc')
-    expect(payment.invoiceTxid).to.equal('2')
+    expect(payment.invoiceTxid).to.equal('02')
     expect(payment.deliveryQuality).to.equal(8)
     expect(payment.productQuality).to.equal(8)
     expect(payment.communicationsQuality).to.equal(8)
@@ -35,21 +39,21 @@ describe('Payment', function () {
 
   it('serializes toTransaction', function () {
     expect(chai.factory.create('payment', connection,
-      {invoiceTxid: '2'}).toTransaction()).to.eql(
+      {invoiceTxid: '02'}).toTransaction()).to.eql(
       { tip: 40000, receiverAddr: globals.tester2PublicKey,
-        data: new Buffer([73, 78, 80, 65, 73, 68, 1, 100, 3, 97, 98, 99,
-          1, 116, 1, 50, 1, 113, 8, 1, 112, 8, 1, 99, 8]) })
+        data: new Buffer([73, 78, 80, 65, 73, 68, 1, 100, 3, 97, 98, 99, 1, 116,
+          1, 2, 1, 113, 8, 1, 112, 8, 1, 99, 8]) })
   })
 
   describe('#save() and #find()', function () {
     it('persists and loads', function (next) {
       chai.factory.create('payment', connection,
-        {invoiceTxid: '2'}).save(globals.testerPrivateKey,
+        {invoiceTxid: '02'}).save(globals.testerPrivateKey,
         function (err, createPayment) {
           if (err) throw err
 
           expect(createPayment.description).to.equal('abc')
-          expect(createPayment.invoiceTxid).to.equal('2')
+          expect(createPayment.invoiceTxid).to.equal('02')
           expect(createPayment.deliveryQuality).to.equal(8)
           expect(createPayment.productQuality).to.equal(8)
           expect(createPayment.communicationsQuality).to.equal(8)
@@ -61,7 +65,7 @@ describe('Payment', function () {
               if (err) throw err
 
               expect(findPayment.description).to.equal('abc')
-              expect(findPayment.invoiceTxid).to.equal('2')
+              expect(findPayment.invoiceTxid).to.equal('02')
               expect(findPayment.deliveryQuality).to.equal(8)
               expect(findPayment.productQuality).to.equal(8)
               expect(findPayment.communicationsQuality).to.equal(8)
@@ -317,6 +321,80 @@ describe('Payment', function () {
 
         nextSpec()
       })
+    })
+  })
+
+  describe('versioning', function () {
+    var connection = null
+
+    before(function (next) {
+      connection = new drivers.FakeChain({ isMutable: false,
+        blockHeight: messages.LATEST_VERSION_HEIGHT}, next)
+    })
+    afterEach(function (next) { connection.clearTransactions(next) })
+
+    var JUNSETH_PAYMENT_ATTRS = { communicationsQuality: 8,
+      receiverAddr: 'mjW8kesgoKAswSEC8dGXa7c3qVa5ixiG4M',
+      description:
+        'Good communication with seller. Fast to create invoice. Looking ' +
+        'forward to getting hat. A+++ Seller',
+      invoiceTxid:
+        'e5a564d54ab9de50fc6eba4176991b7eb8f84bbeca3482ca032c12c1c0050ae3'}
+
+    it('encodes v0 payments with string transaction ids', function () {
+      var blockHeight = 389557
+
+      var payment = new Payment(connection, extend(JUNSETH_PAYMENT_ATTRS,
+        {blockHeight: blockHeight}))
+
+      var data = payment.toTransaction().data
+
+      expect(data.toString('utf8', 0, 6)).to.equal('INPAID')
+      expect(data.toString('utf8', 6, 9)).to.equal('\u0001dc')
+      expect(data.toString('utf8', 9, 108)).to.equal(
+        JUNSETH_PAYMENT_ATTRS.description)
+
+      // This was the problem (at 64 bytes instead of 32):
+      expect(data.toString('utf8', 108, 111)).to.equal('\u0001t@')
+      expect(data.toString('utf8', 111, 175)).to.equal(
+        JUNSETH_PAYMENT_ATTRS.invoiceTxid)
+
+      expect(data.toString('utf8', 175, data.length)).to.equal('\u0001c\b')
+
+      //  Now decode this payment:
+      payment = new Payment(connection, {data: data,
+        blockHeight: blockHeight,
+        receiverAddr: JUNSETH_PAYMENT_ATTRS.receiverAddr})
+
+      expect(payment.description).to.equal(JUNSETH_PAYMENT_ATTRS.description)
+      expect(payment.invoiceTxid).to.equal(JUNSETH_PAYMENT_ATTRS.invoiceTxid)
+      expect(payment.receiverAddr).to.equal(JUNSETH_PAYMENT_ATTRS.receiverAddr)
+    })
+
+    it('encodes v1 payments with string transaction ids', function () {
+      var payment = new Payment(connection, JUNSETH_PAYMENT_ATTRS)
+
+      var data = payment.toTransaction().data
+
+      expect(data.toString('utf8', 0, 6)).to.equal('INPAID')
+      expect(data.toString('utf8', 6, 9)).to.equal('\u0001dc')
+      expect(data.toString('utf8', 9, 108)).to.equal(
+        JUNSETH_PAYMENT_ATTRS.description)
+
+      // This was the problem (at 64 bytes instead of 32):
+      expect(data.toString('utf8', 108, 111)).to.equal('\u0001t ')
+      expect(data.toString('hex', 111, 143)).to.equal(
+        JUNSETH_PAYMENT_ATTRS.invoiceTxid)
+
+      expect(data.toString('utf8', 143, data.length)).to.equal('\u0001c\b')
+
+      //  Now decode this payment:
+      payment = new Payment(connection, {data: data,
+        receiverAddr: JUNSETH_PAYMENT_ATTRS.receiverAddr})
+
+      expect(payment.description).to.equal(JUNSETH_PAYMENT_ATTRS.description)
+      expect(payment.invoiceTxid).to.equal(JUNSETH_PAYMENT_ATTRS.invoiceTxid)
+      expect(payment.receiverAddr).to.equal(JUNSETH_PAYMENT_ATTRS.receiverAddr)
     })
   })
 })

@@ -5,6 +5,7 @@ var chai = require('chai')
 var async = require('async')
 var bitcore = require('bitcore-lib')
 
+var extend = require('shallow-extend')
 var factories = require('../test/factories/factories')
 var messages = require('../lib/messages')
 var drivers = require('../lib/drivers')
@@ -21,7 +22,10 @@ factories.dz(chai)
 describe('Item', function () {
   var connection = null
 
-  before(function (next) { connection = new drivers.FakeChain({}, next) })
+  before(function (next) {
+    connection = new drivers.FakeChain({
+      blockHeight: messages.LATEST_VERSION_HEIGHT}, next)
+  })
   afterEach(function (next) { connection.clearTransactions(next) })
 
   it('has accessors', function () {
@@ -410,7 +414,7 @@ describe('Item', function () {
 
     it('.find_creates_since_block()', function (nextSpec) {
       Item.findCreatesSinceBlock(connection, connection.blockHeight,
-        connection.blockHeight, function (err, items) {
+        2, function (err, items) {
           if (err) throw err
           expect(items.length).to.equal(4)
           expect(items.map(function (i) { return i.description })).to.deep.equal(
@@ -421,7 +425,7 @@ describe('Item', function () {
 
     it('.find_in_radius()', function (nextSpec) {
       Item.findInRadius(connection, connection.blockHeight,
-        connection.blockHeight, 35.689487, 139.691706, 20000,
+        2, 35.689487, 139.691706, 20000,
         function (err, items) {
           if (err) throw err
 
@@ -474,6 +478,72 @@ describe('Item', function () {
 
         nextSpec()
       })
+    })
+  })
+
+  describe('versioning', function () {
+    var connection = null
+
+    before(function (next) {
+      connection = new drivers.FakeChain({
+        blockHeight: messages.LATEST_VERSION_HEIGHT, isMutable: false}, next)
+    })
+    afterEach(function (next) { connection.clearTransactions(next) })
+
+    var ITEM_UPDATE_ATTRS = { description: 'xyz', createTxid:
+      'e5a564d54ab9de50fc6eba4176991b7eb8f84bbeca3482ca032c12c1c0050ae3'}
+
+    /* The max specification encoded transaction ID's as hex-strings which was
+     * a poor use of space, and confusing. Nonetheless, legacy data should be
+     * supported:
+     */
+    it('encodes v0 items with string transaction ids', function () {
+      var blockHeight = 389557
+
+      var item = new Item(connection, extend(ITEM_UPDATE_ATTRS,
+        {blockHeight: blockHeight}))
+
+      var data = item.toTransaction().data
+
+      expect(data.toString('utf8', 0, 6)).to.equal('ITUPDT')
+      expect(data.toString('utf8', 6, 8)).to.equal('\u0001d')
+      expect(data.toString('utf8', 8, 12)).to.equal('\u0003xyz')
+
+      // This was the problem (at 64 bytes instead of 32):
+      expect(data.toString('utf8', 12, 15)).to.equal('\u0001t@')
+      expect(data.toString('utf8', 15, data.length)).to.equal(
+        ITEM_UPDATE_ATTRS.createTxid)
+
+      //  Now decode this item:
+      item = new Item(connection, {data: data,
+        blockHeight: blockHeight, receiverAddr: ITEM_UPDATE_ATTRS.receiverAddr})
+
+      expect(item.description).to.equal(ITEM_UPDATE_ATTRS.description)
+      expect(item.invoiceTxid).to.equal(ITEM_UPDATE_ATTRS.invoiceTxid)
+      expect(item.receiverAddr).to.equal(ITEM_UPDATE_ATTRS.receiverAddr)
+    })
+
+    it('encodes v1 items with string transaction ids', function () {
+      var item = new Item(connection, ITEM_UPDATE_ATTRS)
+
+      var data = item.toTransaction().data
+
+      expect(data.toString('utf8', 0, 6)).to.equal('ITUPDT')
+      expect(data.toString('utf8', 6, 8)).to.equal('\u0001d')
+      expect(data.toString('utf8', 8, 12)).to.equal('\u0003xyz')
+
+      // This was the problem (at 64 bytes instead of 32):
+      expect(data.toString('utf8', 12, 15)).to.equal('\u0001t ')
+      expect(data.toString('hex', 15, data.length)).to.equal(
+        ITEM_UPDATE_ATTRS.createTxid)
+
+      //  Now decode this item:
+      item = new Item(connection, {data: data,
+        receiverAddr: ITEM_UPDATE_ATTRS.receiverAddr})
+
+      expect(item.description).to.equal(ITEM_UPDATE_ATTRS.description)
+      expect(item.invoiceTxid).to.equal(ITEM_UPDATE_ATTRS.invoiceTxid)
+      expect(item.receiverAddr).to.equal(ITEM_UPDATE_ATTRS.receiverAddr)
     })
   })
 })
