@@ -22,8 +22,10 @@ factories.dz(chai)
 describe('Item', function () {
   var connection = null
 
-  before(function (next) { connection = new drivers.FakeChain({
-    blockHeight: messages.LATEST_VERSION_HEIGHT}, next) })
+  before(function (next) {
+    connection = new drivers.FakeChain({
+      blockHeight: messages.LATEST_VERSION_HEIGHT}, next)
+  })
   afterEach(function (next) { connection.clearTransactions(next) })
 
   it('has accessors', function () {
@@ -480,7 +482,15 @@ describe('Item', function () {
   })
 
   describe('versioning', function () {
-    var ITEM_UPDATE_ATTRS = { description: 'xyz', createTxid: 
+    var connection = null
+
+    before(function (next) {
+      connection = new drivers.FakeChain({
+        blockHeight: messages.LATEST_VERSION_HEIGHT, isMutable: false}, next)
+    })
+    afterEach(function (next) { connection.clearTransactions(next) })
+
+    var ITEM_UPDATE_ATTRS = { description: 'xyz', createTxid:
       'e5a564d54ab9de50fc6eba4176991b7eb8f84bbeca3482ca032c12c1c0050ae3'}
 
     /* The max specification encoded transaction ID's as hex-strings which was
@@ -496,16 +506,16 @@ describe('Item', function () {
       var data = item.toTransaction().data
 
       expect(data.toString('utf8', 0, 6)).to.equal('ITUPDT')
-      expect(data.toString('utf8', 6, 8)).to.equal("\u0001d")
-      expect(data.toString('utf8', 8, 12)).to.equal("\u0003xyz")
+      expect(data.toString('utf8', 6, 8)).to.equal('\u0001d')
+      expect(data.toString('utf8', 8, 12)).to.equal('\u0003xyz')
 
-      // This was the problem (at 64 bytes instead of 32): 
-      expect(data.toString('utf8', 12, 15)).to.equal("\u0001t@")
+      // This was the problem (at 64 bytes instead of 32):
+      expect(data.toString('utf8', 12, 15)).to.equal('\u0001t@')
       expect(data.toString('utf8', 15, data.length)).to.equal(
         ITEM_UPDATE_ATTRS.createTxid)
 
       //  Now decode this item:
-      var item = new Item(connection, {data: data, 
+      item = new Item(connection, {data: data,
         blockHeight: blockHeight, receiverAddr: ITEM_UPDATE_ATTRS.receiverAddr})
 
       expect(item.description).to.equal(ITEM_UPDATE_ATTRS.description)
@@ -519,16 +529,16 @@ describe('Item', function () {
       var data = item.toTransaction().data
 
       expect(data.toString('utf8', 0, 6)).to.equal('ITUPDT')
-      expect(data.toString('utf8', 6, 8)).to.equal("\u0001d")
-      expect(data.toString('utf8', 8, 12)).to.equal("\u0003xyz")
+      expect(data.toString('utf8', 6, 8)).to.equal('\u0001d')
+      expect(data.toString('utf8', 8, 12)).to.equal('\u0003xyz')
 
-      // This was the problem (at 64 bytes instead of 32): 
-      expect(data.toString('utf8', 12, 15)).to.equal("\u0001t ")
+      // This was the problem (at 64 bytes instead of 32):
+      expect(data.toString('utf8', 12, 15)).to.equal('\u0001t ')
       expect(data.toString('hex', 15, data.length)).to.equal(
         ITEM_UPDATE_ATTRS.createTxid)
 
       //  Now decode this item:
-      var item = new Item(connection, {data: data, 
+      item = new Item(connection, {data: data,
         receiverAddr: ITEM_UPDATE_ATTRS.receiverAddr})
 
       expect(item.description).to.equal(ITEM_UPDATE_ATTRS.description)

@@ -48,6 +48,7 @@ var testImmutableItemById = function (next) {
     if (err) throw err
 
     expect(genesisItem.txid).to.equal(GENESIS_ITEM_TXID)
+    expect(genesisItem.tip).to.equal(20000)
     expect(genesisItem.blockHeight).to.equal(371812)
     expect(genesisItem.description).to.equal(GENESIS_ITEM_DESC)
     expect(genesisItem.priceCurrency).to.equal('BTC')
@@ -90,6 +91,7 @@ var testItemSerialization = function (next) {
           txid: tx.id, tip: tx.getFee()})
 
         expect(createItem.txid).to.be.a('string')
+        expect(createItem.tip).to.equal(40000)
         expect(createItem.description).to.equal('Item Description')
         expect(createItem.priceCurrency).to.equal('BTC')
         expect(createItem.priceInUnits).to.equal(100000000)
@@ -116,6 +118,7 @@ var testMutableItemById = function (next) {
     if (err) throw err
 
     expect(item.txid).to.be.a('string')
+    expect(item.tip).to.equal(40000)
     expect(item.description).to.equal('Item Description')
     expect(item.priceCurrency).to.equal('BTC')
     expect(item.priceInUnits).to.equal(100000000)
@@ -158,6 +161,7 @@ var testMessagesInBlock = function (next) {
 
     expect(items.length).to.equal(1)
     expect(items[0].txid).to.equal(GENESIS_ITEM_TXID)
+    expect(items[0].tip).to.equal(20000)
     expect(items[0].blockHeight).to.equal(371812)
     expect(items[0].description).to.equal(GENESIS_ITEM_DESC)
     expect(items[0].priceCurrency).to.equal('BTC')

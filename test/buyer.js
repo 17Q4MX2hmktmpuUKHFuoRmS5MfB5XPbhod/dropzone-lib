@@ -16,8 +16,10 @@ factories.dz(chai)
 describe('Buyer', function () {
   var connection = null
 
-  before(function (next) { connection = new drivers.FakeChain({
-    blockHeight: messages.LATEST_VERSION_HEIGHT}, next) })
+  before(function (next) {
+    connection = new drivers.FakeChain({
+      blockHeight: messages.LATEST_VERSION_HEIGHT}, next)
+  })
   after(function (next) { connection.clearTransactions(next) })
 
   it('has accessors', function () {

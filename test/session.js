@@ -25,11 +25,12 @@ var getDecrypted = function (c) { return c.contentsPlain() }
 
 describe('Session', function () {
   this.timeout(10000)
-
   var connection = null
 
-  before(function (next) { connection = new drivers.FakeChain({
-    blockHeight: messages.LATEST_VERSION_HEIGHT}, next) })
+  before(function (next) {
+    connection = new drivers.FakeChain({
+      blockHeight: messages.LATEST_VERSION_HEIGHT}, next)
+  })
   afterEach(function (next) { connection.clearTransactions(next) })
 
   // NOTE: The ruby version is non-deterministic, but due to the RNG time, I
@@ -360,7 +361,6 @@ describe('Session', function () {
 
   it('Requires that session must authenticate before chatting', function (nextSpec) {
     var buyerToSeller
-    var sellerToBuyer
 
     async.series([
       function (next) {
@@ -389,7 +389,7 @@ describe('Session', function () {
 
           expect(sessions.length).to.equal(1)
 
-          sellerToBuyer = new Session(connection, globals.tester2PrivateKey,
+          new Session(connection, globals.tester2PrivateKey,
             new Buffer(globalsSession.sellerSecret, 'hex'),
             {withChat: sessions[0]})
           next()
